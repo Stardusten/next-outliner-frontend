@@ -280,18 +280,23 @@ export const repeatablePlugin = (s: AppState) => {
       if (patch.path[0] != "blocks") continue;
       if (patch.op == "remove") {
         const removed = patch.value! as ABlock;
+        if (removed.content.type != "text") continue; // 只有文本块有 clozeIds
         for (const id of removed.clozeIds) {
           removeRepeatable(id);
         }
       } else if (patch.op == "add") {
         const newBlock = patch.value! as ABlock;
+        if (newBlock.content.type != "text") continue; // 只有文本块有 clozeIds
         for (const id of newBlock.clozeIds) {
           addRepeatable({ id, blockId: newBlock.id });
         }
       } else {
         const oldBlock = patch.oldValue! as ABlock;
         const newBlock = patch.value! as ABlock;
-        const [added, removed] = diff(oldBlock.clozeIds, newBlock.clozeIds);
+        const [added, removed] = diff(
+          oldBlock?.clozeIds ?? [],
+          newBlock?.clozeIds ?? []
+        );
         for (const id of added) {
           addRepeatable({ id, blockId: newBlock.id });
         }

@@ -42,7 +42,7 @@ const firstSyncFinished = ref(false);
 const mainRootBlockId = gs.getTrackingPropReactive("mainRootBlockId");
 
 onMounted(async () => {
-  gs.connectBackend();
+  // gs.connectBackend();
   for (;;) {
     await timeout(500);
     console.log("等待第一次同步...");

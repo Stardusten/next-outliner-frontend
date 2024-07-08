@@ -29,12 +29,15 @@
         <Sun v-if="gs.theme.value == 'light'"></Sun>
         <Moon v-if="gs.theme.value == 'dark'"></Moon>
       </div>
+      <div class="logout-button button" @click="onLogout">
+        <LogOut></LogOut>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ChevronRight, CheckSquare, Menu, Search, Moon, Sun } from "lucide-vue-next";
+import { ChevronRight, LogOut, Menu, Search, Moon, Sun } from "lucide-vue-next";
 import { useAppState } from "@/state/state";
 import { computed, onUnmounted, ref } from "vue";
 import type { ABlock } from "@/state/block";
@@ -73,6 +76,11 @@ const onImport = (checking: boolean) => {
 const onExport = (checking: boolean) => {
   if (checking) return true;
 };
+
+const onLogout = () => {
+  gs.disconnectBackend();
+  location.reload();
+}
 
 onUnmounted(() => {
   mainRootBlockId.dispose();

@@ -1,0 +1,197 @@
+body {
+    height: 100vh;
+    margin: 0;
+    ///
+    --text-font-family: "IBM Plex Sans", "Noto Sans", "Noto Sans CJK SC", "Source Han Sans SC",
+    Cantarell, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    --text-font-size: 16px;
+    --code-font: "IBM Plex Mono", ui-monospace, SFMono-Regular, SF Mono, Menlo,
+    Consolas, Liberation Mono, monospace;
+    --ui-font-family: Inter, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, sans-serif;
+    --ui-font-size: 15px;
+    --code-font-size: 16px;
+    --math-font-size: 1.05em;
+    font-family: var(--ui-font-family);
+    font-size: var(--ui-font-size);
+    color: var(--text-primary-color);
+    line-height: 24px;
+    background-color: var(--bg-color);
+}
+
+*:focus {
+    outline: none;
+}
+
+.ProseMirror {
+    outline: none;
+    word-wrap: break-word;
+}
+
+::selection {
+    background-color: var(--selection-bg-color);
+}
+
+/* 设置滚动条的样式 */
+::-webkit-scrollbar {
+    /*width: 4px;*/
+}
+
+/* 滚动槽 */
+::-webkit-scrollbar-track {
+    -webkit-box-shadow: var(--bg-color-darker);
+}
+
+/* 滚动条滑块 */
+::-webkit-scrollbar-thumb {
+    width: 4px;
+    border-radius: 8px;
+    background: var(--bg-color-lighter);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--bg-color-lighter2);
+}
+
+::-webkit-scrollbar-corner {
+    background-color: var(--bg-color);
+}
+
+.light {
+    --bg-color: #fff;
+    --link-color: #868c90;
+    --tag-color: #868c90;
+    --link-color2: #9876aa;
+    --bg-color-darker: rgb(248, 249, 250);
+    --bg-color-darker-darker: #a4a4a4;
+    --bg-color-lighter: #eceef0;
+    --bg-color-lighter2: #797979;
+    --text-primary-color: rgb(42, 49, 53);
+    --text-secondary-color: rgb(134, 140, 144);
+    --code-background: var(--bg-color);
+    --code-color: rgb(42, 49, 53);
+    --highlight-color: #d5f1ff;
+    --highlight-1: rgb(186, 230, 253);
+    --highlight-2: rgb(188, 240, 218);
+    --highlight-3: rgb(251, 213, 213);
+    --highlight-4: rgb(255, 242, 157);
+    --highlight-5: #E2E8F0;
+    --highlight-6: #FCD9BD;
+    --highlight-7: #DCD7FE;
+    --selection-bg-color: #dbf3ff;
+    --border-indent: 1px solid #eceef0;
+    --bullet-color: #4b5155;
+    --bullet-background: rgb(220, 224, 226);
+    --dangerous: #e24e4e;
+    --dangerous-bg: #a65b65;
+    --sticky-toolbar-bg: #343434;
+    --left-sidebar-bg: rgb(248, 249, 250);
+    /* colors: #3399ff 蓝 #daa520 黄 #808080 灰 #9581a9 紫 #5f9ea0 绿 #f08080 红 */
+    --todo-color: #9581a9;
+    --now-color: #3399ff;
+    --later-color: #daa520;
+    --block-color: #f08080;
+    --completed-color: #5f9ea0;
+    --abort-color: #808080;
+    // rating buttons
+    --again-color: #e24e4e;
+    --hard-color: #eb9a00;
+    --good-color: #4f93f5;
+    --easy-color: #1eb954;
+    // cloze
+    --cloze-underline-color: #cea7ec;
+    --cloze-bg-color: #f6edff;
+    --cloze-highlight-color: #ecdcff;
+}
+
+.dark {
+    --bg-color: #2b2b2b;
+    --link-color2: #9876aa;
+    /*--link-color: #6897BB;*/
+    --link-color: #797979;
+    --bg-color-darker: #282828;
+    --bg-color-darker-darker: #202020;
+    --bg-color-lighter: #414141;
+    --bg-color-lighter2: #797979;
+    --text-primary-color: #a5a5a5;
+    --text-secondary-color: #757777;
+    --code-background: #414141;
+    --code-color: #acacac;
+    --highlight-color: #385570;
+    --highlight-1: #385570;
+    --highlight-2: #294436;
+    --highlight-3: #5e3838;
+    --highlight-4: #515339;
+    --highlight-5: #444444;
+    --highlight-6: #704523;
+    --highlight-7: #503466;
+    --selection-bg-color: #414141;
+    --border-indent: 1px solid #414141;
+    --bullet-color: #a8aaaa;
+    --bullet-background: #414141;
+    --dangerous: #d04255;
+    --dangerous-bg: #a65b65;
+    --sticky-toolbar-bg: #343434;
+    --left-sidebar-bg: #313131;
+}
+
+u {
+    text-underline-offset: .2em;
+    text-decoration-thickness: 1px;
+}
+
+s {
+    text-decoration-thickness: 1px;
+}
+
+/** Mathlive */
+/* Hide the virtual keyboard toggle */
+.ProseMirror {
+    math-field::part(virtual-keyboard-toggle) {
+        display: none;
+    }
+
+    /* Hide the menu toggle */
+    math-field::part(menu-toggle) {
+        display: none;
+    }
+
+    math-field {
+        background-color: unset !important;
+        color: var(--text-primary-color);
+        border: 0;
+        padding: 0;
+        min-width: 0.5em;
+        --selection-background-color: var(--bg-color-lighter);
+        --selection-color: var(--text-primary-color);
+        --contains-highlight-background-color: var(--bg-color-lighter);
+    }
+
+    math-field::selection {
+        background-color: transparent !important;
+    }
+
+    math-field:focus {
+        border: 0;
+        padding: 0;
+        outline: 1px dotted var(--ui-color1);
+        /** may be a bad idea?*/
+        position: relative;
+        z-index: 99;
+    }
+
+    math-field::part(content) {
+        padding-top: 0;
+        padding-bottom: 0;
+        padding-right: 0;
+    }
+}
+
+.fireworks-container {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 100vw;
+    z-index: 999;
+}

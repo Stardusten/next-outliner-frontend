@@ -1,0 +1,140 @@
+<template>
+  <div
+      class="contextmenu"
+      ref="el"
+      v-if="availableItems.length > 0 && gs.contextmenu.context"
+  >
+    <div
+        class="overlay"
+        @click="gs.contextmenu.context = null"
+    ></div>
+    <div
+        class="contextmenu-item"
+        v-for="item in availableItems"
+        :key="item.id"
+        @click="onClickItem(item, $event)"
+    >
+      <component :is="item.icon"></component>
+      {{ item.displayText }}
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import {useAppState} from "@/state/state";
+import {computed, nextTick, onMounted, ref} from "vue";
+import type {ContextmenuItem} from "@/state/contextmenu";
+import {toTwoColumns} from "@/contextmenu/to-two-columns";
+import {copyBlockRef} from "@/contextmenu/copy-block-ref";
+import {copyBlockTag} from "@/contextmenu/copy-block-tag";
+import {copyBlockMirror} from "@/contextmenu/copy-block-mirror";
+import {toggleParagraph} from "@/contextmenu/toggle-paragraph";
+import {addCaption} from "@/contextmenu/add-caption";
+import {deleteBlock} from "@/contextmenu/delete-block";
+import {calcPopoutPos} from "@/util/popout";
+import {addMetadata} from "@/contextmenu/add-metadata";
+import {changeTypeNumber} from "@/contextmenu/metadata/change-type-number";
+import {changeTypeText} from "@/contextmenu/metadata/change-type-text";
+
+const gs = useAppState();
+const availableItems = computed(() => {
+  const ctx = gs.contextmenu.context;
+  if (ctx == null || ctx.openMenuEvent == null) return [];
+  return Object.values(gs.contextmenu.items).filter((item) =>
+      item.available(ctx),
+  );
+});
+const el = ref<HTMLElement | null>(null);
+
+const onClickItem = (item: ContextmenuItem, event: MouseEvent) => {
+  const ctx = gs.contextmenu.context;
+  if (ctx == null) return; // IMPOSSIBLE
+  ctx.clickItemEvent = event;
+  item.onClick(ctx);
+  gs.contextmenu.context = null;
+};
+
+const registerContextMenuItem = (item: ContextmenuItem) => {
+  gs.contextmenu.items[item.id] = item;
+};
+
+onMounted(() => {
+  document.body.addEventListener("contextmenu", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    gs.contextmenu.context = {
+      openMenuEvent: e,
+    };
+    nextTick(() => {
+      if (!el.value) return;
+      const rect = el.value.getBoundingClientRect();
+      const pos = calcPopoutPos(rect.width, rect.height, e.x, e.y);
+      el.value.style.left = pos.left ? `${pos.left}px` : "unset";
+      el.value.style.right = pos.right ? `${pos.right}px` : "unset";
+      el.value.style.top = pos.top ? `${pos.top}px` : "unset";
+      el.value.style.bottom = pos.bottom ? `${pos.bottom}px` : "unset";
+    });
+  });
+
+  registerContextMenuItem(toTwoColumns);
+  registerContextMenuItem(copyBlockRef);
+  registerContextMenuItem(copyBlockTag);
+  registerContextMenuItem(copyBlockMirror);
+  registerContextMenuItem(toggleParagraph);
+  registerContextMenuItem(addCaption);
+  registerContextMenuItem(deleteBlock);
+  registerContextMenuItem(addMetadata);
+  registerContextMenuItem(changeTypeNumber);
+  registerContextMenuItem(changeTypeText);
+});
+</script>
+
+<style lang="scss">
+.contextmenu {
+  position: fixed;
+  min-width: 200px;
+  border-radius: 8px;
+  padding: 4px;
+  background-color: var(--bg-color);
+  border: solid 1px var(--bg-color-lighter);
+  box-shadow: 0 0 10px var(--bg-color-darker);
+  z-index: 99;
+  font-size: 0.9em;
+
+  .overlay {
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    left: 0;
+    top: 0;
+    z-index: 99;
+  }
+
+  .contextmenu-item {
+    display: flex;
+    align-items: center;
+    height: 20px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    z-index: 100;
+
+    &:hover {
+      background: var(--bg-color-lighter);
+      color: var(--text-primary-color);
+    }
+
+    &:active {
+      filter: brightness(0.95);
+    }
+
+    svg {
+      stroke-width: 1.5;
+      height: 15px;
+      width: 15px;
+      margin-right: 8px;
+    }
+  }
+}
+</style>

@@ -64,7 +64,7 @@ const mkProseMirrorPlugins = () => {
       mkHighlightMatchesPlugin(() => props.highlightTerms ?? []),
       mkKeymap(),
       mkPasteLinkPlugin(),
-      mkTrailingHintPlugin(),
+      mkTrailingHintPlugin(getBlockId, getBlockTree),
       mkDocChangedPlugin(),
       mkPasteBlockRefsPlugin(),
       mkPasteBlockMirrorsPlugin(getBlockId, getBlockTree),
@@ -342,5 +342,10 @@ a:before {
   font-style: italic;
   padding-left: 10px;
   opacity: 0.37;
+  cursor: pointer;
+
+  &:hover {
+    opacity: .5;
+  }
 }
 </style>

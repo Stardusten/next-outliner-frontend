@@ -464,6 +464,14 @@ const getBelongingDisplayItem = (blockId: BlockId): DisplayItem | null => {
   return null;
 };
 
+const expandMetadataItemInView = (blockId: BlockId) => {
+  if (!$blockTree.value) return;
+  const $el = $blockTree.value.querySelector(`.metadata-item[block-id="${blockId}"]`);
+  if ($el) {
+    ($el as any)?.expand();
+  }
+}
+
 const controller: BlockTree = {
   getId: () => props.id,
   getRootBlockIds: () => props.rootBlockIds,
@@ -483,6 +491,7 @@ const controller: BlockTree = {
   moveCursorToBegin,
   moveCursorToTheEnd,
   getBelongingDisplayItem,
+  expandMetadataItemInView,
 };
 
 const onClick = (e: MouseEvent) => {

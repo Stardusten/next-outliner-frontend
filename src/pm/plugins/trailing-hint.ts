@@ -1,5 +1,8 @@
 import { Plugin } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
+import type {BlockId} from "@/state/block";
+import type {BlockTree} from "@/state/block-tree";
+import {useAppState} from "@/state/state";
 
 declare module "prosemirror-view" {
   interface EditorView {
@@ -7,7 +10,10 @@ declare module "prosemirror-view" {
   }
 }
 
-export const mkTrailingHintPlugin = () => {
+export const mkTrailingHintPlugin = (
+  getBlockId: () => BlockId,
+  getBlockTree: () => BlockTree,
+) => {
   const plugin: Plugin = new Plugin({
     view: (_view) => {
       const updateTrailingHint = (content: string | HTMLElement) => {
@@ -37,6 +43,18 @@ export const mkTrailingHintPlugin = () => {
               const span = document.createElement("span");
               span.classList.add("trailing-hint");
               span.innerHTML = content;
+
+              // 被点击时，展开对应 metadataItem
+              span.addEventListener("click", () => {
+                const blockId = getBlockId();
+                const blockTree = getBlockTree();
+                const gs = useAppState();
+                gs.taskQueue.addTask(async () => {
+                  const toggled = gs.toggleFold(blockId, false);
+                  if (toggled) await blockTree.nextUpdate();
+                  blockTree.expandMetadataItemInView(blockId);
+                });
+              });
               return span;
             });
             return DecorationSet.create(tr.doc, [deco]);

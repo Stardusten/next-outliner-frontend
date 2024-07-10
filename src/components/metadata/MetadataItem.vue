@@ -5,6 +5,7 @@
     :style="{ marginLeft: `${(item.level + 1) * 25}px` }"
     :block-id="item.id.slice(8)"
     v-if="Object.keys(entriesToDisplay).length > 0"
+    ref="$metadataItem"
   >
     <div class="metadata-header">
       <div
@@ -80,6 +81,8 @@ const props = defineProps<{
 
 const s = useAppState();
 const expand = ref(false);
+const $metadataItem = ref<HTMLElement | null>(null);
+
 const entriesToDisplay = computed(() => {
   const metadata = props.item.metadata;
   if (!metadata.specs) return {};
@@ -132,6 +135,13 @@ const addNewProperty = () => {
   const blockId = props.item.id.slice(8); // 剪掉前面的 metadata
   s.setMetadataEntry(blockId, key, "", { type: "text" });
 }
+
+onMounted(() => {
+  if (!$metadataItem.value) return;
+  Object.assign($metadataItem.value, {
+    expand: () => expand.value = true, // 将展开 metadata 的方法绑定到 $metadataItem 上
+  });
+});
 </script>
 
 <style lang="scss">

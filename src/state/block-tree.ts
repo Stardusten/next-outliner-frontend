@@ -44,6 +44,7 @@ export type BlockTree = {
   moveCursorToTheEnd: (blockId: BlockId) => void;
   moveCursorToBegin: (blockId: BlockId) => void;
   getBelongingDisplayItem: (blockId: BlockId) => DisplayItem | null;
+  expandMetadataItemInView: (blockId: BlockId) => void;
 };
 
 declare module "@/state/state" {

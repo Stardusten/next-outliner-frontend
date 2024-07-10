@@ -79,8 +79,10 @@ export class InlineMathNodeView {
 
   selectNode() {
     const { view, dom } = this;
-    const sm = useAppState();
-    sm.mathEditorActive = true;
+    const s = useAppState();
+    // 防止无限递归
+    if (s.selectFromUnselectOnBlur) return;
+    s.mathEditorActive = true;
     dom.focus();
     // 确保公式两侧加上零宽空格
     let state = view.state;
@@ -98,7 +100,7 @@ export class InlineMathNodeView {
     // 调整光标位置
     state = view.state;
     const currSelection = state.selection.from;
-    const prevSelection = sm.prevSelection;
+    const prevSelection = s.prevSelection;
     if (prevSelection == null || currSelection > prevSelection) {
       // 从左侧移入，光标聚焦到开头
       dom.executeCommand("moveToMathfieldStart");

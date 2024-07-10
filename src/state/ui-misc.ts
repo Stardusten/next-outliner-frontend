@@ -31,6 +31,8 @@ declare module "@/state/state" {
     theme: Ref<string>;
     getCurrentSelectionInfo: () => SelectionInfo;
     restoreSelection: (info: SelectionInfo, onNextUpdate?: boolean) => void;
+    // 一个用于打破 unselect-on-blur.ts 和 inline-math.ts 之间无限递归的辅助变量
+    selectFromUnselectOnBlur: boolean;
   }
 }
 
@@ -87,6 +89,8 @@ export const uiMiscPlugin = (s: AppState) => {
     return null;
   });
   s.decorate("lastFocusedEditorView", lastFocusedEditorView);
+
+  s.decorate("selectFromUnselectOnBlur", false);
 
   const lastFocusedBlockTree = computed(() => {
     if (lastFocusedBlockTreeId.value == null) return null;

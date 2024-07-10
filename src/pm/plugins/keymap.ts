@@ -339,8 +339,8 @@ export const mkKeymap = () => {
         if (!block) return false;
         const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
         gs.taskQueue.addTask(async () => {
-          gs.toggleFold(block.id, true);
-          if (lastFocusedBlockTree) {
+          const toggled = gs.toggleFold(block.id, true);
+          if (toggled && lastFocusedBlockTree) {
             await lastFocusedBlockTree.nextUpdate();
           }
           gs.addUndoPoint();
@@ -355,8 +355,8 @@ export const mkKeymap = () => {
         if (!block) return false;
         const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
         gs.taskQueue.addTask(async () => {
-          gs.toggleFold(block.id, false);
-          if (lastFocusedBlockTree) {
+          const toggled = gs.toggleFold(block.id, false);
+          if (toggled && lastFocusedBlockTree) {
             await lastFocusedBlockTree.nextUpdate();
           }
           gs.addUndoPoint();

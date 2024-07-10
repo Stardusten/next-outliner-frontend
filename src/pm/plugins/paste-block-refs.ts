@@ -11,7 +11,7 @@ export const mkPasteBlockRefsPlugin = () =>
         const copiedText = event.clipboardData.getData("text/plain");
         if (copiedText.startsWith("block-refs:")) {
           const blockIds = copiedText.slice(11).split(",");
-          console.log(blockIds);
+          // console.log(blockIds);
           const nodes: Node[] = [];
           for (const id of blockIds) {
             nodes.push(pmSchema.nodes.blockRef_v2.create({ toBlockId: id }));

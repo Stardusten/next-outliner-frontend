@@ -215,6 +215,10 @@ declare module "@/state/state" {
       content: BlockContent,
       metadata?: any,
     ) => { focusNext: BlockId | null; newNormalBlockId: BlockId } | null;
+    insertMirrorBlock: (
+      pos: BlockPosParentChild,
+      src: BlockId
+    ) => { focusNext: BlockId | null; newMirrorBlockId: BlockId } | null;
     moveBlock: (blockId: BlockId, pos: BlockPosParentChild) => BlockId | null;
     promoteBlock: (blockId: BlockId) => { focusNext: BlockId | null } | null;
     demoteBlock: (blockId: BlockId) => { focusNext: BlockId | null } | null;
@@ -703,6 +707,93 @@ export const blockManagePlugin = (s: AppState) => {
     return { focusNext, newNormalBlockId };
   };
   s.decorate("insertNormalBlock", insertNormalBlock);
+
+  const insertMirrorBlock = (pos: BlockPosParentChild, src: BlockId) => {
+    let focusNext;
+    const { parentId, childIndex } = pos;
+    if (!parentId) return; // 不允许插入多个根块
+    const parentBlock = s.getBlock(parentId);
+    if (!parentBlock) return;
+
+    const parentSrcBlock = (
+      parentBlock.actualSrc
+        ? s.getBlock(parentBlock.actualSrc)
+        : parentBlock
+    ) as ANormalBlock | null;
+    if (!parentSrcBlock) return;
+
+    const srcBlock = s.getBlock(src);
+    if (!srcBlock) return;
+    const srcSrcBlock = (
+      srcBlock.actualSrc ? s.getBlock(srcBlock.actualSrc) : srcBlock
+    ) as ANormalBlock | null;
+    if (!srcSrcBlock) return;
+
+    const newMirrorBlockId = getUUID();
+
+    // create virtual children
+    const vChildBlockIds: BlockId[] = [];
+    for (const childId of srcSrcBlock.childrenIds) {
+      const childBlock = s.getBlock(childId);
+      if (!childBlock) continue;
+      const vChildBlock: AVirtualBlock = {
+        ...childBlock,
+        id: getUUID(),
+        parent: newMirrorBlockId,
+        type: "virtualBlock",
+        childrenIds: "null",
+        fold: true,
+        src: childId,
+        actualSrc: "src" in childBlock ? childBlock.src : childBlock.id,
+      };
+      s._setBlock(vChildBlock);
+      vChildBlockIds.push(vChildBlock.id);
+    }
+
+    const newMirrorBlock: AMirrorBlock = {
+      ...srcSrcBlock,
+      id: newMirrorBlockId,
+      parent: parentSrcBlock.id,
+      type: "mirrorBlock",
+      childrenIds: vChildBlockIds,
+      fold: true,
+      src: srcSrcBlock.id,
+    };
+    s._setBlock(newMirrorBlock);
+    if (parentId == parentSrcBlock.id) {
+      parentSrcBlock.fold = false;
+      focusNext = newMirrorBlockId;
+    }
+    parentSrcBlock.childrenIds.splice(childIndex, 0, newMirrorBlock.id);
+    s._setBlock(parentSrcBlock);
+
+    const parentOccurs = s.getOccurs(parentSrcBlock.id, false);
+    for (const occurId of parentOccurs) {
+      const occurBlock = s.getBlock(occurId);
+      if (!occurBlock) continue;
+      const newBlock: AVirtualBlock = {
+        ...newMirrorBlock,
+        id: getUUID(),
+        parent: occurId,
+        type: "virtualBlock",
+        childrenIds: "null",
+        fold: true,
+        src: newMirrorBlock.id,
+      };
+      if (occurId == parentId) {
+        occurBlock.fold = false;
+        focusNext = newBlock.id;
+      }
+      if (occurBlock.childrenIds == "null") continue;
+      s._setBlock(newBlock);
+      // 新块 id 加入父块的 childrenIds
+      occurBlock.childrenIds.splice(childIndex, 0, newBlock.id);
+      s._setBlock(occurBlock);
+    }
+
+    return { focusNext, newMirrorBlockId };
+  }
+  s.decorate("insertMirrorBlock", insertMirrorBlock);
 
   const moveBlock = (blockId: BlockId, pos: BlockPosParentChild) => {
     let focusNext;

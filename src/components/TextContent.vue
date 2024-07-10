@@ -28,6 +28,7 @@ import { mkUnselectOnBlurPlugin } from "@/pm/plugins/unselect-on-blur";
 import { InlineMathNodeView } from "@/pm/node-views/inline-math";
 import { mkPasteImagePlugin } from "@/pm/plugins/paste-image";
 import {toNumberedList} from "@/pm/input-rules/to-numbered-list";
+import {mkPasteBlockMirrorsPlugin} from "@/pm/plugins/paste-block-mirrors";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -66,6 +67,7 @@ const mkProseMirrorPlugins = () => {
       mkTrailingHintPlugin(),
       mkDocChangedPlugin(),
       mkPasteBlockRefsPlugin(),
+      mkPasteBlockMirrorsPlugin(getBlockId, getBlockTree),
       mkPasteBlockTagsPlugin(),
       mkUnselectOnBlurPlugin(),
       mkPasteImagePlugin(),

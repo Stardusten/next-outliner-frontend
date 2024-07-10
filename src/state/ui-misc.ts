@@ -26,6 +26,7 @@ declare module "@/state/state" {
     lastFocusedBlockTreeId: Ref<BlockTreeId | null>;
     lastFocusedBlock: Disposable<ABlock | null>;
     lastFocusedBlockTree: ComputedRef<BlockTree | null>;
+    lastFocusedEditorView: Disposable<CmEditorView | PmEditorView | null>;
     mainRootBlockPath: Disposable<ABlock[]>;
     theme: Ref<string>;
     getCurrentSelectionInfo: () => SelectionInfo;
@@ -66,25 +67,46 @@ export type DisplayItem =
 /// Data
 export const uiMiscPlugin = (s: AppState) => {
   const lastFocusedBlockId = ref(null);
+  s.decorate("lastFocusedBlockId", lastFocusedBlockId);
+
   const lastFocusedBlockTreeId = ref(null);
+  s.decorate("lastFocusedBlockTreeId", lastFocusedBlockTreeId);
+
   const lastFocusedBlock = disposableComputed((scope) => {
     if (lastFocusedBlockId.value == null) return null;
     const reactiveBlock = s.getBlockReactive(lastFocusedBlockId.value);
     scope.addDisposable(reactiveBlock);
     return reactiveBlock.value;
   });
+  s.decorate("lastFocusedBlock", lastFocusedBlock);
+
+  const lastFocusedEditorView = disposableComputed((scope) => {
+    const tree = lastFocusedBlockTree.value;
+    const id = lastFocusedBlockId.value;
+    if (tree && id) return tree.getEditorViewOfBlock(id);
+    return null;
+  });
+  s.decorate("lastFocusedEditorView", lastFocusedEditorView);
+
   const lastFocusedBlockTree = computed(() => {
     if (lastFocusedBlockTreeId.value == null) return null;
     return s.getBlockTree(lastFocusedBlockTreeId.value);
   });
+  s.decorate("lastFocusedBlockTree", lastFocusedBlockTree);
+
   const blocksUpdated = ref(false);
+  s.decorate("blocksUpdated", blocksUpdated);
+
   const mainRootBlockPath = disposableComputed((scope) => {
     const mainRootBlockId = s.getTrackingPropReactive("mainRootBlockId");
     scope.addDisposable(mainRootBlockId);
     if (mainRootBlockId.value == null) return [];
     return s.getBlockPath(mainRootBlockId.value);
   });
+  s.decorate("mainRootBlockPath", mainRootBlockPath);
+
   const theme = ref("light");
+  s.decorate("theme", theme);
 
   const getFocusedBlockId = () => {
     let el = document.activeElement;
@@ -159,16 +181,6 @@ export const uiMiscPlugin = (s: AppState) => {
     } else cb();
   };
   s.decorate("restoreSelection", restoreSelection);
-
-  s.decorate("lastFocusedBlockId", lastFocusedBlockId);
-  s.decorate("lastFocusedBlockTreeId", lastFocusedBlockTreeId);
-  s.decorate("lastFocusedBlock", lastFocusedBlock);
-  s.decorate("lastFocusedBlockTree", lastFocusedBlockTree);
-  s.decorate("blockTreeUpdated", blocksUpdated);
-  s.decorate("updateBlockTree", () => {
-    blocksUpdated.value = !blocksUpdated.value;
-  });
-  s.decorate("theme", theme);
 
   watch(
     theme,

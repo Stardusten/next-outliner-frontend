@@ -599,7 +599,7 @@ export const blockManagePlugin = (s: AppState) => {
     const newMetadata = { ...oldMetadata };
 
     // ensure spec exists in metadata
-    if (!("spec" in oldMetadata)) newMetadata.specs = {};
+    if (!("specs" in oldMetadata)) newMetadata.specs = {};
     newMetadata.specs![key] = spec;
     newMetadata[key] = value;
 

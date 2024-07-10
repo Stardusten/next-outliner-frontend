@@ -58,7 +58,7 @@
     <div
         v-if="expand"
         class="add-new-property"
-        @click="">
+        @click="addNewProperty">
       + Add new property
     </div>
   </div>
@@ -89,6 +89,7 @@ const entriesToDisplay = computed(() => {
     const value = metadata[key];
     result.push({ key, ...spec, value });
   }
+  // console.log(metadata);
   return result;
 });
 
@@ -120,7 +121,16 @@ const onValueUpdated = (key: string, value: any) => {
 }
 
 const addNewProperty = () => {
-
+  const metadata = props.item.metadata;
+  let key = "key", suffix = "";
+  while ((key + suffix) in metadata) {
+    suffix = suffix == ""
+        ? "0"
+        : (parseInt(suffix) + 1).toString();
+  }
+  key = key + suffix;
+  const blockId = props.item.id.slice(8); // 剪掉前面的 metadata
+  s.setMetadataEntry(blockId, key, "", { type: "text" });
 }
 </script>
 

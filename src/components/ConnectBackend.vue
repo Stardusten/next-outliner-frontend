@@ -1,6 +1,6 @@
 <template>
   <div class="connect-backend">
-    <h1><i>μ</i>-Outliner</h1>
+    <h1><i>next</i>-Outliner</h1>
     <input v-model="backendUrl" />
     <input v-model="location" />
     <button @click="onConnectBackend">Connect</button>

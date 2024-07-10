@@ -39,6 +39,7 @@ export const parseMetadata = (getEditorView: () => EditorView | null) =>
       }
     });
 
+    // TODO 推测值的类型
     const value = valid ? (refs.length == 1 ? refs[0] : refs) : match[2];
 
     const tr = state.tr.delete(start, end);
@@ -46,7 +47,11 @@ export const parseMetadata = (getEditorView: () => EditorView | null) =>
 
     const newMetadata = structuredClone(focusedBlock.metadata);
     newMetadata[key] = value;
-    const focusedBlockId = gs.lastFocusedBlockId.value;
-    gs.changeMetadata(focusedBlock.id, newMetadata);
+    gs.setMetadataEntry(
+      focusedBlock.id,
+      key,
+      value as string, // TODO
+      { type: "text" }
+    );
     return view.state.tr.setMeta("", ""); // empty transaction
   });

@@ -279,7 +279,7 @@ export const repeatablePlugin = (s: AppState) => {
       const patch = patches[i];
       if (patch.path[0] != "blocks") continue;
       if (patch.op == "remove") {
-        const removed = patch.value! as ABlock;
+        const removed = patch.oldValue! as ABlock;
         if (removed.content.type != "text") continue; // 只有文本块有 clozeIds
         for (const id of removed.clozeIds) {
           removeRepeatable(id);

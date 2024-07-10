@@ -24,6 +24,7 @@ export const copyBlockMirror: ContextmenuItem = {
   onClick: (ctx) => {
     const blockId = ctx["blockId"];
     if (blockId != null) {
+      navigator.clipboard.writeText("block-mirrors:" + blockId);
     }
   },
 };

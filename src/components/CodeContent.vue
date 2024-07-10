@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import {onBeforeUnmount, onMounted, ref, watch} from "vue";
 import { EditorView, keymap } from "@codemirror/view";
 import { Compartment, EditorState } from "@codemirror/state";
 import {
@@ -177,12 +177,11 @@ const extensions = props.readonly
             if (docLength == 0) {
               const blockId = props.block.id;
               const focusNext = props.blockTree?.getBlockAbove(blockId)?.id;
-              gs.taskQueue.addTask(() => {
+              gs.taskQueue.addTask(async () => {
                 gs.deleteBlock(blockId);
                 if (focusNext && props.blockTree) {
-                  props.blockTree.nextUpdate(() => {
-                    props.blockTree?.focusBlockInView(focusNext);
-                  });
+                  await props.blockTree.nextUpdate();
+                  props.blockTree.focusBlockInView(focusNext);
                 }
               });
               return true;
@@ -198,12 +197,11 @@ const extensions = props.readonly
             if (docLength == 0) {
               const blockId = props.block.id;
               const focusNext = props.blockTree?.getBlockBelow(blockId)?.id;
-              gs.taskQueue.addTask(() => {
+              gs.taskQueue.addTask(async () => {
                 gs.deleteBlock(blockId);
                 if (focusNext && props.blockTree) {
-                  props.blockTree.nextUpdate(() => {
-                    props.blockTree?.focusBlockInView(focusNext);
-                  });
+                  await props.blockTree.nextUpdate();
+                  props.blockTree.focusBlockInView(focusNext);
                 }
               });
               return true;
@@ -317,6 +315,14 @@ onMounted(() => {
   updateHighlightTerms(props.highlightTerms ?? [], editorView);
   // attach editorView
   Object.assign($contentEl.value, { cmView: editorView });
+});
+
+onBeforeUnmount(() => {
+  if (editorView) {
+    editorView.destroy();
+    delete $contentEl.value["cmView"];
+  }
+  editorView = null;
 });
 </script>
 

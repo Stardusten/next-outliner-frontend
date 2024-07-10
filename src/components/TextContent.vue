@@ -27,6 +27,7 @@ import { mkPasteBlockRefsPlugin } from "@/pm/plugins/paste-block-refs";
 import { mkUnselectOnBlurPlugin } from "@/pm/plugins/unselect-on-blur";
 import { InlineMathNodeView } from "@/pm/node-views/inline-math";
 import { mkPasteImagePlugin } from "@/pm/plugins/paste-image";
+import {toNumberedList} from "@/pm/input-rules/to-numbered-list";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -41,6 +42,10 @@ let editorView: EditorView | null = null;
 const gs = useAppState();
 
 const mkProseMirrorPlugins = () => {
+  const getEditorView = () => editorView;
+  const getBlockId = () => props.block.id;
+  const getBlockTree = () => props.blockTree ?? null;
+
   if (props.readonly) {
     return [mkHighlightMatchesPlugin(() => props.highlightTerms ?? [])];
   } else {
@@ -48,12 +53,10 @@ const mkProseMirrorPlugins = () => {
       inputRules({
         rules: [
           turnToInlineCode,
+          toNumberedList(getBlockId, getEditorView),
           // openRefSuggestion(() => editorView),
-          parseMetadata(() => editorView),
-          turnToCodeBlock(
-            () => props.block.id,
-            () => props.blockTree ?? null,
-          ),
+          parseMetadata(getEditorView),
+          turnToCodeBlock(getBlockId, getBlockTree),
         ],
       }),
       mkEventBusPlugin(),

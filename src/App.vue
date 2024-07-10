@@ -72,7 +72,6 @@ onMounted(async () => {
             actualSrc: rootBlockId,
           };
           gs._setBlock(rootBlock);
-          return;
         }
         console.info("尝试从所有块中找出根块");
         for (const block of blocks.values()) {

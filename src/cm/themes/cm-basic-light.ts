@@ -24,7 +24,7 @@ export const config = {
   type: "#005cc5",
   class: "#cf222e", //
   number: "#005cc5",
-  comment: "#57606a", //
+  comment: "#929ca6", //
   heading: "#005cc5",
   invalid: "#cb2431",
   regexp: "#032f62",

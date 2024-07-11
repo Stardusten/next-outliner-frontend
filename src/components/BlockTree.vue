@@ -23,11 +23,11 @@
           :block-tree="controller"
           :item="itemData"
         ></BlockItem>
-        <!--        <MultiColRow-->
-        <!--            v-else-if="itemData.itemType == 'multiColRow'"-->
-        <!--            :item="itemData"-->
-        <!--            :block-tree="controller"-->
-        <!--        ></MultiColRow>-->
+        <MultiColRow
+            v-else-if="itemData.itemType == 'multiColRow'"
+            :item="itemData"
+            :block-tree="controller"
+        ></MultiColRow>
         <MetadataItem
           v-else-if="itemData.itemType == 'metadata'"
           :block-tree="controller"
@@ -80,6 +80,7 @@ import MetadataItem from "@/components/metadata/MetadataItem.vue";
 import type { Cloze } from "@/state/repeatable";
 import { highlightElements } from "@/util/highlight";
 import { scrollIntoViewIfNotVisible } from "@/util/dom";
+import MultiColRow from "@/components/MultiColRow.vue";
 
 const props = defineProps<{
   id: string;

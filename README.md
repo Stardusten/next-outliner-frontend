@@ -17,3 +17,10 @@ Workflowy 的大部分特性已经实现了，包括：
 4. 镜像块，支持同步编辑
 5. 文档块（隐藏 bullet，增加块上下间距）
 6. 明暗两色主题
+
+# 演示视频
+
+https://github.com/Stardusten/next-outliner-frontend/assets/38722307/c5199b0e-acb9-4a43-abcf-166ee4a91eae
+
+https://github.com/Stardusten/next-outliner-frontend/assets/38722307/3976a350-6c87-427a-9c13-218ee1aa78d1
+

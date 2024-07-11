@@ -27,6 +27,7 @@ import {debounce} from "lodash";
 import type {Selection} from "prosemirror-state";
 import {EditorView as PmEditorView} from "prosemirror-view";
 import {toggleMark} from "prosemirror-commands";
+import Cloze from "@/components/icons/Cloze.vue";
 
 const s = useAppState();
 const show = ref(false);
@@ -91,6 +92,11 @@ const buttonSpecs: ButtonSpec[] = [
     icon: Code,
     classname: "toggle-inline-code",
     onClick: () => toggleMarkOnCurrent(pmSchema.marks.code),
+  },
+  {
+    icon: Cloze,
+    classname: "toggle-cloze",
+    onClick: () => toggleMarkOnCurrent(pmSchema.marks.cloze),
   },
   {
     icon: Underline,

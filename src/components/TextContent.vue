@@ -29,6 +29,7 @@ import { InlineMathNodeView } from "@/pm/node-views/inline-math";
 import { mkPasteImagePlugin } from "@/pm/plugins/paste-image";
 import {toNumberedList} from "@/pm/input-rules/to-numbered-list";
 import {mkPasteBlockMirrorsPlugin} from "@/pm/plugins/paste-block-mirrors";
+import {mkOpenFloatingToolBarPlugin} from "@/pm/plugins/open-floating-toolbar";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -71,6 +72,7 @@ const mkProseMirrorPlugins = () => {
       mkPasteBlockTagsPlugin(),
       mkUnselectOnBlurPlugin(),
       mkPasteImagePlugin(),
+      mkOpenFloatingToolBarPlugin(),
     ];
   }
 };

@@ -12,6 +12,7 @@ import { blockSelectPlugin } from "@/state/block-select";
 import { backendApiPlugin } from "@/state/backend-apis";
 import { searchPanelPlugin } from "@/state/search-panel";
 import { repeatablePlugin } from "@/state/repeatable";
+import {floatingToolbarPlugin} from "@/state/floating-toolbar";
 
 export type StatePath = string | (string | number)[];
 
@@ -55,6 +56,7 @@ export const mkState = async () => {
   blockSelectPlugin(_state);
   searchPanelPlugin(_state);
   repeatablePlugin(_state);
+  floatingToolbarPlugin(_state);
 
   INSTANCE = _state;
 };

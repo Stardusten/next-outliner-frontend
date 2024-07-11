@@ -16,7 +16,7 @@
     <!--    <FileExplorer></FileExplorer>-->
     <SearchPanel></SearchPanel>
     <!--    <RefSuggestion></RefSuggestion>-->
-    <!--    <FloatingEditorToolbar></FloatingEditorToolbar>-->
+    <FloatingToolbar></FloatingToolbar>
     <ReviewerController></ReviewerController>
   </template>
 </template>
@@ -36,6 +36,7 @@ import { EditorView as PmEditorView } from "prosemirror-view";
 import { EditorView as CmEditorView } from "@codemirror/view";
 import SearchPanel from "@/components/SearchPanel.vue";
 import ReviewerController from "@/components/ReviewerController.vue";
+import FloatingToolbar from "@/components/FloatingToolbar.vue";
 
 const gs = useAppState();
 const firstSyncFinished = ref(false);

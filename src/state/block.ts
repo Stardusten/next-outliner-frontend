@@ -194,7 +194,10 @@ declare module "@/state/state" {
     _setBlock: (block: ABlock, meta?: TrackPatch["meta"]) => void;
     _deleteBlock: (blockId: BlockId, meta?: TrackPatch["meta"]) => void;
     getBlockPath: (blockId: BlockId) => BlockId[] | null;
+    getBlockLevel: (blockId: BlockId) => number;
     getBlockPathReactive: (blockId: BlockId) => Disposable<BlockId[] | null>;
+    getPredecessorBlockId: (blockId: BlockId, considerFold?: boolean) => BlockId | null;
+    getSuccessorBlockId: (blockId: BlockId, considerFold?: boolean) => BlockId | null;
     forDescendantsOf: (opts: ForDescendantsOfOptions) => void;
     getCtext: (target: BlockId | BlockContent, includeTags?: boolean) => string;
     getMtext: (metadata: any) => string;
@@ -266,6 +269,58 @@ export const blockManagePlugin = (s: AppState) => {
   };
   s.decorate("getBlockReactive", getBlockReactive);
 
+  const getPredecessorBlockId = (blockId: BlockId, considerFold: boolean = false): BlockId | null => {
+    const block = getBlock(blockId);
+    if (block == null || block.parent == null) return null;
+    const parent = getBlock(block.parent);
+    if (parent == null) return null;
+
+    const thisIndex = parent.childrenIds.indexOf(blockId);
+    if (thisIndex == -1) return null;
+    if (thisIndex > 0) {
+      // 如果有前一个兄弟，则是前一个兄弟最右下方的节点
+      let currId = parent.childrenIds[thisIndex - 1];
+      for (;;) {
+        const block1 = getBlock(currId);
+        if (block1 == null) return null;
+        if ((considerFold && block1.fold)
+          || block1.childrenIds.length == 0) return block1.id;
+        currId = block1.childrenIds[block1.childrenIds.length - 1];
+      }
+    } else {
+      // 否则是父节点
+      return parent.id;
+    }
+  }
+  s.decorate("getPredecessorBlockId", getPredecessorBlockId);
+
+  const getSuccessorBlockId = (blockId: BlockId, considerFold: boolean = false): BlockId | null => {
+    const block = getBlock(blockId);
+    if (block == null || block.parent == null) return null;
+
+    // 有孩子，则是最左边的孩子
+    if (block.childrenIds.length > 0) {
+      if (!considerFold || !block.fold)
+      return block.childrenIds[0];
+    }
+
+    // 否则从当前节点往上找，找到第一个有下一个兄弟的
+    let currId = block.id;
+    for (;;) {
+      const curr = getBlock(currId);
+      if (curr == null) return null;
+      const parent = getBlock(curr.parent);
+      if (parent == null) return null;
+      const thisIndex = parent.childrenIds.indexOf(currId);
+      if (thisIndex == -1) return null;
+      if (thisIndex < parent.childrenIds.length - 1) {
+        return parent.childrenIds[thisIndex + 1];
+      }
+      currId = parent.id;
+    }
+  }
+  s.decorate("getSuccessorBlockId", getSuccessorBlockId);
+
   const _setBlock = (block: ABlock, meta: TrackPatch["meta"] = { from: "local" }) => {
     const blocks = s.getTrackingProp("blocks");
     s.applyPatches([
@@ -304,6 +359,12 @@ export const blockManagePlugin = (s: AppState) => {
     return path;
   };
   s.decorate("getBlockPath", getBlockPath);
+
+  const getBlockLevel = (blockId: BlockId) => {
+    const path = getBlockPath(blockId);
+    return path ? path.length - 1 : -1;
+  }
+  s.decorate("getBlockLevel", getBlockLevel);
 
   const getBlockPathReactive = (blockId: BlockId) => {
     return disposableComputed((scope) => {

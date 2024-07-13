@@ -1,6 +1,7 @@
-const clip = (val: number, min: number, max: number) => {
-  if (val < min) return min;
-  else if (val > max) return max;
+export const clip = (val: number, b1: number, b2: number) => {
+  if (b1 > b2) [b1, b2] = [b2, b1];
+  if (val < b1) return b1;
+  else if (val > b2) return b2;
   return val;
 };
 

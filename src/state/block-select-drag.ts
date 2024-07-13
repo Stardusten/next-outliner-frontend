@@ -138,6 +138,7 @@ export const blockSelectDragPlugin = (s: AppState) => {
           const sortedSelected = sortAcc(selected, commonParentBlock.childrenIds as string[], true);
           for (const id of sortedSelected)
             s.moveBlock(id, pos);
+          s.addUndoPoint();
         });
       } else {
         let baseBlockId = blockId;
@@ -159,6 +160,7 @@ export const blockSelectDragPlugin = (s: AppState) => {
           const sortedSelected = sortAcc(selected, commonParentBlock.childrenIds as string[], true);
           for (const id of sortedSelected)
             s.moveBlock(id, pos);
+          s.addUndoPoint();
         });
       }
     }

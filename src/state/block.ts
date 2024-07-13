@@ -189,7 +189,7 @@ declare module "@/state/tracking" {
 declare module "@/state/state" {
   interface AppState {
     setMainRootBlock: (blockId: BlockId) => void;
-    getBlock: (blockId: BlockId) => ABlock | null;
+    getBlock: (blockId: BlockId, clone?: boolean) => ABlock | null;
     getBlockReactive: (blockId: BlockId) => Disposable<ABlock | null>;
     _setBlock: (block: ABlock, meta?: TrackPatch["meta"]) => void;
     _deleteBlock: (blockId: BlockId, meta?: TrackPatch["meta"]) => void;
@@ -260,9 +260,11 @@ export const blockManagePlugin = (s: AppState) => {
   };
   s.decorate("setMainRootBlock", setMainRootBlock);
 
-  const getBlock = (blockId: BlockId): ABlock | null => {
+  const getBlock = (blockId: BlockId, clone: boolean = false): ABlock | null => {
     const blocks = s.getTrackingProp("blocks");
-    return blocks.get(blockId) ?? null;
+    const block = blocks.get(blockId) ?? null;
+    if (!block) return null;
+    return clone ? structuredClone(block) : block;
   };
   s.decorate("getBlock", getBlock);
 
@@ -631,11 +633,12 @@ export const blockManagePlugin = (s: AppState) => {
   s.decorate("normalizePos", normalizePos);
 
   const toggleFold = (blockId: BlockId, fold: boolean) => {
-    const block = getBlock(blockId);
+    const block = getBlock(blockId, true);
     if (!block) return false;
     if (fold == block.fold) return false; // 折叠状态没有改变
+    block.fold = fold;
 
-    _setBlock({ ...block, fold });
+    _setBlock(block);
     return true;
   };
   s.decorate("toggleFold", toggleFold);
@@ -712,7 +715,7 @@ export const blockManagePlugin = (s: AppState) => {
     if (!parentBlock) return;
 
     const parentSrcBlock = (
-      parentBlock.actualSrc ? getBlock(parentBlock.actualSrc) : parentBlock
+      parentBlock.actualSrc ? getBlock(parentBlock.actualSrc, true) : parentBlock
     ) as ANormalBlock | null;
     if (!parentSrcBlock) return;
 
@@ -744,7 +747,7 @@ export const blockManagePlugin = (s: AppState) => {
 
     const parentOccurs = s.getOccurs(parentSrcBlock.id, false);
     for (const occurId of parentOccurs) {
-      const occurBlock = getBlock(occurId) as AMirrorBlock | AVirtualBlock | null;
+      const occurBlock = getBlock(occurId, true) as AMirrorBlock | AVirtualBlock | null;
       if (!occurBlock) continue;
       if (occurBlock.childrenIds == "null") continue;
       const newBlockId = getUUID();
@@ -789,7 +792,7 @@ export const blockManagePlugin = (s: AppState) => {
 
     const parentSrcBlock = (
       parentBlock.actualSrc
-        ? s.getBlock(parentBlock.actualSrc)
+        ? s.getBlock(parentBlock.actualSrc, true)
         : parentBlock
     ) as ANormalBlock | null;
     if (!parentSrcBlock) return;
@@ -841,7 +844,7 @@ export const blockManagePlugin = (s: AppState) => {
 
     const parentOccurs = s.getOccurs(parentSrcBlock.id, false);
     for (const occurId of parentOccurs) {
-      const occurBlock = s.getBlock(occurId);
+      const occurBlock = s.getBlock(occurId, true);
       if (!occurBlock) continue;
       const newBlock: AVirtualBlock = {
         ...newMirrorBlock,
@@ -871,19 +874,19 @@ export const blockManagePlugin = (s: AppState) => {
     let focusNext;
     const block = getBlock(blockId);
     if (!block) return null;
-    const srcBlock = ("src" in block && block.src ? getBlock(block.src) : block) as
+    const srcBlock = ("src" in block && block.src ? getBlock(block.src, true) : block) as
       | ANormalBlock
       | AMirrorBlock
       | null;
     if (!srcBlock) return null;
 
-    const srcParentBlock = getBlock(srcBlock.parent) as ANormalBlock | null;
+    const srcParentBlock = getBlock(srcBlock.parent, true) as ANormalBlock | null;
     if (!srcParentBlock) return null;
 
-    const targetParentBlock = getBlock(pos.parentId);
+    const targetParentBlock = getBlock(pos.parentId, true);
     if (!targetParentBlock) return null;
     const targetParentActualSrcBlock = (
-      targetParentBlock.actualSrc ? getBlock(targetParentBlock.actualSrc) : targetParentBlock
+      targetParentBlock.actualSrc ? getBlock(targetParentBlock.actualSrc, true) : targetParentBlock
     ) as AMirrorBlock | ANormalBlock | null;
     if (!targetParentActualSrcBlock) return null;
 
@@ -931,7 +934,7 @@ export const blockManagePlugin = (s: AppState) => {
     // sync to all the mirrors and virtuals
     const oldParentOccurs = s.getOccurs(srcParentBlock.id, false);
     for (const occurId of oldParentOccurs) {
-      const occurBlock = getBlock(occurId);
+      const occurBlock = getBlock(occurId, true);
       if (!occurBlock || occurBlock.childrenIds == "null") continue;
       const deletedId = occurBlock.childrenIds.splice(index, 1)[0];
       _setBlock(occurBlock);
@@ -940,7 +943,7 @@ export const blockManagePlugin = (s: AppState) => {
 
     const newParentOccurs = s.getOccurs(targetParentActualSrcBlock.id, false);
     for (const occurId of newParentOccurs) {
-      const occurBlock = getBlock(occurId);
+      const occurBlock = getBlock(occurId, true);
       if (!occurBlock || occurBlock.childrenIds == "null") continue;
       const newVirtualBlock: AVirtualBlock = {
         ...srcBlock,
@@ -989,13 +992,13 @@ export const blockManagePlugin = (s: AppState) => {
     const prevBlock = getBlock(parentBlock.childrenIds[index - 1]);
     if (!prevBlock) return;
     const prevSrcBlock = (
-      prevBlock.actualSrc ? getBlock(prevBlock.actualSrc) : prevBlock
+      prevBlock.actualSrc ? getBlock(prevBlock.actualSrc, true) : prevBlock
     ) as ANormalBlock | null;
     if (!prevSrcBlock) return;
 
     // delete index-th block from parentSrcBlock and append to prevSrcBlock
     const deleted = parentSrcBlock.childrenIds.splice(index, 1)[0];
-    const deletedBlock = getBlock(deleted) as ANormalBlock | AMirrorBlock | null;
+    const deletedBlock = getBlock(deleted, true) as ANormalBlock | AMirrorBlock | null;
     if (!deletedBlock) return;
     _setBlock(parentSrcBlock);
     prevSrcBlock.childrenIds.push(deleted);
@@ -1011,7 +1014,7 @@ export const blockManagePlugin = (s: AppState) => {
     // sync to all the mirrors and virtuals
     const parentOccurs = s.getOccurs(parentSrcBlock.id, false);
     for (const occurId of parentOccurs) {
-      const occurBlock = getBlock(occurId);
+      const occurBlock = getBlock(occurId, true);
       if (!occurBlock || occurBlock.childrenIds == "null") continue;
       const deletedId = occurBlock.childrenIds.splice(index, 1)[0];
       _setBlock(occurBlock);
@@ -1021,7 +1024,7 @@ export const blockManagePlugin = (s: AppState) => {
 
     const prevOccurs = s.getOccurs(prevSrcBlock.id, false);
     for (const occurId of prevOccurs) {
-      const occurBlock = getBlock(occurId);
+      const occurBlock = getBlock(occurId, true);
       if (!occurBlock || occurBlock.childrenIds == "null") continue;
       const newVirtualBlock: AVirtualBlock = {
         ...srcBlock,
@@ -1061,14 +1064,14 @@ export const blockManagePlugin = (s: AppState) => {
     if (!parentBlock) return;
     if (parentBlock.parent == "null") return;
     const parentSrcBlock = (
-      parentBlock.actualSrc ? getBlock(parentBlock.actualSrc) : parentBlock
+      parentBlock.actualSrc ? getBlock(parentBlock.actualSrc, true) : parentBlock
     ) as ANormalBlock | null; // can't be MirrorBlock
     if (!parentSrcBlock) return;
 
-    const parentParentBlock = getBlock(parentBlock.parent);
+    const parentParentBlock = getBlock(parentBlock.parent, true);
     if (!parentParentBlock) return;
     const parentParentSrcBlock = (
-      parentParentBlock.actualSrc ? getBlock(parentParentBlock.actualSrc) : parentParentBlock
+      parentParentBlock.actualSrc ? getBlock(parentParentBlock.actualSrc, true) : parentParentBlock
     ) as ANormalBlock | null; // can't be MirrorBlock
     if (!parentParentSrcBlock) return;
 
@@ -1090,7 +1093,7 @@ export const blockManagePlugin = (s: AppState) => {
     // delete srcBlock from its parent
     const index1 = parentSrcBlock.childrenIds.indexOf(srcBlock.id);
     const deleted = parentSrcBlock.childrenIds.splice(index1, 1)[0];
-    const deletedBlock = getBlock(deleted);
+    const deletedBlock = getBlock(deleted, true);
     if (!deletedBlock) return;
     _setBlock(parentSrcBlock);
 
@@ -1124,7 +1127,7 @@ export const blockManagePlugin = (s: AppState) => {
     // sync to all the mirrors and virtuals
     const parentOccurs = s.getOccurs(parentSrcBlock.id, false);
     for (const occurId of parentOccurs) {
-      const occurBlock = getBlock(occurId);
+      const occurBlock = getBlock(occurId, true);
       if (!occurBlock || occurBlock.childrenIds == "null") continue;
       const deletedId = occurBlock.childrenIds.splice(index1, 1)[0];
       _setBlock(occurBlock);
@@ -1134,7 +1137,7 @@ export const blockManagePlugin = (s: AppState) => {
 
     const parentParentOccurs = s.getOccurs(parentParentSrcBlock.id, false);
     for (const occurId of parentParentOccurs) {
-      const occurBlock = getBlock(occurId);
+      const occurBlock = getBlock(occurId, true);
       if (!occurBlock || occurBlock.childrenIds == "null") continue;
       const newVirtualBlock: AVirtualBlock = {
         ...srcBlock,
@@ -1184,7 +1187,7 @@ export const blockManagePlugin = (s: AppState) => {
         }
       }
       for (const block of blocksToDelete) {
-        const parentBlock = getBlock(block.parent);
+        const parentBlock = getBlock(block.parent, true);
         if (!parentBlock || parentBlock.childrenIds == "null") continue;
         const index = parentBlock.childrenIds.indexOf(block.id);
         parentBlock.childrenIds.splice(index, 1);

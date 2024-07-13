@@ -274,6 +274,11 @@ const mkUndoManager = () => {
     undo,
     redo,
     clearHistory,
+    _patches: patches,
+    _invPatches: invPatches,
+    _undoPoints: undoPoints,
+    _selectionInfos: selectionInfos,
+    get _currPoint() { return currPoint }
   };
 };
 
@@ -358,7 +363,7 @@ const mkTrackingSystem = () => {
       const lastKey = path[path.length - 1];
       let oldValue;
       if (current instanceof Map) {
-        oldValue = current.get(lastKey);
+        oldValue = structuredClone(current.get(lastKey));
         changedPaths.push(path);
         switch (op) {
           case "replace":
@@ -401,7 +406,7 @@ const mkTrackingSystem = () => {
         }
       } else {
         // array or object
-        oldValue = current[lastKey];
+        oldValue = structuredClone(current[lastKey]);
         changedPaths.push(path);
         switch (op) {
           case "replace":
@@ -506,6 +511,7 @@ const mkTrackingSystem = () => {
     on: emitter.on,
     off: emitter.off,
     _emit: emitter.emit,
+    _undoManager: undoManager,
   };
 };
 

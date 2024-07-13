@@ -1,4 +1,3 @@
-/// Types
 import { trackingPlugin } from "@/state/tracking";
 import { blockManagePlugin } from "@/state/block";
 import { blockTreePlugin } from "@/state/block-tree";
@@ -8,13 +7,14 @@ import { taskQueuePlugin } from "@/state/task-queue";
 import { yjsPersisterPlugin } from "@/state/yjs-persister";
 import { clientStorePlugin } from "@/state/client-store";
 import { contextmenuPlugin } from "@/state/contextmenu";
-import { blockSelectPlugin } from "@/state/block-select";
+import { blockSelectDragPlugin } from "@/state/block-select-drag";
 import { backendApiPlugin } from "@/state/backend-apis";
 import { searchPanelPlugin } from "@/state/search-panel";
 import { repeatablePlugin } from "@/state/repeatable";
 import {floatingToolbarPlugin} from "@/state/floating-toolbar";
-import {blockDragPlugin} from "@/state/block-drag";
 
+
+/// Types
 export type StatePath = string | (string | number)[];
 
 export interface AppState {
@@ -54,11 +54,10 @@ export const mkState = async () => {
   backendApiPlugin(_state);
   yjsPersisterPlugin(_state);
   clientStorePlugin(_state);
-  blockSelectPlugin(_state);
+  blockSelectDragPlugin(_state);
   searchPanelPlugin(_state);
   repeatablePlugin(_state);
   floatingToolbarPlugin(_state);
-  blockDragPlugin(_state);
 
   INSTANCE = _state;
 };

@@ -3,7 +3,6 @@
       class="block-item"
       :class="{
         fold: item.fold, // 是否折叠
-        dragging: draggingBlockId == item.id, // 是否正在拖拽
         hasChildren: hasChildren, // 是否有孩子
         hasMetadata: item.mtext.length > 0, // 是否有非内部 metadata
         paragraph: item.metadata.paragraph,
@@ -88,7 +87,7 @@ const props = defineProps<{
 }>();
 
 const gs = useAppState();
-const { draggingBlockId, dropAreaPos } = gs;
+const { dropAreaPos } = gs;
 const $blockItem = ref<HTMLElement | null>(null);
 const hasChildren = computed(() =>
     props.item.childrenIds != "null"
@@ -117,16 +116,28 @@ const onFocusin = () => {
 const onDragStart = (e: DragEvent) => {
   if (!e.dataTransfer) return;
   e.dataTransfer.dropEffect = "move";
-  gs.draggingBlockId.value = props.item.id;
+  // 如果之前什么都没有选中，则选中这个块
+  if (!gs.selectSomething()) {
+    gs.selectBlock(props.item.id);
+  }
 };
 
 const onDragOver = (e: DragEvent) => {
-  const movedBlockId = gs.draggingBlockId.value;
-  if (!movedBlockId
-      || !$blockItem.value
-      || movedBlockId == props.item.id) return;
+  const selected = gs.selectedBlockIds.value;
+  if (selected.length == 0 || !$blockItem.value) return;
   e.preventDefault();
   e.stopPropagation();
+
+  // 禁止将自己拖动到自己上
+  const thisPath = gs.getBlockPath(props.item.id);
+  if (!thisPath) return;
+  for (const id of selected) {
+    if (thisPath.includes(id)) {
+      gs.dropAreaPos.value = null;
+      return;
+    }
+  }
+
   const rect = $blockItem.value.getBoundingClientRect();
   // 悬停在块的上半部分还是下半部分
   const upperHalf = e.y < rect.y + rect.height / 2;
@@ -136,6 +147,15 @@ const onDragOver = (e: DragEvent) => {
   if (upperHalf) {
     const predId = gs.getPredecessorBlockId(props.item.id, true);
     if (predId == null) return;
+    // 禁止将自己拖动到自己上
+    const predPath = gs.getBlockPath(predId);
+    if (!predPath) return;
+    for (const id of selected) {
+      if (predPath.includes(id)) {
+        gs.dropAreaPos.value = null;
+        return;
+      }
+    }
     // 计算有效的 level 区间：[上一个 bock 的 level + 1, 当前 block 的 level]
     const predBlock = gs.getBlock(predId);
     const predLevel = gs.getBlockLevel(predId);
@@ -152,17 +172,25 @@ const onDragOver = (e: DragEvent) => {
       level: clippedLevel,
     };
   } else {
+    let clippedLevel;
     const succId = gs.getSuccessorBlockId(props.item.id, true);
-    if (succId == null) return;
-    // 计算有效的 level 区间：[当前 block 的 level + 1, 下一个 block 的 level]
-    const succLevel = gs.getBlockLevel(succId);
-    if (succLevel == -1) return;
     const thisFoldAndHasChild = props.item.fold && props.item.childrenIds.length > 0;
-    const clippedLevel = clip(
-        level,
-        thisFoldAndHasChild ? props.item.level : props.item.level + 1,
-        succLevel,
-    );
+    if (succId == null) { // 最后一个块
+      clippedLevel = clip(
+          level,
+          thisFoldAndHasChild ? props.item.level : props.item.level + 1,
+          1
+      );
+    } else {
+      // 计算有效的 level 区间：[当前 block 的 level + 1, 下一个 block 的 level]
+      const succLevel = gs.getBlockLevel(succId);
+      if (succLevel == -1) return;
+      clippedLevel = clip(
+          level,
+          thisFoldAndHasChild ? props.item.level : props.item.level + 1,
+          succLevel,
+      );
+    }
     gs.dropAreaPos.value = {
       blockId: props.item.id,
       level: clippedLevel,
@@ -177,11 +205,9 @@ const onDragOver = (e: DragEvent) => {
   display: flex;
 
   &.selected {
-    background-color: var(--selection-bg-color);
-
     .block-content,
     .bullet {
-      background-color: var(--selection-bg-color);
+      background-color: var(--selected-block-item-bg);
     }
   }
 
@@ -325,8 +351,8 @@ const onDragOver = (e: DragEvent) => {
 
 .drop-area {
   background-color: var(--drop-area-bg);
-  height: 4px;
-  margin-right: 4px;
+  height: 2px;
+  margin: 1px 4px 1px;
   border-radius: 4px;
 }
 </style>

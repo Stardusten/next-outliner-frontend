@@ -198,6 +198,8 @@ declare module "@/state/state" {
     getBlockPathReactive: (blockId: BlockId) => Disposable<BlockId[] | null>;
     getPredecessorBlockId: (blockId: BlockId, considerFold?: boolean) => BlockId | null;
     getSuccessorBlockId: (blockId: BlockId, considerFold?: boolean) => BlockId | null;
+    // 判断 a 是不是 b 的后代。注意：如果 a == b，不认为 a 是 b 的后代。
+    isDescendantOf: (a: BlockId, b: BlockId, allowSame?: boolean) => boolean;
     forDescendantsOf: (opts: ForDescendantsOfOptions) => void;
     getCtext: (target: BlockId | BlockContent, includeTags?: boolean) => string;
     getMtext: (metadata: any) => string;
@@ -320,6 +322,15 @@ export const blockManagePlugin = (s: AppState) => {
     }
   }
   s.decorate("getSuccessorBlockId", getSuccessorBlockId);
+
+  const isDescendantOf = (a: BlockId, b: BlockId, allowSame: boolean = true) => {
+    const pathA = getBlockPath(a);
+    if (pathA == null) return false;
+    return allowSame
+      ? pathA.includes(b)
+      : pathA.slice(1).includes(b);
+  }
+  s.decorate("isDescendantOf", isDescendantOf);
 
   const _setBlock = (block: ABlock, meta: TrackPatch["meta"] = { from: "local" }) => {
     const blocks = s.getTrackingProp("blocks");
@@ -1246,18 +1257,14 @@ export const blockManagePlugin = (s: AppState) => {
           if (rootPath == null) return;
           // targetPath 和 rootPath 的最近公共祖先就是最合适的 mainRootBlockId
           let newRoot, newRootJ;
-          let i = rootPath.length - 1,
-            j = targetPath.length - 1;
-          while (i >= 0 && j >= 0) {
-            const elemI = rootPath[i];
-            const elemJ = targetPath[j];
-            if (elemI != elemJ) {
+          let i = rootPath.length - 1;
+          while (i >= 0) {
+            if (rootPath[i] != targetPath[i]) {
               newRoot = rootPath[i + 1];
               newRootJ = i + 1;
               break;
             }
             i -= 1;
-            j -= 1;
           }
           if (newRoot && newRootJ != null) {
             setMainRootBlock(newRoot);

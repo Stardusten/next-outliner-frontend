@@ -18,6 +18,7 @@
     <!--    <RefSuggestion></RefSuggestion>-->
     <FloatingToolbar></FloatingToolbar>
     <ReviewerController></ReviewerController>
+    <ToastPanel></ToastPanel>
   </template>
 </template>
 
@@ -37,6 +38,7 @@ import { EditorView as CmEditorView } from "@codemirror/view";
 import SearchPanel from "@/components/SearchPanel.vue";
 import ReviewerController from "@/components/ReviewerController.vue";
 import FloatingToolbar from "@/components/FloatingToolbar.vue";
+import ToastPanel from "@/components/ToastPanel.vue";
 
 const gs = useAppState();
 const firstSyncFinished = ref(false);

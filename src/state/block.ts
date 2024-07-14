@@ -650,13 +650,11 @@ export const blockManagePlugin = (s: AppState) => {
     const occurs = s.getOccurs(blockSrcId);
     const mtext = getMtext(newMetadata);
     for (const occurId of occurs) {
-      const occurBlock = getBlock(occurId);
+      const occurBlock = getBlock(occurId, true);
       if (!occurBlock) continue;
-      _setBlock({
-        ...occurBlock,
-        metadata: newMetadata,
-        mtext,
-      }); // 只有 normal block 的 metadata 发生变化才需要 persist
+      occurBlock.metadata = newMetadata;
+      occurBlock.mtext = mtext; // 只有 normal block 的 metadata 发生变化才需要 persist
+      _setBlock(occurBlock)
     }
   };
   s.decorate("changeMetadata", changeMetadata);
@@ -694,16 +692,14 @@ export const blockManagePlugin = (s: AppState) => {
     const clozeIds = getClozeIds(content);
     // 更新所有 occurrences
     for (const occurId of occurs) {
-      const occurBlock = getBlock(occurId);
+      const occurBlock = getBlock(occurId, true);
       if (!occurBlock) continue;
-      _setBlock({
-        ...occurBlock,
-        content,
-        ctext,
-        olinks,
-        clozeIds,
-        boosting,
-      });
+      occurBlock.content = content;
+      occurBlock.ctext = ctext;
+      occurBlock.olinks = olinks;
+      occurBlock.clozeIds = clozeIds;
+      occurBlock.boosting = boosting;
+      _setBlock(occurBlock);
     }
   };
   s.decorate("changeContent", changeContent);
@@ -711,7 +707,7 @@ export const blockManagePlugin = (s: AppState) => {
   const insertNormalBlock = (pos: BlockPosParentChild, content: BlockContent, metadata?: any) => {
     let focusNext;
     const { parentId, childIndex } = pos;
-    const parentBlock = getBlock(parentId);
+    const parentBlock = getBlock(parentId, true);
     if (!parentBlock) return;
 
     const parentSrcBlock = (
@@ -787,7 +783,7 @@ export const blockManagePlugin = (s: AppState) => {
     let focusNext;
     const { parentId, childIndex } = pos;
     if (!parentId) return; // 不允许插入多个根块
-    const parentBlock = s.getBlock(parentId);
+    const parentBlock = s.getBlock(parentId, true);
     if (!parentBlock) return;
 
     const parentSrcBlock = (
@@ -809,10 +805,10 @@ export const blockManagePlugin = (s: AppState) => {
     // create virtual children
     const vChildBlockIds: BlockId[] = [];
     for (const childId of srcSrcBlock.childrenIds) {
-      const childBlock = s.getBlock(childId);
+      const childBlock = s.getBlock(childId, true);
       if (!childBlock) continue;
       const vChildBlock: AVirtualBlock = {
-        ...childBlock,
+        ...structuredClone(childBlock),
         id: getUUID(),
         parent: newMirrorBlockId,
         type: "virtualBlock",
@@ -826,7 +822,7 @@ export const blockManagePlugin = (s: AppState) => {
     }
 
     const newMirrorBlock: AMirrorBlock = {
-      ...srcSrcBlock,
+      ...structuredClone(srcSrcBlock),
       id: newMirrorBlockId,
       parent: parentSrcBlock.id,
       type: "mirrorBlock",
@@ -847,7 +843,7 @@ export const blockManagePlugin = (s: AppState) => {
       const occurBlock = s.getBlock(occurId, true);
       if (!occurBlock) continue;
       const newBlock: AVirtualBlock = {
-        ...newMirrorBlock,
+        ...structuredClone(newMirrorBlock),
         id: getUUID(),
         parent: occurId,
         type: "virtualBlock",
@@ -872,7 +868,7 @@ export const blockManagePlugin = (s: AppState) => {
 
   const moveBlock = (blockId: BlockId, pos: BlockPosParentChild) => {
     let focusNext;
-    const block = getBlock(blockId);
+    const block = getBlock(blockId, true);
     if (!block) return null;
     const srcBlock = ("src" in block && block.src ? getBlock(block.src, true) : block) as
       | ANormalBlock
@@ -946,7 +942,7 @@ export const blockManagePlugin = (s: AppState) => {
       const occurBlock = getBlock(occurId, true);
       if (!occurBlock || occurBlock.childrenIds == "null") continue;
       const newVirtualBlock: AVirtualBlock = {
-        ...srcBlock,
+        ...structuredClone(srcBlock),
         id: getUUID(),
         parent: occurBlock.id,
         type: "virtualBlock",
@@ -977,11 +973,11 @@ export const blockManagePlugin = (s: AppState) => {
       | null;
     if (!srcBlock) return;
 
-    const parentBlock = getBlock(block.parent);
+    const parentBlock = getBlock(block.parent, true);
     if (!parentBlock) return;
     // note: srcBlock's parent must be normal block
     const parentSrcBlock = (
-      parentBlock.actualSrc ? getBlock(parentBlock.actualSrc) : parentBlock
+      parentBlock.actualSrc ? getBlock(parentBlock.actualSrc, true) : parentBlock
     ) as ANormalBlock | null;
     if (!parentSrcBlock) return;
 
@@ -989,7 +985,7 @@ export const blockManagePlugin = (s: AppState) => {
     const index = parentBlock.childrenIds.indexOf(block.id);
     if (index <= 0) return;
 
-    const prevBlock = getBlock(parentBlock.childrenIds[index - 1]);
+    const prevBlock = getBlock(parentBlock.childrenIds[index - 1], true);
     if (!prevBlock) return;
     const prevSrcBlock = (
       prevBlock.actualSrc ? getBlock(prevBlock.actualSrc, true) : prevBlock
@@ -1027,7 +1023,7 @@ export const blockManagePlugin = (s: AppState) => {
       const occurBlock = getBlock(occurId, true);
       if (!occurBlock || occurBlock.childrenIds == "null") continue;
       const newVirtualBlock: AVirtualBlock = {
-        ...srcBlock,
+        ...structuredClone(srcBlock),
         id: getUUID(),
         parent: occurBlock.id,
         type: "virtualBlock",
@@ -1060,7 +1056,7 @@ export const blockManagePlugin = (s: AppState) => {
       | null;
     if (!srcBlock) return;
 
-    const parentBlock = getBlock(block.parent);
+    const parentBlock = getBlock(block.parent, true);
     if (!parentBlock) return;
     if (parentBlock.parent == "null") return;
     const parentSrcBlock = (
@@ -1140,7 +1136,7 @@ export const blockManagePlugin = (s: AppState) => {
       const occurBlock = getBlock(occurId, true);
       if (!occurBlock || occurBlock.childrenIds == "null") continue;
       const newVirtualBlock: AVirtualBlock = {
-        ...srcBlock,
+        ...structuredClone(srcBlock),
         id: getUUID(),
         parent: occurBlock.id,
         type: "virtualBlock",
@@ -1313,7 +1309,7 @@ export const blockManagePlugin = (s: AppState) => {
         await tree.nextUpdate();
         tree.focusBlockInView(focused);
       }
-      s.addUndoPoint();
+      s.addUndoPoint({ message: "swap up block(s)" });
     });
     return true;
   };
@@ -1343,7 +1339,7 @@ export const blockManagePlugin = (s: AppState) => {
         await tree.nextUpdate();
         tree.focusBlockInView(focused);
       }
-      s.addUndoPoint();
+      s.addUndoPoint({ message: "swap down block(s)" });
     });
     return true;
   };
@@ -1367,7 +1363,7 @@ export const blockManagePlugin = (s: AppState) => {
         await tree.nextUpdate();
         tree.focusBlockInView(focused);
       }
-      s.addUndoPoint();
+      s.addUndoPoint({ message: "promote block(s)" });
     });
     return true;
   };
@@ -1392,7 +1388,7 @@ export const blockManagePlugin = (s: AppState) => {
         await tree.nextUpdate();
         tree.focusBlockInView(focused);
       }
-      s.addUndoPoint();
+      s.addUndoPoint({ message: "demote block(s)" });
     });
     return true;
   };

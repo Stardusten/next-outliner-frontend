@@ -1,5 +1,5 @@
 import type {AppState} from "@/state/state";
-import {computed, type ComputedRef, type Ref, ref} from "vue";
+import {computed, type ComputedRef, type Ref, ref, watch} from "vue";
 import type {BlockId} from "@/state/block";
 import {generateKeydownHandler, generateKeydownHandlerSimple, type SimpleKeyBinding} from "@/util/keybinding";
 import {sortAcc} from "@/util/array";
@@ -8,6 +8,7 @@ import {sortAcc} from "@/util/array";
 declare module "@/state/state" {
   interface AppState {
     blockSelection: Ref<BlockSelection | null>;
+    dragSelectContext: Ref<DragSelectContext | null>;
     selectedBlockIds: ComputedRef<BlockId[]>;
     // 是否选中了块
     selectSomething: () => boolean;
@@ -34,6 +35,11 @@ export type DropAreaPos = {
   level: number;
 }
 
+export type DragSelectContext = {
+  fromBlockId: BlockId,
+  toBlockId: BlockId,
+};
+
 export const blockSelectDragPlugin = (s: AppState) => {
   /// Data
   const blockSelection = ref<BlockSelection | null>(null);
@@ -47,6 +53,9 @@ export const blockSelectDragPlugin = (s: AppState) => {
 
   const dropAreaPos = ref<DropAreaPos | null>(null);
   s.decorate("dropAreaPos", dropAreaPos);
+
+  const dragSelectContext = ref<DragSelectContext | null>(null);
+  s.decorate("dragSelectContext", dragSelectContext);
 
   /// Actions
   const selectSomething = () => {
@@ -81,27 +90,32 @@ export const blockSelectDragPlugin = (s: AppState) => {
         };
       } else if (block.parent == blockSelection.value.commonParentId) {
         blockSelection.value.selectedBlockIds.add(blockId);
-      } else if (!s.isDescendantOf(block.id, blockSelection.value.commonParentId)) {
+      } else if (!s.isDescendantOf(block.id, blockSelection.value.commonParentId, false)) {
         // 重新计算一个 commonParentId
         const path1 = s.getBlockPath(blockSelection.value.commonParentId);
         const path2 = s.getBlockPath(block.id);
         if (!path1 || !path2) continue;
-        let i = path1.length - 1, success = false;
-        while (i >= 0) {
-          if (path1[i] != path2[i]) {
-            blockSelection.value = {
-              commonParentId: path1[i + 1],
-              selectedBlockIds: new Set([path1[i], path2[i]]),
-            }
-            success = true;
-            break;
-          }
-          i -= 1;
+        let i = path1.length - 1,
+          j = path2.length - 1;
+        while (i >= 0 && j >= 0) {
+          if (path1[i] != path2[j]) break;
+          i --; j --;
         }
-        // 无法成功找到 commonParent，IMPOSSIBLE
-        if (!success) {
-          blockSelection.value = null;
-          return;
+        if (i < 0) {
+          blockSelection.value = {
+            commonParentId: path1[0],
+            selectedBlockIds: new Set([path1[0]])
+          }
+        } else if (j < 0) {
+          blockSelection.value = {
+            commonParentId: path2[0],
+            selectedBlockIds: new Set([path2[0]])
+          }
+        } else {
+          blockSelection.value = {
+            commonParentId: path1[i + 1], // == path2[j + 1]
+            selectedBlockIds: new Set([path1[i], path2[i]]),
+          }
         }
       }
     }
@@ -138,7 +152,7 @@ export const blockSelectDragPlugin = (s: AppState) => {
           const sortedSelected = sortAcc(selected, commonParentBlock.childrenIds as string[], true);
           for (const id of sortedSelected)
             s.moveBlock(id, pos);
-          s.addUndoPoint();
+          s.addUndoPoint({ message: "move block(s)" });
         });
       } else {
         let baseBlockId = blockId;
@@ -160,11 +174,38 @@ export const blockSelectDragPlugin = (s: AppState) => {
           const sortedSelected = sortAcc(selected, commonParentBlock.childrenIds as string[], true);
           for (const id of sortedSelected)
             s.moveBlock(id, pos);
-          s.addUndoPoint();
+          s.addUndoPoint({ message: "move block(s)" });
         });
       }
     }
 
     dropAreaPos.value = null;
   });
+
+  watch(dragSelectContext, (ctx) => {
+    clearSelected();
+    if (ctx == null || ctx.fromBlockId == ctx.toBlockId)
+      return;
+    // 将 fromBlockId 到 toBlockId 之间的部分加入选区
+    const path1 = s.getBlockPath(ctx.fromBlockId);
+    const path2 = s.getBlockPath(ctx.toBlockId);
+    if (!path1 || !path2) return;
+    let i = path1.length - 1,
+      j = path2.length - 1;
+    while (i >= 0 && j >= 0) {
+      if (path1[i] != path2[j]) break;
+      i --; j --;
+    }
+    if (i < 0) selectBlock(path1[0]);
+    else if (j < 0) selectBlock(path2[0]);
+    else {
+      const parentId = path1[i + 1]; // == path2[j + 1]
+      const parentBlock = s.getBlock(parentId);
+      if (!parentBlock || parentBlock.childrenIds == "null") return;
+      let index1 = parentBlock.childrenIds.indexOf(path1[i]);
+      let index2 = parentBlock.childrenIds.indexOf(path2[j]);
+      if (index1 > index2) [index1, index2] = [index2, index1];
+      selectBlock(...parentBlock.childrenIds.slice(index1, index2 + 1));
+    }
+  }, { deep: true });
 }

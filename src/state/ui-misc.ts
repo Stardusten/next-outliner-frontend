@@ -10,10 +10,11 @@ import { EditorSelection } from "@codemirror/state";
 import { retryN } from "@/util/error-handling";
 
 /// Types
-export type SelectionInfo = {
+export type UndoPointInfo = {
   focusedBlockTreeId: BlockTreeId | null;
   focusedBlockId: BlockId | null;
   selection: any | null;
+  message?: string;
 };
 
 declare module "@/state/state" {
@@ -29,8 +30,8 @@ declare module "@/state/state" {
     lastFocusedEditorView: Disposable<CmEditorView | PmEditorView | null>;
     mainRootBlockPath: Disposable<ABlock[]>;
     theme: Ref<string>;
-    getCurrentSelectionInfo: () => SelectionInfo;
-    restoreSelection: (info: SelectionInfo, onNextUpdate?: boolean) => void;
+    getCurrentSelectionInfo: () => UndoPointInfo;
+    restoreSelection: (info: UndoPointInfo, onNextUpdate?: boolean) => void;
     // 一个用于打破 unselect-on-blur.ts 和 inline-math.ts 之间无限递归的辅助变量
     selectFromUnselectOnBlur: boolean;
   }
@@ -136,7 +137,7 @@ export const uiMiscPlugin = (s: AppState) => {
   };
   s.decorate("getFocusedBlockTreeId", getFocusedBlockTreeId);
 
-  const getCurrentSelectionInfo = (): SelectionInfo => {
+  const getCurrentSelectionInfo = (): UndoPointInfo => {
     const focusedBlockTreeId = getFocusedBlockTreeId();
     const focusedBlockId = getFocusedBlockId();
     if (focusedBlockTreeId && focusedBlockId) {
@@ -156,7 +157,7 @@ export const uiMiscPlugin = (s: AppState) => {
   };
   s.decorate("getCurrentSelectionInfo", getCurrentSelectionInfo);
 
-  const restoreSelection = (info: SelectionInfo, onNextUpdate: boolean = true) => {
+  const restoreSelection = (info: UndoPointInfo, onNextUpdate: boolean = true) => {
     const cb = () => {
       if (info.focusedBlockTreeId && info.focusedBlockId) {
         const blockTree = s.getBlockTree(info.focusedBlockTreeId);

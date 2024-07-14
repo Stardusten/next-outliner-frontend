@@ -77,9 +77,15 @@ const extensions = props.readonly
               ...props.block.content,
               code: newSrc,
             } as CodeContent;
-            gs.taskQueue.addTask(() => {
-              gs.changeContent(blockId, newBlockContent);
-            });
+            gs.taskQueue.addTask(
+              () => {
+                gs.changeContent(blockId, newBlockContent);
+                gs.addUndoPoint({ message: "change code block content" })
+              },
+              "updateBlockContent" + blockId,
+              500,
+              true
+            );
           },
           () => true,
       ),
@@ -296,6 +302,7 @@ const onLangChange = (e: any) => {
       ...props.block.content,
       lang: selected,
     } as CodeContent);
+    gs.addUndoPoint({ message: "change code block language" });
   });
 };
 

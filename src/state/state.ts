@@ -12,6 +12,7 @@ import { backendApiPlugin } from "@/state/backend-apis";
 import { searchPanelPlugin } from "@/state/search-panel";
 import { repeatablePlugin } from "@/state/repeatable";
 import {floatingToolbarPlugin} from "@/state/floating-toolbar";
+import {toastPlugin} from "@/state/toast";
 
 
 /// Types
@@ -58,6 +59,7 @@ export const mkState = async () => {
   searchPanelPlugin(_state);
   repeatablePlugin(_state);
   floatingToolbarPlugin(_state);
+  toastPlugin(_state);
 
   INSTANCE = _state;
 };

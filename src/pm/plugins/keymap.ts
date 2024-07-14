@@ -143,7 +143,7 @@ export const mkKeymap = () => {
               await lastFocusedBlockTree.nextUpdate();
               await gs.locateBlock(lastFocusedBlockTree, focusNext);
             }
-            gs.addUndoPoint();
+            gs.addUndoPoint({ message: "insert display math block" });
           });
           return true;
         } else if (sel.empty && sel.from == 0) {
@@ -170,7 +170,7 @@ export const mkKeymap = () => {
               await lastFocusedBlockTree.nextUpdate();
               await gs.locateBlock(lastFocusedBlockTree, focusNext);
             }
-            gs.addUndoPoint();
+            gs.addUndoPoint({ message: "delete empty block" });
           });
           return true;
         } else if (sel.empty && sel.from == 0) {
@@ -287,7 +287,7 @@ export const mkKeymap = () => {
               type: "mathDisplay",
               src: "",
             });
-            gs.addUndoPoint();
+            gs.addUndoPoint({ message: "convert to math block" });
           });
         } else {
           // 下方插入公式块
@@ -310,7 +310,7 @@ export const mkKeymap = () => {
               await tree.nextUpdate();
               tree.focusBlockInView(focusNext);
             }
-            gs.addUndoPoint();
+            gs.addUndoPoint({ message: "insert math block" });
           });
         }
         return true;
@@ -336,14 +336,14 @@ export const mkKeymap = () => {
     "Mod-ArrowUp": {
       run: () => {
         const block = gs.lastFocusedBlock.value;
-        if (!block) return false;
+        if (!block || block.fold) return false;
         const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
         gs.taskQueue.addTask(async () => {
-          const toggled = gs.toggleFold(block.id, true);
-          if (toggled && lastFocusedBlockTree) {
+          gs.toggleFold(block.id, true);
+          if (lastFocusedBlockTree) {
             await lastFocusedBlockTree.nextUpdate();
           }
-          gs.addUndoPoint();
+          gs.addUndoPoint({ message: "fold block" });
         });
         return true;
       },
@@ -352,14 +352,14 @@ export const mkKeymap = () => {
     "Mod-ArrowDown": {
       run: () => {
         const block = gs.lastFocusedBlock.value;
-        if (!block) return false;
+        if (!block || !block.fold) return false;
         const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
         gs.taskQueue.addTask(async () => {
-          const toggled = gs.toggleFold(block.id, false);
-          if (toggled && lastFocusedBlockTree) {
+          gs.toggleFold(block.id, false);
+          if (lastFocusedBlockTree) {
             await lastFocusedBlockTree.nextUpdate();
           }
-          gs.addUndoPoint();
+          gs.addUndoPoint({ message: "expand block" });
         });
         return true;
       },

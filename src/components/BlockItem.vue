@@ -96,7 +96,10 @@ const hasChildren = computed(() =>
 
 const onClickFoldButton = () => {
   const blockId = props.item.id;
-  gs.toggleFold(blockId, !props.item.fold);
+  gs.taskQueue.addTask(() => {
+    gs.toggleFold(blockId, !props.item.fold);
+    gs.addUndoPoint({ message: "toggle fold" });
+  });
 };
 
 const onClickBullet = () => {

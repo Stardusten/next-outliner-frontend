@@ -208,7 +208,7 @@ const onWheel = (e: WheelEvent) => {
       caret-color: var(--text-primary-color);
       color: var(--text-secondary-color);
       font-style: italic;
-      font-family: var(--text-font-family);
+      font-family: var(--text-font);
       font-weight: 600;
     }
 
@@ -221,7 +221,7 @@ const onWheel = (e: WheelEvent) => {
       font-size: var(--text-font-size);
       caret-color: var(--text-primary-color);
       color: var(--text-secondary-color);
-      font-family: var(--text-font-family);
+      font-family: var(--text-font);
       font-style: italic;
     }
   }

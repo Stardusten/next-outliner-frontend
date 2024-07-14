@@ -111,7 +111,7 @@ onUnmounted(() => {
     align-items: center;
     margin: 0 8px;
     color: var(--text-secondary-color);
-    font-family: var(--text-font-family);
+    font-family: var(--text-font);
 
     span {
       cursor: pointer;

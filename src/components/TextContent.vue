@@ -180,7 +180,7 @@ onMounted(() => {
       gs.taskQueue.addTask(
         () => {
           gs.changeContent(blockId, newBlockContent as TextContent);
-          gs.addUndoPoint();
+          gs.addUndoPoint({ message: "change text content" });
         },
         "updateBlockContent" + blockId,
         500,
@@ -225,7 +225,7 @@ onBeforeUnmount(() => {
 .text-content {
   cursor: text;
   max-width: calc(100% - 48px);
-  font-family: var(--text-font-family);
+  font-family: var(--text-font);
 }
 
 // 高亮样式

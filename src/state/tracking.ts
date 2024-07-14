@@ -3,7 +3,7 @@ import { computed, type ComputedRef, type Ref, type ShallowRef, shallowRef, trig
 import mitt from "mitt";
 import type { BlockId } from "@/state/block";
 import type { BlockTreeId } from "@/state/block-tree";
-import type { SelectionInfo } from "@/state/ui-misc";
+import type { UndoPointInfo } from "@/state/ui-misc";
 
 /// Types
 
@@ -166,18 +166,20 @@ const mkUndoManager = () => {
   const patches: TrackPatch[] = [];
   const invPatches: TrackPatch[] = [];
   const undoPoints: number[] = [0];
-  const selectionInfos: Record<number, SelectionInfo> = {};
+  const undoPointInfos: Record<number, UndoPointInfo> = {};
   let currPoint = 0;
 
-  const addUndoPoint = (info?: SelectionInfo) => {
+  const addUndoPoint = (info: Partial<UndoPointInfo> = {}) => {
     // TODO 检查 currPoint，防止错误调用
     const s = useAppState();
     const point = patches.length;
     undoPoints.push(point);
-    // 记录此时的 selectionInfo
-    info = info ?? s.getCurrentSelectionInfo();
-    selectionInfos[point] = info;
-    console.log("add new undoPoint", patches.length, "selectionInfo", info);
+    // 记录此时的 selection
+    undoPointInfos[point] = {
+      ...s.getCurrentSelectionInfo(),
+      ...info,
+    };
+    // console.log("add new undoPoint", patches.length, "info", undoPointInfos[point]);
   };
 
   const undo = () => {
@@ -201,12 +203,20 @@ const mkUndoManager = () => {
     const patchesToApply = invPatches.slice(targetUndoPoint, currPoint);
     patchesToApply.reverse();
 
+    // 显示恢复详细信息
+    const currUndoPointInfo = undoPointInfos[currPoint];
+    if (currUndoPointInfo?.message)
+      s.addToast({
+        message: "Undo: " + currUndoPointInfo.message
+      });
+
     // 应用 patchesToApply 以撤销
     s.applyPatches(patchesToApply, true);
 
     // 恢复选区
-    const selectionInfo = selectionInfos[targetUndoPoint];
-    selectionInfo && s.restoreSelection(selectionInfo);
+    const undoPointInfo = undoPointInfos[targetUndoPoint];
+    if (undoPointInfo)
+      s.restoreSelection(undoPointInfo);
 
     // 更新 currPoint
     currPoint = targetUndoPoint;
@@ -230,8 +240,14 @@ const mkUndoManager = () => {
     s.applyPatches(patchesToApply, true);
 
     // 恢复选区
-    const selectionInfo = selectionInfos[targetUndoPoint];
-    selectionInfo && s.restoreSelection(selectionInfo);
+    const targetUndoPointInfo = undoPointInfos[targetUndoPoint];
+    if (targetUndoPointInfo) {
+      s.restoreSelection(targetUndoPointInfo);
+      // 显示恢复详细信息
+      s.addToast({
+        message: "Redo: " + targetUndoPointInfo.message
+      });
+    }
 
     // 更新 currPoint
     currPoint = targetUndoPoint;
@@ -277,7 +293,7 @@ const mkUndoManager = () => {
     _patches: patches,
     _invPatches: invPatches,
     _undoPoints: undoPoints,
-    _selectionInfos: selectionInfos,
+    _selectionInfos: undoPointInfos,
     get _currPoint() { return currPoint }
   };
 };

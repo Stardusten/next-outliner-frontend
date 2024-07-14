@@ -52,35 +52,22 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-  shallowRef,
-  watch,
-  watchEffect,
-} from "vue";
-import { VirtList, RealList } from "vue-virt-list";
-import type {
-  BlockDisplayItem,
-  DisplayItem,
-  MetadataDisplayItem,
-  MultiColRowItem,
-} from "@/state/ui-misc";
-import { useAppState } from "@/state/state";
-import type { ALBlock, BlockId, ForDescendantsOfOptions } from "@/state/block";
-import type { BlockTree } from "@/state/block-tree";
-import { AllSelection } from "prosemirror-state";
-import { EditorView as PmEditorView } from "prosemirror-view";
-import { EditorView as CmEditorView } from "@codemirror/view";
+import {nextTick, onMounted, onUnmounted, ref, shallowRef, watch,} from "vue";
+import {VirtList} from "vue-virt-list";
+import type {BlockDisplayItem, DisplayItem, MetadataDisplayItem, MultiColRowItem,} from "@/state/ui-misc";
+import {useAppState} from "@/state/state";
+import type {ALBlock, BlockId, ForDescendantsOfOptions} from "@/state/block";
+import type {BlockTree} from "@/state/block-tree";
+import {AllSelection} from "prosemirror-state";
+import {EditorView as PmEditorView} from "prosemirror-view";
+import {EditorView as CmEditorView} from "@codemirror/view";
 import BlockItem from "@/components/BlockItem.vue";
 import MetadataItem from "@/components/metadata/MetadataItem.vue";
-import type { Cloze } from "@/state/repeatable";
-import { highlightElements } from "@/util/highlight";
-import { scrollIntoViewIfNotVisible } from "@/util/dom";
+import type {Cloze} from "@/state/repeatable";
+import {highlightElements} from "@/util/highlight";
+import {getHoveredElementWithClass, scrollIntoViewIfNotVisible} from "@/util/dom";
 import MultiColRow from "@/components/MultiColRow.vue";
+import {throttle} from "lodash";
 
 const props = defineProps<{
   id: string;
@@ -495,58 +482,55 @@ const controller: BlockTree = {
   expandMetadataItemInView,
 };
 
-const onClick = (e: MouseEvent) => {
-  // 如果选择了某些块，则单击时取消选择
-  if (gs.selectSomething()) {
-    gs.clearSelected();
-    return;
-  }
-  // Shift 单击一个块，会选中上一个聚焦的块到这个块之间的所有块
-  if (!e.shiftKey) return;
-  const fromBlockId = gs.lastFocusedBlockId.value;
-  if (fromBlockId == null) return;
-  const fromDisplayItem = getBelongingDisplayItem(fromBlockId);
-  if (fromDisplayItem == null) return;
-  // 找到当前点击的 blockItem
-  let curr: any = e.target,
-    toDisplayItemId: string | null = null;
-  for (;;) {
-    if (!(curr instanceof HTMLElement)) return;
-    // TODO 处理 multiColRowItem
-    if (curr.classList.contains("block-item")) {
-      toDisplayItemId = curr.getAttribute("block-id");
-      break;
+/// 拖拽以多选块
+const onMouseDown = (e: MouseEvent) => {
+  if (e.buttons != 1) return; // left key only
+
+  const el = $blockTree.value;
+  if (!el) return;
+  el.addEventListener("mousemove", onMouseMove);
+
+  const ctx = gs.dragSelectContext;
+  const blockItem = getHoveredElementWithClass(e.target, "block-item");
+  const hoveredBlockId = blockItem?.getAttribute("block-id");
+  if (hoveredBlockId)  {
+    ctx.value = {
+      fromBlockId: hoveredBlockId,
+      toBlockId: hoveredBlockId
     }
-    curr = curr.parentElement;
+  } else ctx.value = null;
+}
+
+const onMouseMove = throttle((e: MouseEvent) => {
+  const blockItem = getHoveredElementWithClass(e.target, "block-item");
+  const hoveredBlockId = blockItem?.getAttribute("block-id");
+  const ctx = gs.dragSelectContext;
+  if (hoveredBlockId && ctx.value)  {
+    ctx.value.toBlockId = hoveredBlockId;
   }
-  // 计算出 fromDisplayItem 和 toDisplayItem 之间的所有 display item
-  if (toDisplayItemId != null) {
-    const fromIndex = displayItems.value!.findIndex((item) => item.id == fromDisplayItem!.id);
-    const toIndex = displayItems.value!.findIndex((item) => item.id == toDisplayItemId);
-    const selected: BlockId[] = [];
-    for (let i = fromIndex; i <= toIndex; i++) {
-      const itemI = displayItems.value![i];
-      selected.push(itemI.id); // TODO 考虑 multiColRowItem
-    }
-    gs.selectBlock(...selected);
-    // 失焦
-    const view = getEditorViewOfBlock(fromBlockId);
-    if (view instanceof PmEditorView) view.dom.blur();
-    else if (view instanceof CmEditorView) view.contentDOM.blur();
-  }
-};
+}, 50);
+
+const onMouseUp = (e: MouseEvent) => {
+  const el = $blockTree.value;
+  if (!el) return;
+  el.removeEventListener("mousemove", onMouseMove);
+}
 
 onMounted(() => {
-  if ($blockTree.value) {
-    Object.assign($blockTree.value, { controller });
-    $blockTree.value.addEventListener("click", onClick);
+  const el = $blockTree.value;
+  if (el) {
+    Object.assign(el, { controller });
+    el.addEventListener("mousedown", onMouseDown);
+    el.addEventListener("mouseup", onMouseUp);
   }
   gs.registerBlockTree(props.id, controller);
 });
 
 onUnmounted(() => {
-  if ($blockTree.value) {
-    $blockTree.value.removeEventListener("click", onClick);
+  const el = $blockTree.value;
+  if (el) {
+    el.removeEventListener("mousedown", onMouseDown);
+    el.removeEventListener("mouseup", onMouseUp);
   }
   gs.unregisterBlockTree(props.id);
 });

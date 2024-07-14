@@ -1,28 +1,31 @@
 # Next Outliner
 
-一个类似 Workflowy 的大纲笔记软件，但加了一些我想要的功能，包括：
+一个类似 Workflowy 的大纲笔记软件，但加了一些功能，包括：
 
 1. 代码块（使用 CodeMirror）
 2. 所见即所得的行内与行间公式编辑（使用 MathLive）
 3. 间隔重复（使用 ts-fsrs）
-4. 问题还很多，但基本能用的多端同步与协同编辑（使用 Yjs）
-5. 块属性（数字、文本、URL、块引用）
-6. 多列布局
+4. 块属性（数字、文本、URL、块引用）
 
 Workflowy 的大部分特性已经实现了，包括：
 
-1. 基本大纲编辑，富文本，所见即所得
-2. 模糊搜索（使用 minisearch）
-3. 块引用
-4. 镜像块，支持同步编辑
-5. 文档块（隐藏 bullet，增加块上下间距）
-6. 明暗两色主题
+1. 基本的大纲编辑（折叠、聚焦、缩进 / 反缩进，拖拽选中块等）
+2. 块内使用富文本编辑（基于 ProseMirror）
+3. 模糊搜索（使用 minisearch 在前端实现）
+4. 问题还很多，但基本能用的多端同步与协同编辑（使用 Yjs）
+5. 块引用
+6. 镜像块，与原身保持同步
+7. 文档块（隐藏 bullet，增加块上下间距）
+8. 自带明暗两色主题
 
-## 演示视频
+## 使用截图
 
-https://github.com/Stardusten/next-outliner-frontend/assets/38722307/c5199b0e-acb9-4a43-abcf-166ee4a91eae
+![image](https://github.com/user-attachments/assets/0c93b6de-c43f-4b9b-969f-6c6e23bce357)
 
-https://github.com/Stardusten/next-outliner-frontend/assets/38722307/3976a350-6c87-427a-9c13-218ee1aa78d1
+![image](https://github.com/user-attachments/assets/8e206bc7-9264-4707-b407-61fcf7b0832f)
+
+![image](https://github.com/user-attachments/assets/7ad039ab-8fc0-49c6-991d-504c58b8d5cb)
+
 
 ## 安装说明
 

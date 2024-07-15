@@ -22,7 +22,7 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 
-const gs = useAppState();
+const app = useAppState();
 const $contentEl = ref<HTMLElement | null>(null);
 let mfe: MathfieldElement | null = null;
 
@@ -43,10 +43,10 @@ onMounted(() => {
 
   // 将修改同步到外部
   mfe.addEventListener("blur", () => {
-    gs.taskQueue.addTask(() => {
+    app.taskQueue.addTask(() => {
       const src = mfe?.value;
       if (src == null || (props.block.content as MathContent).src == src) return;
-      gs.changeContent(props.block.id, {
+      app.changeContent(props.block.id, {
         type: "mathDisplay",
         src,
       });
@@ -60,7 +60,7 @@ onMounted(() => {
       e.preventDefault();
       e.stopPropagation();
       mfe.blur();
-      gs.selectBlock(props.block.id);
+      app.selectBlock(props.block.id);
       return;
     }
     // 在一个空公式里按 Backspace 或 Escape，都会删掉这个公式所在块
@@ -68,10 +68,10 @@ onMounted(() => {
       if (mfe.value.trim().length == 0) {
         e.preventDefault();
         e.stopPropagation();
-        gs.taskQueue.addTask(async () => {
+        app.taskQueue.addTask(async () => {
           const focusNext = props.blockTree.getBlockAbove(props.block.id)?.id
             ?? props.blockTree.getBlockBelow(props.block.id)?.id;
-          gs.deleteBlock(props.block.id);
+          app.deleteBlock(props.block.id);
           if (props.blockTree && focusNext) {
             await props.blockTree.nextUpdate();
             props.blockTree.focusBlockInView(focusNext);

@@ -9,9 +9,9 @@ export const parseMetadata = (getEditorView: () => EditorView | null) =>
     const view = getEditorView();
     if (!view) return null;
 
-    const gs = useAppState();
+    const app = useAppState();
 
-    const focusedBlock = gs.lastFocusedBlock.value;
+    const focusedBlock = app.lastFocusedBlock.value;
     if (!focusedBlock) return null;
     const key = match[1];
 
@@ -47,7 +47,7 @@ export const parseMetadata = (getEditorView: () => EditorView | null) =>
 
     const newMetadata = structuredClone(focusedBlock.metadata);
     newMetadata[key] = value;
-    gs.setMetadataEntry(
+    app.setMetadataEntry(
       focusedBlock.id,
       key,
       value as string, // TODO

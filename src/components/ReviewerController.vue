@@ -1,9 +1,9 @@
 <template>
-  <div class="reviewer-panel" v-if="gs.isReviewing.value">
+  <div class="reviewer-panel" v-if="app.isReviewing.value">
     <!--    <div class="grip-icon">-->
     <!--      <GripVertical></GripVertical>-->
     <!--    </div>-->
-    <div class="ratings" v-if="gs.showAnswerOrNot.value">
+    <div class="ratings" v-if="app.showAnswerOrNot.value">
       <div class="again button" @click="ratingAs(Rating.Again)"><Frown></Frown>Again</div>
       <div class="hard button" @click="ratingAs(Rating.Hard)"><Meh></Meh>Hard</div>
       <div class="good button" @click="ratingAs(Rating.Good)"><Smile></Smile>Good</div>
@@ -11,13 +11,13 @@
     </div>
     <div
       class="show-answer-button button"
-      v-if="!gs.showAnswerOrNot.value"
-      @click="gs.showAnswerOrNot.value = true"
+      v-if="!app.showAnswerOrNot.value"
+      @click="app.showAnswerOrNot.value = true"
     >
       <Eye></Eye>Show answer
     </div>
     <div class="next-button button"><StepForward></StepForward>Next</div>
-    <div class="stop-button button" @click="gs.stopReviewing"><Square></Square>Stop</div>
+    <div class="stop-button button" @click="app.stopReviewing"><Square></Square>Stop</div>
   </div>
 </template>
 
@@ -27,13 +27,13 @@ import { useAppState } from "@/state/state";
 import { type Grade, Rating } from "ts-fsrs";
 import { computed, watch } from "vue";
 
-const gs = useAppState();
+const app = useAppState();
 
 const ratingAs = (rating: Grade) => {
-  const curr = gs.currReviewingRepeatableId.value;
+  const curr = app.currReviewingRepeatableId.value;
   if (curr == null) return;
-  gs.review(curr, rating);
-  gs.reviewNextIfAvailable();
+  app.review(curr, rating);
+  app.reviewNextIfAvailable();
 };
 </script>
 

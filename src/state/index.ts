@@ -139,7 +139,7 @@ export const indexPlugin = (s: AppState) => {
     if (dirtySet.size > 0) {
       for (const id of dirtySet) {
         const block = s.getBlock(id);
-        if (block == null) {
+        if (block == null && fulltextIndex.has(id)) {
           // 这个块被删除了
           fulltextIndex.discard(id);
         } else if (isNormalBlock(block)) {

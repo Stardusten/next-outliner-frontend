@@ -11,13 +11,13 @@
 import { ref } from "vue";
 import {useAppState} from "@/state/state";
 
-const gs = useAppState();
-const backendUrl = ref(gs.getTrackingProp("backendUrl"));
-const location = ref(gs.getTrackingProp("dbLocation"));
+const app = useAppState();
+const backendUrl = ref(app.getTrackingProp("backendUrl"));
+const location = ref(app.getTrackingProp("dbLocation"));
 
 const onConnectBackend = () => {
   if (backendUrl.value && location.value)
-    gs.connectBackend(backendUrl.value, location.value);
+    app.connectBackend(backendUrl.value, location.value);
 };
 </script>
 

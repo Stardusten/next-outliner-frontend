@@ -15,7 +15,7 @@
     <ContextMenu></ContextMenu>
     <!--    <FileExplorer></FileExplorer>-->
     <SearchPanel></SearchPanel>
-    <!--    <RefSuggestion></RefSuggestion>-->
+    <RefSuggestions></RefSuggestions>
     <FloatingToolbar></FloatingToolbar>
     <ReviewerController></ReviewerController>
     <ToastPanel></ToastPanel>
@@ -39,23 +39,24 @@ import SearchPanel from "@/components/SearchPanel.vue";
 import ReviewerController from "@/components/ReviewerController.vue";
 import FloatingToolbar from "@/components/FloatingToolbar.vue";
 import ToastPanel from "@/components/ToastPanel.vue";
+import RefSuggestions from "@/components/RefSuggestions.vue";
 
-const gs = useAppState();
+const app = useAppState();
 const firstSyncFinished = ref(false);
-const mainRootBlockId = gs.getTrackingPropReactive("mainRootBlockId");
+const mainRootBlockId = app.getTrackingPropReactive("mainRootBlockId");
 
 onMounted(async () => {
   // gs.connectBackend();
   for (;;) {
     await timeout(500);
     console.log("等待第一次同步...");
-    if (gs.isSynced()) {
+    if (app.isSynced()) {
       console.info("第一次同步完成！开始加载界面...");
       firstSyncFinished.value = true;
       // 处理根块
-      const mainRootBlockId = gs.getTrackingProp("mainRootBlockId");
+      const mainRootBlockId = app.getTrackingProp("mainRootBlockId");
       if (mainRootBlockId == null) {
-        const blocks = gs.getTrackingProp("blocks");
+        const blocks = app.getTrackingProp("blocks");
         if (blocks.size == 0) {
           console.info("所有块为空，创建一个新块作为根块");
           const rootBlockId = getUUID();
@@ -74,13 +75,13 @@ onMounted(async () => {
             boosting: 1,
             actualSrc: rootBlockId,
           };
-          gs._setBlock(rootBlock);
+          app._setBlock(rootBlock);
         }
         console.info("尝试从所有块中找出根块");
         for (const block of blocks.values()) {
           if (isBlock(block) && block.parent == "null") {
             console.info("成功找到根块 ", block.id, "，将其作为 main pane 的根");
-            gs.setMainRootBlock(block.id);
+            app.setMainRootBlock(block.id);
           }
         }
       }
@@ -92,22 +93,22 @@ onMounted(async () => {
 /// Event handlers
 const bindings: { [key: string]: SimpleKeyBinding } = {
   "Alt-ArrowUp": {
-    run: gs.swapUpSelectedOrFocusedBlock,
+    run: app.swapUpSelectedOrFocusedBlock,
     stopPropagation: true,
     preventDefault: true,
   },
   "Alt-ArrowDown": {
-    run: gs.swapDownSelectedOrFocusedBlock,
+    run: app.swapDownSelectedOrFocusedBlock,
     stopPropagation: true,
     preventDefault: true,
   },
   Tab: {
-    run: gs.promoteSelectedOrFocusedBlock,
+    run: app.promoteSelectedOrFocusedBlock,
     stopPropagation: true,
     preventDefault: true,
   },
   "Shift-Tab": {
-    run: gs.demoteSelectedOrFocusedBlock,
+    run: app.demoteSelectedOrFocusedBlock,
     stopPropagation: true,
     preventDefault: true,
   },
@@ -115,19 +116,19 @@ const bindings: { [key: string]: SimpleKeyBinding } = {
     // Note: MathContent 处理 Escape 的逻辑在 MathContent.vue 里
     run: (e) => {
       // 如果选择了某些块，则按 Escape 取消选择
-      if (gs.selectSomething() && e.key == "Escape") {
-        gs.clearSelected();
+      if (app.selectSomething() && e.key == "Escape") {
+        app.clearSelected();
         return true;
       }
       // 如果当前正在编辑某个块，则失焦并选择这个块
-      const focused = gs.lastFocusedBlockId.value;
+      const focused = app.lastFocusedBlockId.value;
       if (focused == null) return true;
-      const tree = gs.lastFocusedBlockTree.value;
+      const tree = app.lastFocusedBlockTree.value;
       const view = tree?.getEditorViewOfBlock(focused);
       if (focused && view) {
         if (view instanceof PmEditorView) view.dom.blur();
         /*if (view instanceof CmEditorView)*/ else view.contentDOM.blur();
-        gs.selectBlock(focused);
+        app.selectBlock(focused);
       }
       return true;
     },
@@ -136,7 +137,7 @@ const bindings: { [key: string]: SimpleKeyBinding } = {
   },
   "Mod-z": {
     run: () => {
-      gs.undo();
+      app.undo();
       return true;
     },
     stopPropagation: true,
@@ -144,7 +145,7 @@ const bindings: { [key: string]: SimpleKeyBinding } = {
   },
   "Mod-Shift-z": {
     run: () => {
-      gs.redo();
+      app.redo();
       return true;
     },
     stopPropagation: true,

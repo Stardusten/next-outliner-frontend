@@ -50,7 +50,7 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 
-const gs = useAppState();
+const app = useAppState();
 const $contentEl = ref<HTMLElement | null>(null);
 let editorView: EditorView | null = null;
 const languageCompartment = new Compartment();
@@ -77,10 +77,10 @@ const extensions = props.readonly
               ...props.block.content,
               code: newSrc,
             } as CodeContent;
-            gs.taskQueue.addTask(
+            app.taskQueue.addTask(
               () => {
-                gs.changeContent(blockId, newBlockContent);
-                gs.addUndoPoint({ message: "change code block content" })
+                app.changeContent(blockId, newBlockContent);
+                app.addUndoPoint({ message: "change code block content" })
               },
               "updateBlockContent" + blockId,
               500,
@@ -183,8 +183,8 @@ const extensions = props.readonly
             if (docLength == 0) {
               const blockId = props.block.id;
               const focusNext = props.blockTree?.getBlockAbove(blockId)?.id;
-              gs.taskQueue.addTask(async () => {
-                gs.deleteBlock(blockId);
+              app.taskQueue.addTask(async () => {
+                app.deleteBlock(blockId);
                 if (focusNext && props.blockTree) {
                   await props.blockTree.nextUpdate();
                   props.blockTree.focusBlockInView(focusNext);
@@ -203,8 +203,8 @@ const extensions = props.readonly
             if (docLength == 0) {
               const blockId = props.block.id;
               const focusNext = props.blockTree?.getBlockBelow(blockId)?.id;
-              gs.taskQueue.addTask(async () => {
-                gs.deleteBlock(blockId);
+              app.taskQueue.addTask(async () => {
+                app.deleteBlock(blockId);
                 if (focusNext && props.blockTree) {
                   await props.blockTree.nextUpdate();
                   props.blockTree.focusBlockInView(focusNext);
@@ -297,12 +297,12 @@ watch(
 
 const onLangChange = (e: any) => {
   const selected = (e.target as HTMLSelectElement).value;
-  gs.taskQueue.addTask(() => {
-    gs.changeContent(props.block.id, {
+  app.taskQueue.addTask(() => {
+    app.changeContent(props.block.id, {
       ...props.block.content,
       lang: selected,
     } as CodeContent);
-    gs.addUndoPoint({ message: "change code block language" });
+    app.addUndoPoint({ message: "change code block language" });
   });
 };
 

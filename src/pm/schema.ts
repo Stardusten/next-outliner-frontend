@@ -60,7 +60,7 @@ export const pmSchema = new Schema({
       group: "inline",
       selectable: true,
       toDOM: (node) => {
-        const gs = useAppState();
+        const app = useAppState();
         const { toBlockId } = node.attrs;
         const span = document.createElement("span");
         span.classList.add("block-ref-v2");
@@ -74,17 +74,17 @@ export const pmSchema = new Schema({
           e.preventDefault();
           e.stopPropagation();
           // 从这个元素往上找，找到对应的 blockTree 更好？
-          const blockTree = gs.getBlockTree("main");
+          const blockTree = app.getBlockTree("main");
           if (blockTree == null) return;
-          await gs.locateBlock(blockTree, toBlockId, true, true);
+          await app.locateBlock(blockTree, toBlockId, true, true);
         });
         // 当源块 ctext 更新时，更新引用锚文本
-        const _ref = gs.getBlockReactive(toBlockId);
+        const _ref = app.getBlockReactive(toBlockId);
         watch(
           _ref,
           (toBlock) => {
             const ctext = toBlock?.ctext ?? "";
-            span.innerHTML = ctext;
+            span.innerHTML = ctext.trim();
             span.setAttribute("ctext", ctext);
           },
           { immediate: true },
@@ -105,8 +105,8 @@ export const pmSchema = new Schema({
         },
       ],
       leafText: (node) => {
-        const s = useAppState();
-        return s.getBlock(node.attrs.toBlockId)?.ctext ?? "";
+        const app = useAppState();
+        return app.getBlock(node.attrs.toBlockId)?.ctext ?? "";
       },
     },
 
@@ -244,15 +244,15 @@ export const pmSchema = new Schema({
       },
       inclusive: false,
       toDOM(node) {
-        const s = useAppState();
+        const app = useAppState();
         const dom = document.createElement("span");
         dom.classList.add("cloze");
         dom.setAttribute("clozeid", node.attrs.clozeId);
         // when to remove?
         // 当复习自己时，隐藏内容
         watchEffect(() => {
-          const curr = s.currReviewingRepeatableId.value;
-          const showAns = s.showAnswerOrNot.value;
+          const curr = app.currReviewingRepeatableId.value;
+          const showAns = app.showAnswerOrNot.value;
           if (curr == node.attrs.clozeId && !showAns) {
             dom.style.color = "transparent";
           } else {

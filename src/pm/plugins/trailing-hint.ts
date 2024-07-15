@@ -48,9 +48,9 @@ export const mkTrailingHintPlugin = (
               span.addEventListener("click", () => {
                 const blockId = getBlockId();
                 const blockTree = getBlockTree();
-                const gs = useAppState();
-                gs.taskQueue.addTask(async () => {
-                  const toggled = gs.toggleFold(blockId, false);
+                const app = useAppState();
+                app.taskQueue.addTask(async () => {
+                  const toggled = app.toggleFold(blockId, false);
                   if (toggled) await blockTree.nextUpdate();
                   blockTree.expandMetadataItemInView(blockId);
                 });

@@ -6,12 +6,12 @@ import type {BlockId, ImageContent} from "@/state/block";
 import {getUUID} from "@/util/uuid";
 
 export const mkPasteImagePlugin = () => {
-  const gs = useAppState();
+  const app = useAppState();
 
   return new Plugin({
     props: {
       handlePaste(view: EditorView, event: ClipboardEvent, slice: Slice) {
-        const blockId = gs.lastFocusedBlockId.value;
+        const blockId = app.lastFocusedBlockId.value;
         if (blockId == null) return;
 
         // find image
@@ -30,7 +30,7 @@ export const mkPasteImagePlugin = () => {
 
         // save image
         if (imageExt && imageFile) {
-          const imagePath = `${gs.imagesAbsDir.value}/${getUUID()}.${imageExt}`;
+          const imagePath = `${app.imagesAbsDir.value}/${getUUID()}.${imageExt}`;
           const imageContent: ImageContent = {
             type: "image",
             path: imagePath,
@@ -41,38 +41,38 @@ export const mkPasteImagePlugin = () => {
           if (view.state.doc.content.size == 0) {
             // 当前块为空, 直接将当前块变成图片块
             imageBlockId = blockId;
-            gs.taskQueue.addTask(() => {
-              gs.changeContent(blockId, imageContent);
+            app.taskQueue.addTask(() => {
+              app.changeContent(blockId, imageContent);
             });
           } else {
             // 当前块不为空, 在下方插入图片块
-            gs.taskQueue.addTask(() => {
-              const pos = gs.normalizePos({
+            app.taskQueue.addTask(() => {
+              const pos = app.normalizePos({
                 baseBlockId: blockId,
                 offset: 1,
               });
               if (!pos) return;
               const { newNormalBlockId } =
-              gs.insertNormalBlock(pos, imageContent) ?? {};
+              app.insertNormalBlock(pos, imageContent) ?? {};
               imageBlockId = newNormalBlockId ?? null;
             });
           }
 
           if (imageBlockId) {
-            gs.fs.upload(imagePath, imageFile)
+            app.fs.upload(imagePath, imageFile)
               .then((result) => {
                 if ("error" in result) {
                   // 上传失败后, 将 uploadStatus 改为 notUploaded
                   console.error(result.error);
                   imageContent.uploadStatus = "notUploaded";
-                  gs.taskQueue.addTask(() => {
-                    gs.changeContent(imageBlockId!, imageContent);
+                  app.taskQueue.addTask(() => {
+                    app.changeContent(imageBlockId!, imageContent);
                   });
                 } else {
                   // 上传成功后, 将 uploadStatus 改为 uploaded
                   imageContent.uploadStatus = "uploaded";
-                  gs.taskQueue.addTask(() => {
-                    gs.changeContent(imageBlockId!, imageContent);
+                  app.taskQueue.addTask(() => {
+                    app.changeContent(imageBlockId!, imageContent);
                   });
                 }
               })

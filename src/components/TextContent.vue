@@ -30,6 +30,7 @@ import { mkPasteImagePlugin } from "@/pm/plugins/paste-image";
 import {toNumberedList} from "@/pm/input-rules/to-numbered-list";
 import {mkPasteBlockMirrorsPlugin} from "@/pm/plugins/paste-block-mirrors";
 import {mkOpenFloatingToolBarPlugin} from "@/pm/plugins/open-floating-toolbar";
+import {openRefSuggestions} from "@/pm/input-rules/open-ref-suggestions";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -41,7 +42,7 @@ const props = defineProps<{
 const $contentEl = ref<HTMLElement | null>(null);
 const corruptedContent = ref(false);
 let editorView: EditorView | null = null;
-const gs = useAppState();
+const app = useAppState();
 
 const mkProseMirrorPlugins = () => {
   const getEditorView = () => editorView;
@@ -54,9 +55,9 @@ const mkProseMirrorPlugins = () => {
     return [
       inputRules({
         rules: [
-          turnToInlineCode,
+          turnToInlineCode(),
           toNumberedList(getBlockId, getEditorView),
-          // openRefSuggestion(() => editorView),
+          openRefSuggestions(getEditorView),
           parseMetadata(getEditorView),
           turnToCodeBlock(getBlockId, getBlockTree),
         ],
@@ -84,7 +85,7 @@ const highlightBlockRefs = (editorView: EditorView) => {
   blockRefs.forEach((el) => {
     const toBlockId = el.getAttribute("to-block-id");
     if (!toBlockId) return;
-    const block = gs.getBlock(toBlockId);
+    const block = app.getBlock(toBlockId);
     const ctext = block?.ctext ?? "";
     if (terms == null) {
       el.innerHTML = ctext;
@@ -177,10 +178,10 @@ onMounted(() => {
         ...props.block.content,
         docContent: newDoc,
       };
-      gs.taskQueue.addTask(
+      app.taskQueue.addTask(
         () => {
-          gs.changeContent(blockId, newBlockContent as TextContent);
-          gs.addUndoPoint({ message: "change text content" });
+          app.changeContent(blockId, newBlockContent as TextContent);
+          app.addUndoPoint({ message: "change text content" });
         },
         "updateBlockContent" + blockId,
         500,

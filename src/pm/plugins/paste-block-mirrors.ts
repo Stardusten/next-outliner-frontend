@@ -14,7 +14,7 @@ export const mkPasteBlockMirrorsPlugin = (
   new Plugin({
     props: {
       handlePaste(view, event) {
-        const gs = useAppState();
+        const app = useAppState();
         const currBlockId = getBlockId();
         const blockTree = getBlockTree();
 
@@ -37,17 +37,17 @@ export const mkPasteBlockMirrorsPlugin = (
         }
 
         // 否则在下方插入镜像块
-        gs.taskQueue.addTask(async () => {
+        app.taskQueue.addTask(async () => {
           // 计算插入位置
-          const insertPos = gs.normalizePos({
+          const insertPos = app.normalizePos({
             baseBlockId: currBlockId,
             offset: 1
           });
           if (!insertPos) return;
           // 如果当前块为空，先删除当前块
-          if (currBlockEmpty) gs.deleteBlock(currBlockId);
+          if (currBlockEmpty) app.deleteBlock(currBlockId);
           // 插入镜像块
-          const { focusNext, newMirrorBlockId } = gs.insertMirrorBlock(insertPos, mirrorBlockId) ?? {};
+          const { focusNext, newMirrorBlockId } = app.insertMirrorBlock(insertPos, mirrorBlockId) ?? {};
           // console.log("insert mirror block ", newMirrorBlockId);
           // 聚焦到刚刚插入的块
           if (focusNext && blockTree) {

@@ -73,8 +73,8 @@ import { simpleTokenize } from "@/util/tokenizer";
 import { useAppState } from "@/state/state";
 import type { ABlock, BlockId } from "@/state/block";
 
-const gs = useAppState();
-const searchPanel = gs.searchPanel;
+const app = useAppState();
+const searchPanel = app.searchPanel;
 const queryTerms = computed(() => {
   if (searchPanel.query.length == 0) return [];
   return simpleTokenize(searchPanel.query, false, 1) ?? [];
@@ -101,15 +101,15 @@ const updateSuggestions = () => {
   const allowedBlockTypes = Object.entries(searchPanel.types)
     .filter((t) => t[1])
     .map((t) => t[0].toLowerCase());
-  const result = gs.search(searchPanel.query, { prefix: true });
+  const result = app.search(searchPanel.query, { prefix: true });
   suggestions.value = result
     .slice(0, 100)
     .map((item) => {
-      const block = gs.getBlock(item.id);
+      const block = app.getBlock(item.id);
       if (block == null || !allowedBlockTypes.includes(block.content.type)) return null;
-      const path = gs.getBlockPath(item.id);
+      const path = app.getBlockPath(item.id);
       if (path == null) return null;
-      const ancestors = path.map((id) => gs.getBlock(id)).filter((b) => b != null) as ABlock[];
+      const ancestors = path.map((id) => app.getBlock(id)).filter((b) => b != null) as ABlock[];
       ancestors.reverse();
       ancestors.shift();
       ancestors.pop();
@@ -124,10 +124,10 @@ const updateSuggestions = () => {
 
 const focusToSuggestionItem = (blockId?: BlockId) => {
   if (!blockId) return;
-  gs.taskQueue.addTask(() => {
-    const tree = gs.lastFocusedBlockTree.value;
+  app.taskQueue.addTask(() => {
+    const tree = app.lastFocusedBlockTree.value;
     if (tree == null) return;
-    gs.locateBlock(tree, blockId, true, true);
+    app.locateBlock(tree, blockId, true, true);
   });
 };
 
@@ -256,6 +256,10 @@ const onKeydown = async (e: KeyboardEvent) => {
           line-height: 1.5em;
           padding: 6px 8px;
           margin: 0 4px;
+
+          .text-content {
+            max-width: unset;
+          }
 
           &.focus {
             background-color: var(--bg-color-lighter);

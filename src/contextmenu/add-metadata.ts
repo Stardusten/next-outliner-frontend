@@ -25,8 +25,8 @@ export const addMetadata: ContextmenuItem = {
   onClick: (ctx) => {
     const blockId = ctx["blockId"];
     if (blockId != null) {
-      const s = useAppState();
-      s.setMetadataEntry(
+      const app = useAppState();
+      app.setMetadataEntry(
         blockId,
         "key",
         "",

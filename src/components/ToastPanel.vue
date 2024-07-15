@@ -5,7 +5,7 @@
           class="toast"
           v-for="(t, i) in toasts" :key="t"
           :class="{[t.type]: t.type}"
-          @click="gs.removeToast(t)"
+          @click="app.removeToast(t)"
       >
         <div class="toast-icon" v-if="t.icon">
           <component :is="t.icon"></component>
@@ -19,8 +19,8 @@
 <script setup lang="ts">
 import {useAppState} from "@/state/state";
 
-const gs = useAppState();
-const toasts = gs.toasts;
+const app = useAppState();
+const toasts = app.toasts;
 </script>
 
 <style lang="scss">

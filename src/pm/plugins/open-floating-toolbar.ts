@@ -2,7 +2,7 @@ import { Plugin } from "prosemirror-state";
 import {useAppState} from "@/state/state";
 
 export const mkOpenFloatingToolBarPlugin = () => {
-  const gs = useAppState();
+  const app = useAppState();
 
   return new Plugin({
     view: () => ({
@@ -18,7 +18,7 @@ export const mkOpenFloatingToolBarPlugin = () => {
 
         // 没有选中任何东西
         if (state.selection.empty) {
-          gs.floatingToolbar.showPos.value = null;
+          app.floatingToolbar.showPos.value = null;
           return;
         }
 
@@ -29,7 +29,7 @@ export const mkOpenFloatingToolBarPlugin = () => {
         let left = Math.max((start.left + end.left) / 2, start.left + 3);
         left = Math.min(left - 10, window.innerWidth - 250);
         const top = start.top;
-        gs.floatingToolbar.showPos.value = { x: left, y: top };
+        app.floatingToolbar.showPos.value = { x: left, y: top };
       },
     }),
   });

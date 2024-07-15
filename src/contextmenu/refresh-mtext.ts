@@ -25,10 +25,10 @@ export const refreshMtext: ContextmenuItem = {
   onClick: (ctx) => {
     const blockId = ctx["blockId"];
     if (blockId != null) {
-      const gs = useAppState();
-      const block = gs.getBlock(blockId);
+      const app = useAppState();
+      const block = app.getBlock(blockId);
       if (!block) return;
-      gs.changeMetadata(blockId, block.metadata);
+      app.changeMetadata(blockId, block.metadata);
     }
   },
 };

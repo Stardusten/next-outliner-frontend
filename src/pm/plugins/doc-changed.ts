@@ -16,7 +16,7 @@ export const mkDocChangedPlugin = () => {
         if (tr.docChanged) {
           const newDoc = newState.doc.toJSON();
           const oldDoc = oldState.doc.toJSON();
-          _view.emit("docChanged", { newDoc, oldDoc });
+          _view.emit("docChanged", { newDoc, oldDoc, view: _view });
         }
       },
     },

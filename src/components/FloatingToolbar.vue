@@ -29,7 +29,7 @@ import {EditorView as PmEditorView} from "prosemirror-view";
 import {toggleMark} from "prosemirror-commands";
 import Cloze from "@/components/icons/Cloze.vue";
 
-const s = useAppState();
+const app = useAppState();
 const show = ref(false);
 const $floatingToolbar = ref<HTMLElement | null>(null);
 
@@ -45,7 +45,7 @@ type ButtonSpec = {
 
 const toggleMarkOnCurrent = (mark: MarkType, attrs?: any) => {
   if (!selectionBackup) return;
-  const view = s.lastFocusedEditorView.value;
+  const view = app.lastFocusedEditorView.value;
   if (view instanceof PmEditorView) {
     // 先恢复选区
     view.dispatch(view.state.tr.setSelection(selectionBackup));
@@ -53,7 +53,7 @@ const toggleMarkOnCurrent = (mark: MarkType, attrs?: any) => {
   }
 }
 
-watch(s.floatingToolbar.showPos, debounce((pos) => {
+watch(app.floatingToolbar.showPos, debounce((pos) => {
   if (!$floatingToolbar.value) return;
   if (!pos) {
     show.value = false;
@@ -61,7 +61,7 @@ watch(s.floatingToolbar.showPos, debounce((pos) => {
   }
   show.value = true;
   // 暂存 selection
-  selectionBackup = s.lastFocusedEditorView.value?.state.selection ?? null;
+  selectionBackup = app.lastFocusedEditorView.value?.state.selection ?? null;
   const { width, height } = $floatingToolbar.value.getBoundingClientRect();
   const popoutPos = calcPopoutPos(width, height, pos.x, pos.y, 20, {
     left: 0,

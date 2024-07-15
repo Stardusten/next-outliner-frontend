@@ -15,7 +15,7 @@ export const mkPasteLinkPlugin = () => {
     },
     props: {
       transformPasted(slice) {
-        const gs = useAppState();
+        const app = useAppState();
         const links: string[] = [];
         const linkified = linkify(slice.content, links);
         // replace links' display text with their titles
@@ -23,7 +23,7 @@ export const mkPasteLinkPlugin = () => {
           setTimeout(async () => {
             if (!(editorView instanceof EditorView)) return;
             for (const link of links) {
-              const title = await gs.fetchWebpageTitle(link);
+              const title = await app.fetchWebpageTitle(link);
               console.log("fetched title", title);
               if (!title) return;
               const mark = pmSchema.marks.link.create({ href: link });

@@ -59,7 +59,7 @@ const props = defineProps<{
 }>();
 const src = ref<string | null>(null);
 const $contentEl = ref<HTMLElement | null>(null);
-const gs = useAppState();
+const app = useAppState();
 const captionInput = ref("");
 
 watch(
@@ -67,7 +67,7 @@ watch(
     () => {
       if (props.block.content.type != "image") return;
 
-      const backendUrl = gs.getTrackingProp("backendUrl");
+      const backendUrl = app.getTrackingProp("backendUrl");
       const { path, uploadStatus, caption } = props.block.content;
       if (uploadStatus == "uploaded") {
         // 图片没有上传完成, 不显示
@@ -92,7 +92,7 @@ const onCaptionInput = debounce(() => {
     newContent.caption = captionInput.value;
   }
   console.log(captionInput.value);
-  gs.changeContent(blockId, newContent);
+  app.changeContent(blockId, newContent);
 }, 500);
 
 // suppress composition input
@@ -114,11 +114,11 @@ const onKeydown = (e: any) => {
     const focusNext =
         props.blockTree.getBlockBelow(props.block.id)?.id ??
         props.blockTree.getBlockAbove(props.block.id)?.id;
-    gs.taskQueue.addTask(async () => {
-      gs.deleteBlock(props.block.id);
+    app.taskQueue.addTask(async () => {
+      app.deleteBlock(props.block.id);
       if (focusNext && props.blockTree) {
         await props.blockTree.nextUpdate();
-        await gs.locateBlock(props.blockTree, focusNext, false, true);
+        await app.locateBlock(props.blockTree, focusNext, false, true);
       }
     });
   } else if (e.key == "ArrowUp") {
@@ -132,29 +132,29 @@ const onKeydown = (e: any) => {
       props.blockTree.focusBlockInView(nextBlock.id);
     }
   } else if (e.key == "Enter") {
-    const pos = gs.normalizePos({
+    const pos = app.normalizePos({
       baseBlockId: props.block.id,
       offset: 1,
     });
     if (!pos) return;
-    gs.taskQueue.addTask(async () => {
+    app.taskQueue.addTask(async () => {
       const { focusNext } =
-      gs.insertNormalBlock(pos, textContentFromString("")) ?? {};
+      app.insertNormalBlock(pos, textContentFromString("")) ?? {};
       if (focusNext && props.blockTree) {
         await props.blockTree.nextUpdate();
-        await gs.locateBlock(props.blockTree, focusNext, false, true);
+        await app.locateBlock(props.blockTree, focusNext, false, true);
       }
     });
   } else if (e.key == "Tab") {
     if (e.shiftKey) {
       // demote
-      gs.taskQueue.addTask(() => {
-        gs.demoteBlock(props.block.id);
+      app.taskQueue.addTask(() => {
+        app.demoteBlock(props.block.id);
       });
     } else {
       // promote
-      gs.taskQueue.addTask(() => {
-        gs.promoteBlock(props.block.id);
+      app.taskQueue.addTask(() => {
+        app.promoteBlock(props.block.id);
       });
     }
   }
@@ -173,9 +173,9 @@ const onWheel = (e: WheelEvent) => {
       width + (e.deltaY > 0 ? -width * scaleFactor : width * scaleFactor),
       100,
   );
-  gs.taskQueue.addTask(() => {
+  app.taskQueue.addTask(() => {
     if (props.block.content.type != "image") return;
-    gs.changeContent(props.block.id, {
+    app.changeContent(props.block.id, {
       ...props.block.content,
       width: newWidth,
     });

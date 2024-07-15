@@ -40,7 +40,7 @@ const props = defineProps<{
 
   .block-item {
     // 覆盖 block-item 的缩进
-    margin-left: unset !important;
+    padding-left: unset !important;
     flex: 1;
 
     // 不显示折叠按钮，因为不允许有子级

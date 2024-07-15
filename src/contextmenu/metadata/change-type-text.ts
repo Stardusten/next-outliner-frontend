@@ -32,17 +32,17 @@ export const changeTypeText: ContextmenuItem = {
     const blockId = ctx["blockId"];
     const entrykey = ctx["entrykey"];
     if (blockId && entrykey) {
-      const s = useAppState();
-      const block = s.getBlock(blockId);
+      const app = useAppState();
+      const block = app.getBlock(blockId);
       if (!block) return;
       const metadata = block.metadata;
       if (metadata[entrykey] == null
         || metadata.specs![entrykey] == null) return;
       // try parse current value to number
-      s.taskQueue.addTask(() => {
+      app.taskQueue.addTask(() => {
         metadata.specs![entrykey] = { type: "text" };
         metadata[entrykey] = metadata[entrykey].toString();
-        s.changeMetadata(blockId, metadata);
+        app.changeMetadata(blockId, metadata);
       });
     }
   },

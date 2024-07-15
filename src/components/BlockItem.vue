@@ -9,7 +9,7 @@
         // 'has-mirror': hasMirror,
         // 'has-ilinks': item.ilinks.length > 0,
         no: item.metadata.no,
-        selected: gs.isBlockSelected(item.id),
+        selected: app.isBlockSelected(item.id),
         [item.content.type]: item.content.type,
       }"
       :style="{ paddingLeft: `${item.level * 25}px` }"
@@ -86,8 +86,8 @@ const props = defineProps<{
   highlightTerms?: string[];
 }>();
 
-const gs = useAppState();
-const { dropAreaPos } = gs;
+const app = useAppState();
+const { dropAreaPos } = app;
 const $blockItem = ref<HTMLElement | null>(null);
 const hasChildren = computed(() =>
     props.item.childrenIds != "null"
@@ -96,14 +96,14 @@ const hasChildren = computed(() =>
 
 const onClickFoldButton = () => {
   const blockId = props.item.id;
-  gs.taskQueue.addTask(() => {
-    gs.toggleFold(blockId, !props.item.fold);
-    gs.addUndoPoint({ message: "toggle fold" });
+  app.taskQueue.addTask(() => {
+    app.toggleFold(blockId, !props.item.fold);
+    app.addUndoPoint({ message: "toggle fold" });
   });
 };
 
 const onClickBullet = () => {
-  gs.applyPatches([{
+  app.applyPatches([{
     op: "replace",
     path: ["mainRootBlockId"],
     value: props.item.id,
@@ -111,32 +111,32 @@ const onClickBullet = () => {
 };
 
 const onFocusin = () => {
-  gs.lastFocusedBlockTreeId.value = props.blockTree?.getId() ?? null;
+  app.lastFocusedBlockTreeId.value = props.blockTree?.getId() ?? null;
   // TODO only work for alblock?
-  gs.lastFocusedBlockId.value = props.item.id;
+  app.lastFocusedBlockId.value = props.item.id;
 };
 
 const onDragStart = (e: DragEvent) => {
   if (!e.dataTransfer) return;
   e.dataTransfer.dropEffect = "move";
   // 如果之前什么都没有选中，则选中这个块
-  if (!gs.selectSomething()) {
-    gs.selectBlock(props.item.id);
+  if (!app.selectSomething()) {
+    app.selectBlock(props.item.id);
   }
 };
 
 const onDragOver = (e: DragEvent) => {
-  const selected = gs.selectedBlockIds.value;
+  const selected = app.selectedBlockIds.value;
   if (selected.length == 0 || !$blockItem.value) return;
   e.preventDefault();
   e.stopPropagation();
 
   // 禁止将自己拖动到自己上
-  const thisPath = gs.getBlockPath(props.item.id);
+  const thisPath = app.getBlockPath(props.item.id);
   if (!thisPath) return;
   for (const id of selected) {
     if (thisPath.includes(id)) {
-      gs.dropAreaPos.value = null;
+      app.dropAreaPos.value = null;
       return;
     }
   }
@@ -148,20 +148,20 @@ const onDragOver = (e: DragEvent) => {
   const level = Math.floor((e.x - rect.x) / 25) - 1;
   // 根据 upperHalf 和 level 计算拖放目标位置
   if (upperHalf) {
-    const predId = gs.getPredecessorBlockId(props.item.id, true);
+    const predId = app.getPredecessorBlockId(props.item.id, true);
     if (predId == null) return;
     // 禁止将自己拖动到自己上
-    const predPath = gs.getBlockPath(predId);
+    const predPath = app.getBlockPath(predId);
     if (!predPath) return;
     for (const id of selected) {
       if (predPath.includes(id)) {
-        gs.dropAreaPos.value = null;
+        app.dropAreaPos.value = null;
         return;
       }
     }
     // 计算有效的 level 区间：[上一个 bock 的 level + 1, 当前 block 的 level]
-    const predBlock = gs.getBlock(predId);
-    const predLevel = gs.getBlockLevel(predId);
+    const predBlock = app.getBlock(predId);
+    const predLevel = app.getBlockLevel(predId);
     if (predBlock == null || predLevel == -1) return;
     const predFoldAndHasChild = predBlock.fold && predBlock.childrenIds.length > 0;
     const clippedLevel = clip(
@@ -170,13 +170,13 @@ const onDragOver = (e: DragEvent) => {
         predFoldAndHasChild ? predLevel : predLevel + 1,
         props.item.level,
     );
-    gs.dropAreaPos.value = {
+    app.dropAreaPos.value = {
       blockId: predId,
       level: clippedLevel,
     };
   } else {
     let clippedLevel;
-    const succId = gs.getSuccessorBlockId(props.item.id, true);
+    const succId = app.getSuccessorBlockId(props.item.id, true);
     const thisFoldAndHasChild = props.item.fold && props.item.childrenIds.length > 0;
     if (succId == null) { // 最后一个块
       clippedLevel = clip(
@@ -186,7 +186,7 @@ const onDragOver = (e: DragEvent) => {
       );
     } else {
       // 计算有效的 level 区间：[当前 block 的 level + 1, 下一个 block 的 level]
-      const succLevel = gs.getBlockLevel(succId);
+      const succLevel = app.getBlockLevel(succId);
       if (succLevel == -1) return;
       clippedLevel = clip(
           level,
@@ -194,7 +194,7 @@ const onDragOver = (e: DragEvent) => {
           succLevel,
       );
     }
-    gs.dropAreaPos.value = {
+    app.dropAreaPos.value = {
       blockId: props.item.id,
       level: clippedLevel,
     }

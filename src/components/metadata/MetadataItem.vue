@@ -79,7 +79,7 @@ const props = defineProps<{
   item: MetadataDisplayItem;
 }>();
 
-const s = useAppState();
+const app = useAppState();
 const expand = ref(false);
 const $metadataItem = ref<HTMLElement | null>(null);
 
@@ -105,7 +105,7 @@ const onKeyUpdated = (oldKey: string, newKey: string) => {
   delete metadata.specs![oldKey];
   metadata[newKey] = value;
   metadata.specs![newKey] = spec;
-  s.changeMetadata(blockId, metadata);
+  app.changeMetadata(blockId, metadata);
 }
 
 const onDeleteEntry = (key: string) => {
@@ -113,14 +113,14 @@ const onDeleteEntry = (key: string) => {
   const blockId = props.item.id.slice(8); // 剪掉前面的 metadata
   delete metadata[key];
   delete metadata.specs![key];
-  s.changeMetadata(blockId, metadata);
+  app.changeMetadata(blockId, metadata);
 }
 
 const onValueUpdated = (key: string, value: any) => {
   const metadata = props.item.metadata;
   const blockId = props.item.id.slice(8); // 剪掉前面的 metadata
   metadata[key] = value;
-  s.changeMetadata(blockId, metadata);
+  app.changeMetadata(blockId, metadata);
 }
 
 const addNewProperty = () => {
@@ -133,7 +133,7 @@ const addNewProperty = () => {
   }
   key = key + suffix;
   const blockId = props.item.id.slice(8); // 剪掉前面的 metadata
-  s.setMetadataEntry(blockId, key, "", { type: "text" });
+  app.setMetadataEntry(blockId, key, "", { type: "text" });
 }
 
 onMounted(() => {

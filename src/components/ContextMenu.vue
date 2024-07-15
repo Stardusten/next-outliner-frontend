@@ -2,11 +2,11 @@
   <div
       class="contextmenu"
       ref="el"
-      v-if="availableItems.length > 0 && gs.contextmenu.context"
+      v-if="availableItems.length > 0 && app.contextmenu.context"
   >
     <div
         class="overlay"
-        @click="gs.contextmenu.context = null"
+        @click="app.contextmenu.context = null"
     ></div>
     <div
         class="contextmenu-item"
@@ -36,33 +36,33 @@ import {addMetadata} from "@/contextmenu/add-metadata";
 import {changeTypeNumber} from "@/contextmenu/metadata/change-type-number";
 import {changeTypeText} from "@/contextmenu/metadata/change-type-text";
 
-const gs = useAppState();
+const app = useAppState();
 const availableItems = computed(() => {
-  const ctx = gs.contextmenu.context;
+  const ctx = app.contextmenu.context;
   if (ctx == null || ctx.openMenuEvent == null) return [];
-  return Object.values(gs.contextmenu.items).filter((item) =>
+  return Object.values(app.contextmenu.items).filter((item) =>
       item.available(ctx),
   );
 });
 const el = ref<HTMLElement | null>(null);
 
 const onClickItem = (item: ContextmenuItem, event: MouseEvent) => {
-  const ctx = gs.contextmenu.context;
+  const ctx = app.contextmenu.context;
   if (ctx == null) return; // IMPOSSIBLE
   ctx.clickItemEvent = event;
   item.onClick(ctx);
-  gs.contextmenu.context = null;
+  app.contextmenu.context = null;
 };
 
 const registerContextMenuItem = (item: ContextmenuItem) => {
-  gs.contextmenu.items[item.id] = item;
+  app.contextmenu.items[item.id] = item;
 };
 
 onMounted(() => {
   document.body.addEventListener("contextmenu", async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    gs.contextmenu.context = {
+    app.contextmenu.context = {
       openMenuEvent: e,
     };
     nextTick(() => {

@@ -32,8 +32,8 @@ export const changeTypeNumber: ContextmenuItem = {
     const blockId = ctx["blockId"];
     const entrykey = ctx["entrykey"];
     if (blockId && entrykey) {
-      const s = useAppState();
-      const block = s.getBlock(blockId);
+      const app = useAppState();
+      const block = app.getBlock(blockId);
       if (!block) return;
       const metadata = block.metadata;
       if (metadata[entrykey] == null
@@ -44,10 +44,10 @@ export const changeTypeNumber: ContextmenuItem = {
         const parsed = Number(metadata[entrykey]);
         if (!Number.isNaN(parsed)) newVal = parsed;
       } catch (e) {}
-      s.taskQueue.addTask(() => {
+      app.taskQueue.addTask(() => {
         metadata.specs![entrykey] = { type: "number" };
         metadata[entrykey] = newVal;
-        s.changeMetadata(blockId, metadata);
+        app.changeMetadata(blockId, metadata);
       });
     }
   },

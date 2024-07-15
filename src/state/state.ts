@@ -13,6 +13,7 @@ import { searchPanelPlugin } from "@/state/search-panel";
 import { repeatablePlugin } from "@/state/repeatable";
 import {floatingToolbarPlugin} from "@/state/floating-toolbar";
 import {toastPlugin} from "@/state/toast";
+import {refSuggestionsPlugin} from "@/state/ref-suggestions";
 
 
 /// Types
@@ -60,6 +61,7 @@ export const mkState = async () => {
   repeatablePlugin(_state);
   floatingToolbarPlugin(_state);
   toastPlugin(_state);
+  refSuggestionsPlugin(_state);
 
   INSTANCE = _state;
 };

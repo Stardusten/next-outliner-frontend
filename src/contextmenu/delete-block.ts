@@ -25,9 +25,9 @@ export const deleteBlock: ContextmenuItem = {
   onClick: (ctx) => {
     const blockId = ctx["blockId"];
     if (blockId != null) {
-      const gs = useAppState();
-      gs.taskQueue.addTask(() => {
-        gs.deleteBlock(blockId);
+      const app = useAppState();
+      app.taskQueue.addTask(() => {
+        app.deleteBlock(blockId);
       });
     }
   },

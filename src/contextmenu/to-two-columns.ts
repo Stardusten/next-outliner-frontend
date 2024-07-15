@@ -15,11 +15,11 @@ export const toTwoColumns: ContextmenuItem = {
         const blockId = elem.getAttribute("block-id");
         if (blockId != null) {
           // 要求所有子节点都在同一级, 并且没有孩子
-          const gs = useAppState();
-          const block = gs.getBlock(blockId);
+          const app = useAppState();
+          const block = app.getBlock(blockId);
           if (!block) return false;
           for (const childId of block.childrenIds) {
-            const childBlock = gs.getBlock(childId);
+            const childBlock = app.getBlock(childId);
             if (!childBlock || childBlock.childrenIds.length > 0) return false;
           }
           ctx["blockId"] = blockId;
@@ -33,10 +33,10 @@ export const toTwoColumns: ContextmenuItem = {
   onClick: (ctx) => {
     const blockId = ctx["blockId"];
     if (blockId != null) {
-      const gs = useAppState();
-      const block = gs.getBlock(blockId);
+      const app = useAppState();
+      const block = app.getBlock(blockId);
       if (!block) return;
-      gs.changeMetadata(blockId, {
+      app.changeMetadata(blockId, {
         ...block.metadata,
         ncols: 2,
       });

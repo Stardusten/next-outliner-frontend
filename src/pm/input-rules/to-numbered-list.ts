@@ -12,17 +12,17 @@ export const toNumberedList = (
     const view = getView();
     if (!view) return null;
     view.dispatch(view.state.tr.deleteRange(start, end));
-    const gs = useAppState();
-    gs.taskQueue.addTask(() => {
-      const block = gs.getBlock(blockId);
+    const app = useAppState();
+    app.taskQueue.addTask(() => {
+      const block = app.getBlock(blockId);
       if (!block) return;
       if (match[1] == "-") {
         // delete no
         // @ts-ignore
         delete block.metadata;
-        gs.changeMetadata(blockId, { ...block.metadata });
+        app.changeMetadata(blockId, { ...block.metadata });
       } else {
-        gs.changeMetadata(blockId, {
+        app.changeMetadata(blockId, {
           ...block.metadata,
           no: match[1] ?? match[2],
         });

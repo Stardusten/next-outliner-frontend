@@ -16,16 +16,16 @@ export const mkUnselectOnBlurPlugin = () => {
         blur() {
           if (_view == null) return;
           if (_view.state.selection.empty) return;
-          const gs = useAppState();
+          const app = useAppState();
           // 标记这次 focus 事件由 unselect-on-blur.ts 触发
           // 防止和 inline-math.ts 之间产生无限递归
-          gs.selectFromUnselectOnBlur = true;
+          app.selectFromUnselectOnBlur = true;
           _view.focus(); // 失焦的时候没法 dispatch event，先 focus
           const emptySelection = TextSelection.create(_view.state.doc, 0);
           const tr = _view.state.tr.setSelection(emptySelection);
           _view.dispatch(tr);
           _view.dom.blur(); // 然后再 blur
-          gs.selectFromUnselectOnBlur = false;
+          app.selectFromUnselectOnBlur = false;
         }
       }
     }

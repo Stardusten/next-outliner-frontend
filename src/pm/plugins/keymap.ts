@@ -27,7 +27,7 @@ const keymap = (bindings: { [key: string]: PmKeyBinding }): Plugin => {
 };
 
 export const mkKeymap = () => {
-  const gs = useAppState();
+  const app = useAppState();
 
   return keymap({
     "Shift-Enter": {
@@ -44,11 +44,11 @@ export const mkKeymap = () => {
     Enter: {
       run: (state, dispatch, view) => {
         if (!view) return false;
-        const rootBlockId = gs.getTrackingProp("mainRootBlockId");
+        const rootBlockId = app.getTrackingProp("mainRootBlockId");
         if (!rootBlockId) return false;
-        const block = gs.lastFocusedBlock.value;
+        const block = app.lastFocusedBlock.value;
         if (!block) return false;
-        const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
+        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
         const sel = view.state.selection;
         const selEnd = AllSelection.atEnd(view.state.doc);
         const onRoot = rootBlockId == block.id;
@@ -57,41 +57,41 @@ export const mkKeymap = () => {
         // 在块末尾按 Enter，下面创建空块
         if (sel.eq(selEnd)) {
           const pos = onRoot
-            ? gs.normalizePos({
+            ? app.normalizePos({
                 parentId: rootBlockId,
                 childIndex: "last-space",
               })
-            : gs.normalizePos({
+            : app.normalizePos({
                 baseBlockId: block.id,
                 offset: 1,
               });
           if (!pos) return false;
-          gs.taskQueue.addTask(async () => {
+          app.taskQueue.addTask(async () => {
             const { focusNext } =
-              gs.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
+              app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
             if (focusNext && lastFocusedBlockTree) {
               await lastFocusedBlockTree.nextUpdate();
-              await gs.locateBlock(lastFocusedBlockTree, focusNext, false, true);
+              await app.locateBlock(lastFocusedBlockTree, focusNext, false, true);
             }
-            gs.addUndoPoint();
+            app.addUndoPoint();
           });
           return true;
         } else if (sel.head == 0) {
           // 块开头按 Enter，上面创建块
           if (onRoot) return false; // 不处理根块的情况
-          const pos = gs.normalizePos({
+          const pos = app.normalizePos({
             baseBlockId: block.id,
             offset: 0,
           });
           if (!pos) return false;
-          gs.taskQueue.addTask(async () => {
+          app.taskQueue.addTask(async () => {
             const { focusNext } =
-              gs.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
+              app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
             if (focusNext && lastFocusedBlockTree) {
               await lastFocusedBlockTree.nextUpdate();
-              await gs.locateBlock(lastFocusedBlockTree, focusNext, false, true);
+              await app.locateBlock(lastFocusedBlockTree, focusNext, false, true);
             }
-            gs.addUndoPoint();
+            app.addUndoPoint();
           });
           return true;
         } else {
@@ -105,13 +105,13 @@ export const mkKeymap = () => {
           tr.setSelection(AllSelection.atStart(tr.doc));
           view.dispatch(tr);
           // 上方插入块
-          gs.taskQueue.addTask(async () => {
-            const pos = gs.normalizePos({
+          app.taskQueue.addTask(async () => {
+            const pos = app.normalizePos({
               baseBlockId: block.id,
               offset: 0,
             });
             if (!pos) return;
-            gs.insertNormalBlock(
+            app.insertNormalBlock(
               pos,
               {
                 type: "text",
@@ -119,7 +119,7 @@ export const mkKeymap = () => {
               },
               inheritMetadata,
             );
-            gs.addUndoPoint();
+            app.addUndoPoint();
           });
           return true;
         }
@@ -128,22 +128,22 @@ export const mkKeymap = () => {
     },
     Backspace: {
       run: (state, dispatch, view) => {
-        const block = gs.lastFocusedBlock.value;
+        const block = app.lastFocusedBlock.value;
         if (!block) return false;
-        const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
+        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
         const focusNext =
           lastFocusedBlockTree?.getBlockAbove(block.id)?.id ??
           lastFocusedBlockTree?.getBlockBelow(block.id)?.id;
         const sel = state.selection;
         // 当前块为空，直接删掉这个块
         if (state.doc.content.size == 0) {
-          gs.taskQueue.addTask(async () => {
-            gs.deleteBlock(block.id);
+          app.taskQueue.addTask(async () => {
+            app.deleteBlock(block.id);
             if (focusNext && lastFocusedBlockTree) {
               await lastFocusedBlockTree.nextUpdate();
-              await gs.locateBlock(lastFocusedBlockTree, focusNext);
+              await app.locateBlock(lastFocusedBlockTree, focusNext);
             }
-            gs.addUndoPoint({ message: "insert display math block" });
+            app.addUndoPoint({ message: "insert display math block" });
           });
           return true;
         } else if (sel.empty && sel.from == 0) {
@@ -155,22 +155,22 @@ export const mkKeymap = () => {
     },
     Delete: {
       run: (state, dispatch, view) => {
-        const block = gs.lastFocusedBlock.value;
+        const block = app.lastFocusedBlock.value;
         if (!block) return false;
-        const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
+        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
         const focusNext =
           lastFocusedBlockTree?.getBlockBelow(block.id)?.id ??
           lastFocusedBlockTree?.getBlockAbove(block.id)?.id;
         const sel = state.selection;
         // 当前块为空，直接删掉这个块
         if (state.doc.content.size == 0) {
-          gs.taskQueue.addTask(async () => {
-            gs.deleteBlock(block.id);
+          app.taskQueue.addTask(async () => {
+            app.deleteBlock(block.id);
             if (focusNext && lastFocusedBlockTree) {
               await lastFocusedBlockTree.nextUpdate();
-              await gs.locateBlock(lastFocusedBlockTree, focusNext);
+              await app.locateBlock(lastFocusedBlockTree, focusNext);
             }
-            gs.addUndoPoint({ message: "delete empty block" });
+            app.addUndoPoint({ message: "delete empty block" });
           });
           return true;
         } else if (sel.empty && sel.from == 0) {
@@ -182,9 +182,9 @@ export const mkKeymap = () => {
     },
     ArrowUp: {
       run: (state, dispatch, view) => {
-        const block = gs.lastFocusedBlock.value;
+        const block = app.lastFocusedBlock.value;
         if (!block) return false;
-        const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
+        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
         if (lastFocusedBlockTree && view?.endOfTextblock("up")) {
           const oldPos = state.selection.anchor;
           const coord = view!.coordsAtPos(oldPos);
@@ -212,9 +212,9 @@ export const mkKeymap = () => {
     },
     ArrowDown: {
       run: (state, dispatch, view) => {
-        const block = gs.lastFocusedBlock.value;
+        const block = app.lastFocusedBlock.value;
         if (!block) return false;
-        const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
+        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
         if (lastFocusedBlockTree && view?.endOfTextblock("down")) {
           const oldPos = state.selection.anchor;
           const coord = view!.coordsAtPos(oldPos);
@@ -243,9 +243,10 @@ export const mkKeymap = () => {
     },
     ArrowLeft: {
       run: (state, dispatch, view) => {
-        const block = gs.lastFocusedBlock.value;
+        skipOneUfeffBeforeCursor(state, dispatch!);
+        const block = app.lastFocusedBlock.value;
         if (!block) return false;
-        const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
+        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
         const atBeg = state.selection.empty && state.selection.anchor == 0;
         if (lastFocusedBlockTree && atBeg) {
           const prevBlock = lastFocusedBlockTree.getPredecessorBlock(block.id);
@@ -260,9 +261,10 @@ export const mkKeymap = () => {
     },
     ArrowRight: {
       run: (state, dispatch, view) => {
-        const block = gs.lastFocusedBlock.value;
+        skipOneUfeffAfterCursor(state, dispatch!);
+        const block = app.lastFocusedBlock.value;
         if (!block) return false;
-        const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
+        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
         const atEnd = state.selection.empty && state.selection.anchor == state.doc.content.size;
         if (lastFocusedBlockTree && atEnd) {
           const nextBlock = lastFocusedBlockTree.getSuccessorBlock(block.id);
@@ -280,28 +282,28 @@ export const mkKeymap = () => {
         const empty = state.doc.content.size == 0;
         if (empty) {
           // 将这个空块变为公式块
-          gs.taskQueue.addTask(() => {
-            const blockId = gs.lastFocusedBlockId.value;
+          app.taskQueue.addTask(() => {
+            const blockId = app.lastFocusedBlockId.value;
             if (blockId == null) return;
-            gs.changeContent(blockId, {
+            app.changeContent(blockId, {
               type: "mathDisplay",
               src: "",
             });
-            gs.addUndoPoint({ message: "convert to math block" });
+            app.addUndoPoint({ message: "convert to math block" });
           });
         } else {
           // 下方插入公式块
-          gs.taskQueue.addTask(async () => {
-            const blockId = gs.lastFocusedBlockId.value;
+          app.taskQueue.addTask(async () => {
+            const blockId = app.lastFocusedBlockId.value;
             if (blockId == null) return;
-            const pos = gs.normalizePos({
+            const pos = app.normalizePos({
               baseBlockId: blockId,
               offset: 1,
             });
             if (pos == null) return;
-            const tree = gs.lastFocusedBlockTree.value;
+            const tree = app.lastFocusedBlockTree.value;
             const { focusNext } =
-              gs.insertNormalBlock(pos, {
+              app.insertNormalBlock(pos, {
                 type: "mathDisplay",
                 src: "",
               }) ?? {};
@@ -310,7 +312,7 @@ export const mkKeymap = () => {
               await tree.nextUpdate();
               tree.focusBlockInView(focusNext);
             }
-            gs.addUndoPoint({ message: "insert math block" });
+            app.addUndoPoint({ message: "insert math block" });
           });
         }
         return true;
@@ -335,15 +337,15 @@ export const mkKeymap = () => {
     },
     "Mod-ArrowUp": {
       run: () => {
-        const block = gs.lastFocusedBlock.value;
+        const block = app.lastFocusedBlock.value;
         if (!block || block.fold) return false;
-        const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
-        gs.taskQueue.addTask(async () => {
-          gs.toggleFold(block.id, true);
+        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
+        app.taskQueue.addTask(async () => {
+          app.toggleFold(block.id, true);
           if (lastFocusedBlockTree) {
             await lastFocusedBlockTree.nextUpdate();
           }
-          gs.addUndoPoint({ message: "fold block" });
+          app.addUndoPoint({ message: "fold block" });
         });
         return true;
       },
@@ -351,15 +353,15 @@ export const mkKeymap = () => {
     },
     "Mod-ArrowDown": {
       run: () => {
-        const block = gs.lastFocusedBlock.value;
+        const block = app.lastFocusedBlock.value;
         if (!block || !block.fold) return false;
-        const lastFocusedBlockTree = gs.lastFocusedBlockTree.value;
-        gs.taskQueue.addTask(async () => {
-          gs.toggleFold(block.id, false);
+        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
+        app.taskQueue.addTask(async () => {
+          app.toggleFold(block.id, false);
           if (lastFocusedBlockTree) {
             await lastFocusedBlockTree.nextUpdate();
           }
-          gs.addUndoPoint({ message: "expand block" });
+          app.addUndoPoint({ message: "expand block" });
         });
         return true;
       },
@@ -388,4 +390,31 @@ export const mkKeymap = () => {
       preventDefault: true,
     },
   });
+};
+
+const skipOneUfeffAfterCursor = (state: EditorState, dispatch: EditorView["dispatch"]) => {
+  if (dispatch == null) return false;
+  const sel = state.selection;
+  try {
+    const charAfter = state.doc.textBetween(sel.from, sel.from + 1);
+    if (charAfter == "\ufeff") {
+      // console.log('skip \\ufeff')
+      const tr = state.tr.setSelection(TextSelection.create(state.doc, sel.from + 1));
+      dispatch(tr);
+      return true;
+    }
+  } catch (_) {}
+  return false;
+};
+
+const skipOneUfeffBeforeCursor = (state: EditorState, dispatch: EditorView["dispatch"]) => {
+  if (dispatch == null) return false;
+  const sel = state.selection;
+  const charBefore = state.doc.textBetween(sel.from - 1, sel.from);
+  if (charBefore == "\ufeff") {
+    const tr = state.tr.setSelection(TextSelection.create(state.doc, sel.from - 1));
+    dispatch(tr);
+    return true;
+  }
+  return false;
 };

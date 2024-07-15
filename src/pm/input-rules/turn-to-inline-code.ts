@@ -1,7 +1,7 @@
 import { InputRule } from "prosemirror-inputrules";
 import { pmSchema } from "../schema";
 
-export const turnToInlineCode = new InputRule(/`([^`]+)`$/, (state, match) => {
+export const turnToInlineCode = () => new InputRule(/`([^`]+)`$/, (state, match) => {
   const cursorPos = state.selection.anchor;
   const mark = pmSchema.marks.code.create({});
   const node = pmSchema.text(match[1], [mark]);

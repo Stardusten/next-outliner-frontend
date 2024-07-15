@@ -79,12 +79,12 @@ const props = defineProps<{
 const $blockTree = ref<HTMLElement | null>(null);
 const $vlist = ref<any | null>(null);
 const displayItems = shallowRef<DisplayItem[]>();
-const gs = useAppState();
+const app = useAppState();
 const eventListeners: any = {
   displayItemsUpdated: new Set<any>(),
 };
 const onceListeners = new Set<any>();
-const blocks = gs.getTrackingPropReactive("blocks");
+const blocks = app.getTrackingPropReactive("blocks");
 
 watch(
   [() => props.rootBlockIds, blocks],
@@ -157,14 +157,14 @@ watch(
       if (props.rootBlockLevel != null) {
         options.rootBlockLevel = props.rootBlockLevel;
       } else {
-        const path = gs.getBlockPath(blockId);
+        const path = app.getBlockPath(blockId);
         if (path == null) {
           console.error("cannot get path of ", blockId);
           continue;
         }
         options.rootBlockLevel = path.length - 1;
       }
-      gs.forDescendantsOf(options as any);
+      app.forDescendantsOf(options as any);
     }
 
     displayItems.value = newDisplayItems;
@@ -490,7 +490,7 @@ const onMouseDown = (e: MouseEvent) => {
   if (!el) return;
   el.addEventListener("mousemove", onMouseMove);
 
-  const ctx = gs.dragSelectContext;
+  const ctx = app.dragSelectContext;
   const blockItem = getHoveredElementWithClass(e.target, "block-item");
   const hoveredBlockId = blockItem?.getAttribute("block-id");
   if (hoveredBlockId)  {
@@ -504,7 +504,7 @@ const onMouseDown = (e: MouseEvent) => {
 const onMouseMove = throttle((e: MouseEvent) => {
   const blockItem = getHoveredElementWithClass(e.target, "block-item");
   const hoveredBlockId = blockItem?.getAttribute("block-id");
-  const ctx = gs.dragSelectContext;
+  const ctx = app.dragSelectContext;
   if (hoveredBlockId && ctx.value)  {
     ctx.value.toBlockId = hoveredBlockId;
   }
@@ -523,7 +523,7 @@ onMounted(() => {
     el.addEventListener("mousedown", onMouseDown);
     el.addEventListener("mouseup", onMouseUp);
   }
-  gs.registerBlockTree(props.id, controller);
+  app.registerBlockTree(props.id, controller);
 });
 
 onUnmounted(() => {
@@ -532,7 +532,7 @@ onUnmounted(() => {
     el.removeEventListener("mousedown", onMouseDown);
     el.removeEventListener("mouseup", onMouseUp);
   }
-  gs.unregisterBlockTree(props.id);
+  app.unregisterBlockTree(props.id);
 });
 </script>
 
@@ -573,13 +573,11 @@ onUnmounted(() => {
 }
 
 // 高亮
-.block-item.highlight-keep,
 .block-item.highlight-keep .block-content,
 .block-item.highlight-keep .bullet {
   background-color: var(--highlight-color);
 }
 
-.block-item.highlight-fade,
 .block-item.highlight-fade .block-content,
 .block-item.highlight-fade .bullet {
   background-color: unset !important;

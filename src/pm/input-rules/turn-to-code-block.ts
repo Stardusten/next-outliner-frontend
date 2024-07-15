@@ -10,9 +10,9 @@ export const turnToCodeBlock = (
   return new InputRule(/^```([a-z]+) $/, (state, match) => {
     const blockId = getBlockId();
     const blockTree = getBlockTree();
-    const gs = useAppState();
-    gs.taskQueue.addTask(async () => {
-      gs.changeContent(blockId, {
+    const app = useAppState();
+    app.taskQueue.addTask(async () => {
+      app.changeContent(blockId, {
         type: "code",
         code: "",
         lang: match[1],

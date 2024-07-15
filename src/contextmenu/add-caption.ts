@@ -28,10 +28,10 @@ export const addCaption: ContextmenuItem = {
   onClick: (ctx) => {
     const blockId = ctx["blockId"];
     if (blockId != null) {
-      const gs = useAppState();
-      const block = gs.getBlock(blockId);
+      const app = useAppState();
+      const block = app.getBlock(blockId);
       if (!block || block.content.type != "image") return;
-      gs.changeContent(blockId, {
+      app.changeContent(blockId, {
         ...block.content,
         caption: "",
       });

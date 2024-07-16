@@ -24,7 +24,7 @@
 import {useAppState} from "@/state/state";
 import {computed, nextTick, onMounted, ref} from "vue";
 import type {ContextmenuItem} from "@/state/contextmenu";
-import {toTwoColumns} from "@/contextmenu/to-two-columns";
+import {toggleTwoColumns} from "@/contextmenu/toggle-two-columns";
 import {copyBlockRef} from "@/contextmenu/copy-block-ref";
 import {copyBlockTag} from "@/contextmenu/copy-block-tag";
 import {copyBlockMirror} from "@/contextmenu/copy-block-mirror";
@@ -76,7 +76,7 @@ onMounted(() => {
     });
   });
 
-  registerContextMenuItem(toTwoColumns);
+  registerContextMenuItem(toggleTwoColumns);
   registerContextMenuItem(copyBlockRef);
   registerContextMenuItem(copyBlockTag);
   registerContextMenuItem(copyBlockMirror);

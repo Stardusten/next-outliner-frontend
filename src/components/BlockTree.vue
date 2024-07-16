@@ -5,7 +5,7 @@
         class="indent-line"
         v-for="i in 20"
         :key="i"
-        :style="{ left: `${26 + (i - 1) * 25}px` }"
+        :style="{ left: `${26 + (i - 1) * 36}px` }"
       ></div>
     </div>
     <virt-list
@@ -13,7 +13,7 @@
       itemKey="id"
       :list="displayItems"
       :buffer="10"
-      :minSize="24"
+      :minSize="30"
       ref="$vlist"
       itemClass="block-container"
     >
@@ -38,6 +38,11 @@
         <!--          :block-tree="controller"-->
         <!--          :item="itemData"-->
         <!--        ></BacklinkItem>-->
+        <FEContainerItem
+          v-else-if="itemData.itemType == 'foldingExpandingContainer'"
+          :block-tree="controller"
+          :item="itemData"
+        ></FEContainerItem>
       </template>
       <template #footer>
         <div
@@ -54,7 +59,13 @@
 <script setup lang="ts">
 import {nextTick, onMounted, onUnmounted, ref, shallowRef, watch,} from "vue";
 import {VirtList} from "vue-virt-list";
-import type {BlockDisplayItem, DisplayItem, MetadataDisplayItem, MultiColRowItem,} from "@/state/ui-misc";
+import type {
+  BlockDisplayItem,
+  DisplayItem,
+  FoldingExpandingContainerItem,
+  MetadataDisplayItem,
+  MultiColRowItem,
+} from "@/state/ui-misc";
 import {useAppState} from "@/state/state";
 import type {ALBlock, BlockId, ForDescendantsOfOptions} from "@/state/block";
 import type {BlockTree} from "@/state/block-tree";
@@ -68,6 +79,7 @@ import {highlightElements} from "@/util/highlight";
 import {getHoveredElementWithClass, scrollIntoViewIfNotVisible} from "@/util/dom";
 import MultiColRow from "@/components/MultiColRow.vue";
 import {throttle} from "lodash";
+import FEContainerItem from "@/components/FEContainerItem.vue";
 
 const props = defineProps<{
   id: string;
@@ -77,7 +89,7 @@ const props = defineProps<{
   paddingBottom?: number;
 }>();
 const $blockTree = ref<HTMLElement | null>(null);
-const $vlist = ref<any | null>(null);
+const $vlist = ref<InstanceType<typeof VirtList> | null>(null);
 const displayItems = shallowRef<DisplayItem[]>();
 const app = useAppState();
 const eventListeners: any = {
@@ -87,7 +99,7 @@ const onceListeners = new Set<any>();
 const blocks = app.getTrackingPropReactive("blocks");
 
 watch(
-  [() => props.rootBlockIds, blocks],
+  [() => props.rootBlockIds, blocks, app.foldingStatus],
   () => {
     if (!props.rootBlockIds) {
       displayItems.value = [];
@@ -119,19 +131,17 @@ watch(
     };
 
     options.afterLeavingChildrens = async (block: ALBlock) => {
+      let index;
+
       // 支持多栏布局
       if ("ncols" in block.metadata && block.metadata.ncols > 1) {
-        const index = newDisplayItems.findIndex((item) => {
-          return item.itemType == "alblock" && item.id == block.id;
-        });
+        index = newDisplayItems.findIndex((item) => item.itemType == "alblock" && item.id == block.id);
         const childrenDisplayItems = newDisplayItems.slice(index + 1);
         // 要求 childrenDisplayItems 里的 displayItems 全都是 BlockDisplayItems 并且 level 都相同
         // 这是实现所限
         if (childrenDisplayItems.length > 0) {
           const level = childrenDisplayItems[0].level;
-          const isValid = childrenDisplayItems.every((item) => {
-            return item.itemType == "alblock" && item.level == level;
-          });
+          const isValid = childrenDisplayItems.every((item) => item.itemType == "alblock" && item.level == level);
           if (isValid) {
             const nrows = Math.ceil(childrenDisplayItems.length / 2);
             const rows = [];
@@ -149,6 +159,23 @@ watch(
             newDisplayItems.splice(index + 1, childrenDisplayItems.length, ...rows);
           }
         }
+      }
+
+      const { op, blockId } = app.foldingStatus.value;
+      if (op != "none" && blockId == block.id) {
+        if (!index)
+          index = newDisplayItems.findIndex((item) => item.itemType == "alblock" && item.id == block.id);
+        const level = newDisplayItems[index + 1].level;
+        const maxItemNum = window.innerHeight / 36; // 不准确的估计，但应该没问题
+        const item: FoldingExpandingContainerItem = {
+          id: op + blockId,
+          itemType: "foldingExpandingContainer",
+          blockItems: newDisplayItems.slice(index + 1)
+              .slice(0, maxItemNum),
+          level,
+          op,
+        };
+        newDisplayItems.splice(index + 1, newDisplayItems.length, item)
       }
     };
 
@@ -480,6 +507,7 @@ const controller: BlockTree = {
   moveCursorToTheEnd,
   getBelongingDisplayItem,
   expandMetadataItemInView,
+  getVirtList: () => $vlist.value!,
 };
 
 /// 拖拽以多选块

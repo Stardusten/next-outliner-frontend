@@ -46,12 +46,16 @@ export const mkTrailingHintPlugin = (
 
               // 被点击时，展开对应 metadataItem
               span.addEventListener("click", () => {
+                const app = useAppState();
                 const blockId = getBlockId();
                 const blockTree = getBlockTree();
-                const app = useAppState();
+                const block = app.getBlock(blockId);
+                if (block == null) return;
                 app.taskQueue.addTask(async () => {
-                  const toggled = app.toggleFold(blockId, false);
-                  if (toggled) await blockTree.nextUpdate();
+                  if (block.fold) {
+                    await app.toggleFoldWithAnimation(blockId, false);
+                    await blockTree.nextUpdate();
+                  }
                   blockTree.expandMetadataItemInView(blockId);
                 });
               });

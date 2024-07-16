@@ -2,10 +2,10 @@ import { Columns2 } from "lucide-vue-next";
 import type {ContextmenuItem} from "@/state/contextmenu";
 import {useAppState} from "@/state/state";
 
-export const toTwoColumns: ContextmenuItem = {
+export const toggleTwoColumns: ContextmenuItem = {
   icon: Columns2,
-  id: "toTwoColumns",
-  displayText: "To 2 columns",
+  id: "toggleTwoColumns",
+  displayText: "Toggle 2 columns",
   available: (ctx) => {
     if (ctx.openMenuEvent == null) return false;
     let elem = ctx.openMenuEvent.target;
@@ -34,12 +34,15 @@ export const toTwoColumns: ContextmenuItem = {
     const blockId = ctx["blockId"];
     if (blockId != null) {
       const app = useAppState();
-      const block = app.getBlock(blockId);
+      const block = app.getBlock(blockId, true);
       if (!block) return;
-      app.changeMetadata(blockId, {
-        ...block.metadata,
-        ncols: 2,
-      });
+      if ("ncols" in block.metadata) {
+        delete block.metadata["ncols"];
+        app.changeMetadata(blockId, block.metadata);
+      } else {
+        block.metadata["ncols"] = 2;
+        app.changeMetadata(blockId, block.metadata);
+      }
     }
   },
 };

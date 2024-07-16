@@ -165,6 +165,7 @@ document.body.addEventListener("keydown", keydownHandler);
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: clip;
 
   .header-bar {
     height: 50px;

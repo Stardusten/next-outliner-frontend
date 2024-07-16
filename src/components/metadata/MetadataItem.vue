@@ -2,7 +2,7 @@
   <div
     class="metadata-item"
     :class="{ expand: expand }"
-    :style="{ marginLeft: `${(item.level + 1) * 25}px` }"
+    :style="{ marginLeft: `${(item.level + 1) * 36}px` }"
     :block-id="item.id.slice(8)"
     v-if="Object.keys(entriesToDisplay).length > 0"
     ref="$metadataItem"

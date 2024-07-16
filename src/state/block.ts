@@ -6,6 +6,7 @@ import { getUUID } from "@/util/uuid";
 import { timeout } from "@/util/timeout";
 import type { BlockTree } from "@/state/block-tree";
 import type { Cloze, RepeatableId } from "@/state/repeatable";
+import {nextTick} from "vue";
 
 /// Types
 export type BlockId = string;
@@ -207,6 +208,7 @@ declare module "@/state/state" {
     getBoosting: (target: BlockId | BlockContent) => number;
     normalizePos: (pos: BlockPos) => BlockPosParentChild | null;
     toggleFold: (blockId: BlockId, fold: boolean) => boolean;
+    toggleFoldWithAnimation: (blockId: BlockId, fold: boolean) => Promise<void>;
     changeMetadata: (blockId: BlockId, newMetadata: any) => void;
     changeContent: (blockId: BlockId, content: BlockContent) => void;
     setMetadataEntry: <S extends BlockMetadataSpec>(
@@ -632,16 +634,45 @@ export const blockManagePlugin = (s: AppState) => {
   };
   s.decorate("normalizePos", normalizePos);
 
-  const toggleFold = (blockId: BlockId, fold: boolean) => {
+  const toggleFold = (blockId: BlockId, fold: boolean, animate: boolean = false) => {
     const block = getBlock(blockId, true);
-    if (!block) return false;
-    if (fold == block.fold) return false; // 折叠状态没有改变
+    if (!block || fold == block.fold) return false; // 折叠状态没有改变
     block.fold = fold;
-
     _setBlock(block);
     return true;
   };
   s.decorate("toggleFold", toggleFold);
+
+  const toggleFoldWithAnimation = async (blockId: BlockId, fold: boolean) => {
+    const block = getBlock(blockId, true);
+    if (!block || fold == block.fold) return false; // 折叠状态没有改变
+
+    const blockTree = s.lastFocusedBlockTree.value;
+    const offset = blockTree?.getVirtList()?.reactiveData.offset;
+
+    if (fold) {
+      s.foldingStatus.value = { op: "folding", blockId };
+      await timeout(120);
+      s.foldingStatus.value = { op: "none" };
+      block.fold = true; // 动画结束后才真的将 block 设为 fold
+      _setBlock(block);
+    } else {
+      block.fold = false; // 动画开始前就将 block 设为 expand
+      _setBlock(block);
+      s.foldingStatus.value = { op: "expanding", blockId };
+      await timeout(120);
+      s.foldingStatus.value = { op: "none" };
+    }
+
+    // 恢复折叠之前的 offset
+    if (blockTree && offset) {
+      await nextTick();
+      await blockTree.nextUpdate();
+      blockTree.getVirtList().scrollToOffset(offset);
+      blockTree.getVirtList().scrollToOffset(offset);
+    }
+  }
+  s.decorate("toggleFoldWithAnimation", toggleFoldWithAnimation);
 
   const changeMetadata = (blockId: BlockId, newMetadata: any) => {
     const block = getBlock(blockId);

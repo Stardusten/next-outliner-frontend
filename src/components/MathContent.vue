@@ -120,7 +120,7 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 1px;
+  padding: .5em 0;
 
   math-field {
     z-index: 80;

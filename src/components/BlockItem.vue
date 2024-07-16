@@ -3,16 +3,16 @@
       class="block-item"
       :class="{
         fold: item.fold, // 是否折叠
-        hasChildren: hasChildren, // 是否有孩子
+        hasChildren, // 是否有孩子
         hasMetadata: item.mtext.length > 0, // 是否有非内部 metadata
         paragraph: item.metadata.paragraph,
-        // 'has-mirror': hasMirror,
+        hasMirror,
         // 'has-ilinks': item.ilinks.length > 0,
         no: item.metadata.no,
         selected: app.isBlockSelected(item.id),
         [item.content.type]: item.content.type,
       }"
-      :style="{ paddingLeft: `${item.level * 25}px` }"
+      :style="{ paddingLeft: `${item.level * 36}px` }"
       :level="item.level"
       :block-id="item.id"
       ref="$blockItem"
@@ -31,6 +31,7 @@
         @dragstart="onDragStart"
     >
       <div class="no" v-if="item.metadata.no">{{ item.metadata.no }}.</div>
+      <SharpDiamond class="diamond" v-else-if="hasMirror"></SharpDiamond>
       <Circle class="circle" v-else></Circle>
     </div>
     <TextContent
@@ -73,10 +74,11 @@ import {useAppState} from "@/state/state";
 import CodeContent from "@/components/CodeContent.vue";
 import TextContent from "@/components/TextContent.vue";
 import type {BlockDisplayItem} from "@/state/ui-misc";
-import {Circle, Triangle} from "lucide-vue-next";
+import {Circle, Triangle, Diamond} from "lucide-vue-next";
 import MathContent from "@/components/MathContent.vue";
 import ImageContent from "@/components/ImageContent.vue";
 import {clip} from "@/util/popout";
+import SharpDiamond from "@/components/icons/SharpDiamond.vue";
 
 const props = defineProps<{
   blockTree: BlockTree;
@@ -93,11 +95,15 @@ const hasChildren = computed(() =>
     props.item.childrenIds != "null"
     && props.item.childrenIds.length > 0
 );
+const hasMirror = computed(() => {
+  const mirrors = app.index.mirrors.get(props.item.actualSrc);
+  return mirrors && mirrors.size > 0;
+});
 
 const onClickFoldButton = () => {
   const blockId = props.item.id;
-  app.taskQueue.addTask(() => {
-    app.toggleFold(blockId, !props.item.fold);
+  app.taskQueue.addTask(async () => {
+    await app.toggleFoldWithAnimation(blockId, !props.item.fold);
     app.addUndoPoint({ message: "toggle fold" });
   });
 };
@@ -215,7 +221,7 @@ const onDragOver = (e: DragEvent) => {
   }
 
   .fold-button {
-    height: 24px;
+    height: 28px;
     width: 18px;
     display: flex;
     justify-content: center;
@@ -244,7 +250,7 @@ const onDragOver = (e: DragEvent) => {
   }
 
   .bullet {
-    height: 24px;
+    height: 28px;
     min-width: 18px;
     display: flex;
     justify-content: center;
@@ -260,15 +266,16 @@ const onDragOver = (e: DragEvent) => {
     }
 
     svg {
-      height: 5px;
-      width: 5px;
+      height: 7px;
+      width: 7px;
+      stroke: none;
       fill: var(--bullet-color);
-      padding: 3px;
-    }
+      padding: 4px;
 
-    .diamond {
-      width: 6px;
-      height: 6px;
+      &.diamond {
+        width: 8px;
+        height: 8px;
+      }
     }
 
     @at-root .block-item.fold.hasChildren .bullet svg,

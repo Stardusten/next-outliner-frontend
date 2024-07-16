@@ -226,7 +226,10 @@ onBeforeUnmount(() => {
 .text-content {
   cursor: text;
   max-width: calc(100% - 48px);
+  padding: 2px 0;
   font-family: var(--text-font);
+  font-size: var(--text-font-size);
+  line-height: var(--line-height-normal);
 }
 
 // 高亮样式

@@ -341,7 +341,7 @@ export const mkKeymap = () => {
         if (!block || block.fold) return false;
         const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
         app.taskQueue.addTask(async () => {
-          app.toggleFold(block.id, true);
+          await app.toggleFoldWithAnimation(block.id, true);
           if (lastFocusedBlockTree) {
             await lastFocusedBlockTree.nextUpdate();
           }
@@ -357,7 +357,7 @@ export const mkKeymap = () => {
         if (!block || !block.fold) return false;
         const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
         app.taskQueue.addTask(async () => {
-          app.toggleFold(block.id, false);
+          await app.toggleFoldWithAnimation(block.id, false);
           if (lastFocusedBlockTree) {
             await lastFocusedBlockTree.nextUpdate();
           }

@@ -74,6 +74,7 @@ const mkYjsPersister = (gs: AppState, wsServerUrl: string, docName: string, loca
     console.log("binding -> local (blocks)");
     const patches: TrackPatch[] = [];
     const changes = event.changes.keys.entries();
+    const nonNormalBlocksToAdd: Block[] = [];
     for (const [key, { action, oldValue }] of changes) {
       if (action == "delete") {
         if (oldValue == null) {
@@ -88,14 +89,14 @@ const mkYjsPersister = (gs: AppState, wsServerUrl: string, docName: string, loca
       } else if (action == "update") {
         const yBlock = yBlocks.get(key);
         if (yBlock == null) {
-          console.warn("try add a empty object, ignore.");
+          console.warn("try add a empty block, ignore.");
           continue;
         }
-        const object = normalizeBlock(yjsToPojo(yBlock) as Block);
+        const block = normalizeBlock(yjsToPojo(yBlock) as Block);
         patches.push({
           op: "replace",
           path: ["blocks", key],
-          value: augmentBlock(object, gs.getBlock),
+          value: augmentBlock(block, gs.getBlock),
           meta: { from: "remote" },
         });
       } else {
@@ -103,17 +104,33 @@ const mkYjsPersister = (gs: AppState, wsServerUrl: string, docName: string, loca
         // 先 normalize，保证在修改或添加一些字段后不出问题
         const yBlock = yBlocks.get(key);
         if (yBlock == null) {
-          console.warn("try add a empty object, ignore.");
+          console.warn("try add a empty block, ignore.");
           continue;
         }
-        const object = normalizeBlock(yjsToPojo(yBlock) as Block);
-        patches.push({
-          op: "add",
-          path: ["blocks", key],
-          value: augmentBlock(object, gs.getBlock),
-          meta: { from: "remote" },
-        });
+        const block = normalizeBlock(yjsToPojo(yBlock) as Block);
+        // 如果是 addBlock，先只 add normalBlock
+        // 因为如果 add 一个 mirrorBlock，而这个 block 的 srcBlock 还没被 add
+        // 就会出问题
+        if (block.type == "normalBlock") {
+          patches.push({
+            op: "add",
+            path: ["blocks", key],
+            value: augmentBlock(block, gs.getBlock),
+            meta: {from: "remote"},
+          });
+        } else nonNormalBlocksToAdd.push(block);
       }
+    }
+    gs.applyPatches(patches);
+    // add 之前没有 add 的 nonNormalBlocks
+    patches.length = 0;
+    for (const block of nonNormalBlocksToAdd) {
+      patches.push({
+        op: "add",
+        path: ["blocks", block.id],
+        value: augmentBlock(block, gs.getBlock),
+        meta: {from: "remote"},
+      });
     }
     gs.applyPatches(patches);
   });

@@ -170,7 +170,7 @@ const updateSuggestions = debounce(() => {
 .ref-suggestions {
   position: fixed;
   display: block;
-  width: 200px;
+  width: 300px;
   height: fit-content;
   max-height: 300px;
   border: solid 1px var(--bg-color-lighter);
@@ -199,7 +199,6 @@ const updateSuggestions = debounce(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-left: 10px;
 }
 
 .ref-suggestions .input-container .input-container-icon svg {
@@ -211,6 +210,7 @@ const updateSuggestions = debounce(() => {
   border: none;
   caret-color: var(--text-primary-color);
   color: var(--text-primary-color);
+  width: 260px;
 }
 
 .ref-suggestions .input-container input:focus {
@@ -230,6 +230,8 @@ const updateSuggestions = debounce(() => {
 
   .text-content {
     max-width: unset;
+    font-size: var(--ui-font-size-s);
+    line-height: var(--line-height-tight);
   }
 }
 

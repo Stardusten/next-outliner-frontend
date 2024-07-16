@@ -34,6 +34,7 @@ declare module "@/state/state" {
     restoreSelection: (info: UndoPointInfo, onNextUpdate?: boolean) => void;
     // 一个用于打破 unselect-on-blur.ts 和 inline-math.ts 之间无限递归的辅助变量
     selectFromUnselectOnBlur: boolean;
+    foldingStatus: Ref<FoldingStatus>,
   }
 }
 
@@ -61,11 +62,26 @@ export type MultiColRowItem = {
   level: number;
 };
 
+export type FoldingExpandingContainerItem = {
+  id: string;
+  itemType: "foldingExpandingContainer",
+  blockItems: DisplayItem[];
+  level: number;
+  op: "expanding" | "folding";
+}
+
 export type DisplayItem =
   | BlockDisplayItem
   | MetadataDisplayItem
   | MultiColRowItem
-  | BacklinkDisplayItem;
+  | BacklinkDisplayItem
+  | FoldingExpandingContainerItem
+  ;
+
+export type FoldingStatus = {
+  op: "folding" | "expanding" | "none";
+  blockId?: BlockId;
+}
 
 /// Data
 export const uiMiscPlugin = (s: AppState) => {
@@ -112,6 +128,9 @@ export const uiMiscPlugin = (s: AppState) => {
 
   const theme = ref("light");
   s.decorate("theme", theme);
+
+  const foldingStatus = ref<FoldingStatus>({ op: "none" });
+  s.decorate("foldingStatus", foldingStatus);
 
   const getFocusedBlockId = () => {
     let el = document.activeElement;

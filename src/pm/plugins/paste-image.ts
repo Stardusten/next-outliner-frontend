@@ -19,6 +19,7 @@ export const mkPasteImagePlugin = () => {
         let imageFile: File | null = null;
         const items = event.clipboardData?.items;
         if (!items || items.length == 0) return;
+
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
           const match = item.type.match(/image\/([a-z]+)/);

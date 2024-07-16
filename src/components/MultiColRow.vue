@@ -1,7 +1,7 @@
 <template>
   <div
       class="multi-col-row-item"
-      :style="{ marginLeft: `${item.level * 25 + 20}px` }"
+      :style="{ marginLeft: `${item.level * 36 + 20}px` }"
   >
     <BlockItem
         v-for="(item, index) in props.item.blockItems"

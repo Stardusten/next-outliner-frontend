@@ -20,13 +20,12 @@ body {
 
     /// Line Height
     --line-height-tight: 1.3;
-    --line-height-normal: 1.5;
+    --line-height-normal: 1.6;
 
     /// Defaults
     font-family: var(--ui-font);
     font-size: var(--ui-font-size-m);
     color: var(--text-primary-color);
-    line-height: var(--line-height-normal);
     background-color: var(--bg-color);
 }
 
@@ -91,7 +90,7 @@ body {
     --highlight-7: #DCD7FE;
     --selection-bg-color: #dbf3ff;
     --border-indent: 1px solid #eceef0;
-    --bullet-color: #4b5155;
+    --bullet-color: rgb(75, 81, 85);
     --bullet-background: rgb(220, 224, 226);
     --dangerous: #e24e4e;
     --dangerous-bg: #a65b65;

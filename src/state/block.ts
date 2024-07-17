@@ -354,6 +354,7 @@ export const blockManagePlugin = (s: AppState) => {
       {
         op: "remove",
         path: ["blocks", blockId],
+        meta,
       },
     ]);
   };
@@ -649,10 +650,12 @@ export const blockManagePlugin = (s: AppState) => {
 
     const blockTree = s.lastFocusedBlockTree.value;
     const offset = blockTree?.getVirtList()?.reactiveData.offset;
+    if (blockTree != null && offset != null)
+      s.virtListFixedOffset.value[blockTree.getId()] = offset;
 
     if (fold) {
       s.foldingStatus.value = { op: "folding", blockId };
-      await timeout(120);
+      await timeout(150);
       s.foldingStatus.value = { op: "none" };
       block.fold = true; // 动画结束后才真的将 block 设为 fold
       _setBlock(block);
@@ -660,16 +663,14 @@ export const blockManagePlugin = (s: AppState) => {
       block.fold = false; // 动画开始前就将 block 设为 expand
       _setBlock(block);
       s.foldingStatus.value = { op: "expanding", blockId };
-      await timeout(120);
+      await timeout(150);
       s.foldingStatus.value = { op: "none" };
     }
 
-    // 恢复折叠之前的 offset
-    if (blockTree && offset) {
-      await nextTick();
-      await blockTree.nextUpdate();
-      blockTree.getVirtList().scrollToOffset(offset);
-      blockTree.getVirtList().scrollToOffset(offset);
+    if (blockTree != null) {
+      blockTree.nextUpdate(() => {
+        delete s.virtListFixedOffset.value[blockTree.getId()];
+      });
     }
   }
   s.decorate("toggleFoldWithAnimation", toggleFoldWithAnimation);
@@ -1189,7 +1190,7 @@ export const blockManagePlugin = (s: AppState) => {
   s.decorate("demoteBlock", demoteBlock);
 
   const deleteBlock = (blockId: BlockId) => {
-    const callback = async (block: ABlock) => {
+    const callback = (block: ABlock) => {
       const blocksToDelete = <ABlock[]>[];
       if (isVirtualBlock(block)) {
         blocksToDelete.push(block);
@@ -1226,7 +1227,7 @@ export const blockManagePlugin = (s: AppState) => {
     const block = getBlock(blockId);
     if (isVirtualBlock(block)) {
       forDescendantsOf({
-        onEachBlock: callback, // TODO async
+        onEachBlock: callback,
         rootBlockId: block.actualSrc!,
         includeSelf: true,
         nonFoldOnly: false,
@@ -1286,29 +1287,27 @@ export const blockManagePlugin = (s: AppState) => {
           const rootPath = getBlockPath(rootBlockIds[0]);
           if (rootPath == null) return;
           // targetPath 和 rootPath 的最近公共祖先就是最合适的 mainRootBlockId
-          let newRoot, newRootJ;
-          let i = rootPath.length - 1;
-          while (i >= 0) {
-            if (rootPath[i] != targetPath[i]) {
-              newRoot = rootPath[i + 1];
-              newRootJ = i + 1;
-              break;
-            }
-            i -= 1;
+          let i = rootPath.length - 1,
+            j = targetPath.length - 1;
+          while (i >= 0 && j >= 0) {
+            if (rootPath[i] != targetPath[j]) break;
+            i --; j--;
           }
-          if (newRoot && newRootJ != null) {
-            setMainRootBlock(newRoot);
-            for (let j = newRootJ; j > 0; j--) {
-              const id = targetPath[i];
-              toggleFold(id, false);
-            }
-            await blockTree.nextUpdate();
-            blockTree.scrollBlockIntoView(targetBlockId);
-            if (highlight || focus) {
-              await timeout(50);
-              highlight && blockTree.highlightBlockInViewAndFade(targetBlockId);
-              focus && blockTree.focusBlockInView(targetBlockId);
-            }
+          const newRoot = i < 0 ? rootPath[0]
+            : j < 0 ? targetPath[0]
+            : rootPath[i + 1];
+          const blockIdsToExpand = i < 0 ? targetPath.slice(0, j + 1)
+            : j < 0 ? rootPath.slice(0, i + 1)
+            : targetPath.slice(j);
+          setMainRootBlock(newRoot);
+          for (const id of blockIdsToExpand)
+            toggleFold(id, false);
+          await blockTree.nextUpdate();
+          blockTree.scrollBlockIntoView(targetBlockId);
+          if (highlight || focus) {
+            await timeout(50);
+            highlight && blockTree.highlightBlockInViewAndFade(targetBlockId);
+            focus && blockTree.focusBlockInView(targetBlockId);
           }
         } // 否则放弃
       }

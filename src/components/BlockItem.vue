@@ -232,6 +232,7 @@ const onDragOver = (e: DragEvent) => {
     svg {
       height: 6px;
       width: 6px;
+      stroke: none;
       fill: var(--bullet-color);
       transform: rotate(180deg);
       padding: 4px;
@@ -250,7 +251,7 @@ const onDragOver = (e: DragEvent) => {
   }
 
   .bullet {
-    height: 28px;
+    height: 30px;
     min-width: 18px;
     display: flex;
     justify-content: center;

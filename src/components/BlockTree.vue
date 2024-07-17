@@ -199,6 +199,11 @@ watch(
     console.timeEnd("calc displayItems");
 
     nextTick(() => {
+      if (props.id in app.virtListFixedOffset.value) {
+        const offset = app.virtListFixedOffset.value[props.id];
+        $vlist.value?.scrollToOffset(offset);
+      }
+
       for (const listener of eventListeners.displayItemsUpdated) {
         listener();
         if (onceListeners.has(listener)) {

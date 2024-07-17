@@ -34,7 +34,10 @@ declare module "@/state/state" {
     restoreSelection: (info: UndoPointInfo, onNextUpdate?: boolean) => void;
     // 一个用于打破 unselect-on-blur.ts 和 inline-math.ts 之间无限递归的辅助变量
     selectFromUnselectOnBlur: boolean;
-    foldingStatus: Ref<FoldingStatus>,
+    foldingStatus: Ref<FoldingStatus>;
+    // 如果指定了一个 blockTree 的固定 offset
+    // 则在 virtList 更新后，会强制滚动到指定的 offset
+    virtListFixedOffset: Ref<Record<BlockTreeId, number>>;
   }
 }
 
@@ -126,8 +129,11 @@ export const uiMiscPlugin = (s: AppState) => {
   });
   s.decorate("mainRootBlockPath", mainRootBlockPath);
 
-  const theme = ref("light");
+  const theme = ref("dark");
   s.decorate("theme", theme);
+
+  const virtListFixedOffset = ref({});
+  s.decorate("virtListFixedOffset", virtListFixedOffset);
 
   const foldingStatus = ref<FoldingStatus>({ op: "none" });
   s.decorate("foldingStatus", foldingStatus);

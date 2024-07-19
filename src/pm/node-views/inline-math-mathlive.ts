@@ -5,21 +5,23 @@ import { MathfieldElement } from "mathlive";
 import {pmSchema} from "@/pm/schema";
 import {useAppState} from "@/state/state";
 
-export class InlineMathNodeView {
+export class InlineMathMathLive {
   private readonly dom: MathfieldElement;
   private readonly view: EditorView;
   private readonly getPos: Function;
 
   constructor(node: Node, view: EditorView, getPos: Function) {
     this.view = view;
-    this.dom = new MathfieldElement();
+    this.dom = new MathfieldElement({
+      defaultMode: "inline-math",
+      smartFence: true,
+      smartSuperscript: false,
+      scriptDepth: 3,
+      removeExtraneousParentheses: true,
+    });
     this.dom.contentEditable = "true"; // 允许编辑
-    // this.dom.smartMode = true;
-    this.dom.smartFence = true;
-    this.dom.smartSuperscript = true;
-    this.dom.removeExtraneousParentheses = true;
     this.dom.value = node.attrs.src;
-    this.dom.menuItems = [];
+    // this.dom.menuItems = [];
     this.getPos = getPos;
     this.dom.addEventListener("blur", (e) => {
       // 将修改同步到 state

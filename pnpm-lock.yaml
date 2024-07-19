@@ -29,6 +29,9 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.0
         version: 1.2.0
+      '@types/katex':
+        specifier: ^0.16.7
+        version: 0.16.7
       '@types/lodash':
         specifier: ^4.17.6
         version: 4.17.6
@@ -47,6 +50,9 @@ importers:
       fireworks-js:
         specifier: ^2.10.7
         version: 2.10.7
+      katex:
+        specifier: ^0.16.11
+        version: 0.16.11
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -54,8 +60,8 @@ importers:
         specifier: ^0.344.0
         version: 0.344.0(vue@3.4.30(typescript@5.4.5))
       mathlive:
-        specifier: ^0.98.6
-        version: 0.98.6
+        specifier: ^0.100.0
+        version: 0.100.0
       minisearch:
         specifier: ^6.3.0
         version: 6.3.0
@@ -416,8 +422,8 @@ packages:
   '@codemirror/view@6.28.2':
     resolution: {integrity: sha512-A3DmyVfjgPsGIjiJqM/zvODUAPQdQl3ci0ghehYNnbt5x+o76xq+dL5+mMBuysDXnI3kapgOkoeJ0sbtL/3qPw==}
 
-  '@cortex-js/compute-engine@0.22.0':
-    resolution: {integrity: sha512-TPePa4bCbgZO/xh++3ZMNhJD7eLNTFxctbqHtIYbQjLLlUX585HaWeZqIptao4Xi59jZZtP3bPb19txTb251ZA==}
+  '@cortex-js/compute-engine@0.24.1':
+    resolution: {integrity: sha512-B9pLaZFC1vBrL64yR2LQWy2sj1E/+wtwIVokPuPqX8YWXwj9W2AMVyS9pSMN8gEdjpAC50nSmtL6110Rgi7dKA==}
     engines: {node: '>=16.14.2', npm: '>=8.5.0'}
 
   '@esbuild/aix-ppc64@0.21.5':
@@ -725,6 +731,9 @@ packages:
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
 
+  '@types/katex@0.16.7':
+    resolution: {integrity: sha512-HMwFiRujE5PjrgwHQ25+bsLJgowjGjm5Z8FVSf0N6PwgJrwxH0QxzHYDcKsTfV3wva0vzrpqMTJS2jXPr5BMEQ==}
+
   '@types/lodash@4.17.6':
     resolution: {integrity: sha512-OpXEVoCKSS3lQqjx9GGGOapBeuW5eUboYHRlHP9urXPX25IKZ6AnP5ZRxtVf63iieUbsHxLn8NQ5Nlftc6yzAA==}
 
@@ -920,6 +929,10 @@ packages:
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
     engines: {node: '>= 0.8'}
+
+  commander@8.3.0:
+    resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
+    engines: {node: '>= 12'}
 
   complex.js@2.1.1:
     resolution: {integrity: sha512-8njCHOTtFFLtegk6zQo0kkVX1rngygb/KQI6z1qZxlFI3scluC+LVTCFbrkWjBv4vvLlbQ9t88IPMC6k95VTTg==}
@@ -1160,6 +1173,10 @@ packages:
   jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
 
+  katex@0.16.11:
+    resolution: {integrity: sha512-RQrI8rlHY92OLf3rho/Ts8i/XvjgguEjOkO1BEXcU3N8BqPpSzBNwV/G0Ukr+P/l3ivvJUE/Fa/CwbS6HesGNQ==}
+    hasBin: true
+
   kolorist@1.8.0:
     resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
 
@@ -1227,8 +1244,8 @@ packages:
   magic-string@0.30.10:
     resolution: {integrity: sha512-iIRwTIf0QKV3UAnYK4PU8uiEc4SRh5jX0mwpIwETPpHdhVM4f53RSwS/vXvN1JhGX+Cs7B8qIq3d6AH49O5fAQ==}
 
-  mathlive@0.98.6:
-    resolution: {integrity: sha512-5rRnVa1Xc9iD+f3sfQ6CWgL0GIIq0Fl6A/FbM5gZcrMaEeYn34DFIxUnLLLMgpb8vc/LZhJ1s9dDCqxv2bYTBw==}
+  mathlive@0.100.0:
+    resolution: {integrity: sha512-gZJTw/7pzqsfpZBt5yr7lBeMErDvqnbe2U1LOsS9drrtH9oJuT/cH0LxgC/8Hid4M4/DQ0HQcW1TvjIX399MqQ==}
     engines: {node: '>=16.14.2', npm: '>=8.5.0'}
 
   memorystream@0.3.1:
@@ -2183,7 +2200,7 @@ snapshots:
       style-mod: 4.1.2
       w3c-keyname: 2.2.8
 
-  '@cortex-js/compute-engine@0.22.0':
+  '@cortex-js/compute-engine@0.24.1':
     dependencies:
       complex.js: 2.1.1
       decimal.js: 10.4.3
@@ -2428,6 +2445,8 @@ snapshots:
   '@tsconfig/node20@20.1.4': {}
 
   '@types/estree@1.0.5': {}
+
+  '@types/katex@0.16.7': {}
 
   '@types/lodash@4.17.6': {}
 
@@ -2727,6 +2746,8 @@ snapshots:
     dependencies:
       delayed-stream: 1.0.0
 
+  commander@8.3.0: {}
+
   complex.js@2.1.1: {}
 
   computeds@0.0.1: {}
@@ -2935,6 +2956,10 @@ snapshots:
     optionalDependencies:
       graceful-fs: 4.2.11
 
+  katex@0.16.11:
+    dependencies:
+      commander: 8.3.0
+
   kolorist@1.8.0: {}
 
   level-codec@9.0.2:
@@ -3022,9 +3047,9 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.4.15
 
-  mathlive@0.98.6:
+  mathlive@0.100.0:
     dependencies:
-      '@cortex-js/compute-engine': 0.22.0
+      '@cortex-js/compute-engine': 0.24.1
 
   memorystream@0.3.1: {}
 

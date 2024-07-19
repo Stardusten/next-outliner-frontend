@@ -1,5 +1,5 @@
 <template>
-  <div class="toast-panel">
+  <div class="toast-panel" v-if="toasts.length > 0">
     <TransitionGroup name="list">
       <div
           class="toast"

@@ -147,7 +147,7 @@ onMounted(() => {
 <style lang="scss">
 .metadata-item {
   position: relative;
-  background: var(--bg-color);
+  background: var(--bg-color-primary);
 
   .metadata-header {
     display: flex;
@@ -196,7 +196,7 @@ onMounted(() => {
       align-items: center;
       padding-right: 6px;
       cursor: pointer;
-      background-color: var(--bg-color);
+      background-color: var(--bg-color-primary);
 
       svg {
         height: 5px;
@@ -222,7 +222,7 @@ onMounted(() => {
       padding-right: 6px;
       cursor: pointer;
       //color: var(--text-secondary-color);
-      background-color: var(--bg-color);
+      background-color: var(--bg-color-primary);
 
       svg {
         height: 14px;
@@ -262,7 +262,7 @@ onMounted(() => {
       align-items: center;
       padding-right: 4px;
       cursor: pointer;
-      background-color: var(--bg-color);
+      background-color: var(--bg-color-primary);
 
       svg {
         height: 5px;

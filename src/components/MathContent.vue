@@ -3,7 +3,6 @@
       class="math-content block-content"
       ref="$contentEl"
       v-if="block.content.type == 'mathDisplay'"
-      @click="mfe?.focus()"
   ></div>
 </template>
 
@@ -12,9 +11,8 @@ import type {BlockTree} from "@/state/block-tree";
 import type {ABlock, CodeContent} from "@/state/block";
 import {useAppState} from "@/state/state";
 import {onMounted, ref, watch} from "vue";
-import {MathfieldElement} from "mathlive";
-import type {MoveOutEvent} from "mathlive/dist/types/mathfield-element";
-import MathContent from "@/components/MathContent.vue";
+import katex, {type KatexOptions} from "katex";
+import {generateKeydownHandlerSimple} from "@/util/keybinding";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -24,147 +22,173 @@ const props = defineProps<{
 
 const app = useAppState();
 const $contentEl = ref<HTMLElement | null>(null);
-let mfe: MathfieldElement | null = null;
+let katexContainer: HTMLDivElement;
+
+const KATEX_RENDER_OPTION: KatexOptions = {
+  displayMode: true,
+  throwOnError: false,
+};
 
 onMounted(() => {
-  if ($contentEl.value == null) return; // IMPOSSIBLE
+  if (!$contentEl.value) return; // IMPOSSIBLE
+  const content = props.block.content;
+  if (content.type != "mathDisplay") return; // IMPOSSIBLE
 
-  mfe = new MathfieldElement();
-  mfe.defaultMode = "math";
-  mfe.smartSuperscript = true;
-  mfe.smartFence = true;
-  mfe.menuItems = [];
-  // mfe.smartMode = true;
-  mfe.removeExtraneousParentheses = true;
-  $contentEl.value.append(mfe);
+  katexContainer = document.createElement("div");
+  katexContainer.classList.add("katex-display-container");
+  katex.render(content.src, katexContainer, KATEX_RENDER_OPTION);
+  $contentEl.value.append(katexContainer);
 
-  mfe.executeCommand("moveToMathfieldEnd");
-  mfe.blur();
+  $contentEl.value.addEventListener("click", () => {
+    selectNode();
+  });
+})
 
-  // 将修改同步到外部
-  mfe.addEventListener("blur", () => {
+const selectNode = () => {
+  if (!$contentEl.value) return; // IMPOSSIBLE
+  const content = props.block.content;
+  if (content.type != "mathDisplay") return; // IMPOSSIBLE
+
+  // 已经插入了一个 input，返回
+  const firstChild = $contentEl.value.firstElementChild;
+  if (!firstChild || firstChild.classList.contains("katex-src-input"))
+    return;
+
+  // 插入一个 input
+  const inputEl = document.createElement("div");
+  inputEl.classList.add("katex-src-input");
+  inputEl.contentEditable = "true";
+  inputEl.innerText = content.src;
+  $contentEl.value.prepend(inputEl);
+
+  // input 改变时，重新渲染公式
+  const onSrcChanged = (src: string) => {
+    katex.render(src, katexContainer, KATEX_RENDER_OPTION);
+  };
+
+  inputEl.addEventListener("input", (e: any) => {
+    if (e.isComposing) return;
+    const src = inputEl.innerText;
+    onSrcChanged(src); // 输入中文时不触发
+  });
+
+  inputEl.addEventListener("compositionend", () => {
+    const src = inputEl.innerText;
+    onSrcChanged(src);
+  });
+
+  inputEl.addEventListener("blur", () => {
+    deselect();
+  });
+
+  inputEl.addEventListener("keydown", generateKeydownHandlerSimple({
+    Delete: {
+      run: () => {
+        if (inputEl.innerText.length == 0) {
+          // 删除一个空块
+          const blockId = props.block.id;
+          const tree = props.blockTree;
+
+          const blockAbove = tree.getBlockAbove(blockId);
+          const blockBelow = tree.getBlockBelow(blockId);
+          const focusNext = blockBelow?.id || blockAbove?.id;
+
+          app.taskQueue.addTask(async () => {
+            app.deleteBlock(blockId);
+            if (focusNext && tree) {
+              await tree.nextUpdate();
+              await app.locateBlock(tree, focusNext);
+            }
+            app.addUndoPoint({ message: "delete block" });
+          });
+          return true;
+        }
+        return false;
+      },
+      stopPropagation: true,
+      preventDefault: true,
+    },
+    Backspace: {
+      run: () => {
+        if (inputEl.innerText.length == 0) {
+          // 删除一个空块
+          const blockId = props.block.id;
+          const tree = props.blockTree;
+
+          const blockAbove = tree.getBlockAbove(blockId);
+          const blockBelow = tree.getBlockBelow(blockId);
+          const focusNext = blockAbove?.id || blockBelow?.id;
+
+
+          app.taskQueue.addTask(async () => {
+            app.deleteBlock(blockId);
+            if (focusNext && tree) {
+              await tree.nextUpdate();
+              await app.locateBlock(tree, focusNext);
+            }
+            app.addUndoPoint({ message: "delete block" });
+          });
+          return true;
+        }
+        return false;
+      },
+      stopPropagation: true,
+      preventDefault: true,
+    },
+    "Mod-a": { // 全选
+      run: () => {
+        const sel = window.getSelection();
+        if (sel) {
+          const range = new Range();
+          range.selectNodeContents(inputEl);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        return true;
+      },
+      stopPropagation: true,
+      preventDefault: true,
+    },
+  }));
+
+  inputEl.focus();
+}
+
+const deselect = () => {
+  const inputEl = $contentEl.value?.firstElementChild;
+  if (inputEl instanceof HTMLElement
+      && inputEl.classList?.contains("katex-src-input")) {
     app.taskQueue.addTask(() => {
-      const src = mfe?.value;
-      if (src == null || (props.block.content as MathContent).src == src) return;
       app.changeContent(props.block.id, {
         type: "mathDisplay",
-        src,
+        src: inputEl.innerText,
       });
-    })
-  });
-
-  mfe.addEventListener("keydown", (e) => {
-    if (mfe == null) return;
-    // 禁用默认的 Escape 行为
-    if (e.key == "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      mfe.blur();
-      app.selectBlock(props.block.id);
-      return;
-    }
-    // 在一个空公式里按 Backspace 或 Escape，都会删掉这个公式所在块
-    if (e.key == "Backspace" || e.key == "Delete") {
-      if (mfe.value.trim().length == 0) {
-        e.preventDefault();
-        e.stopPropagation();
-        app.taskQueue.addTask(async () => {
-          const focusNext = props.blockTree.getBlockAbove(props.block.id)?.id
-            ?? props.blockTree.getBlockBelow(props.block.id)?.id;
-          app.deleteBlock(props.block.id);
-          if (props.blockTree && focusNext) {
-            await props.blockTree.nextUpdate();
-            props.blockTree.focusBlockInView(focusNext);
-          }
-        })
-      }
-    }
-  }, { capture: true });
-
-  // 光标移出行为
-  mfe.addEventListener("move-out", (e: any) => {
-    const { blockTree, block } = props;
-    if (!blockTree) return;
-
-    let gotoBlock;
-    const dir = e.detail.direction;
-    if (dir == "forward") {
-      gotoBlock = blockTree.getPredecessorBlock(block.id);
-    } else if (dir == "backward") {
-      gotoBlock = blockTree.getSuccessorBlock(block.id);
-    } else if (dir == "upward") {
-      gotoBlock = blockTree.getBlockAbove(block.id);
-    } else if (dir == "downward") {
-      gotoBlock = blockTree.getBlockBelow(block.id);
-    }
-
-    if (gotoBlock) {
-      e.preventDefault();
-      mfe?.blur();
-      blockTree.focusBlockInView(gotoBlock.id);
-    }
-  });
-
-  // blockContent 更新时，同步更新 mathField
-  watch(() => props.block.content, (content) => {
-    if (mfe == null) return; // IMPOSSIBLE
-    if (content.type == "mathDisplay" && mfe.value != content.src) {
-      mfe.value = content.src;
-    }
-  }, { immediate: true });
-});
+      inputEl.remove();
+    });
+  }
+}
 </script>
 
 <style lang="scss">
 .math-content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   padding: .5em 0;
 
-  math-field {
-    z-index: 80;
+  .katex-src-input {
+    width: fit-content;
+    margin: 0 auto;
+    font-family: var(--code-font);
+    font-size: var(--code-font-size);
+    margin-bottom: 1em;
   }
 
-  /** Mathlive */
-  /* Hide the virtual keyboard toggle */
-  math-field::part(virtual-keyboard-toggle) {
-    display: none;
-  }
+  .katex-display-container {
+    .katex {
+      font-size: var(--math-font-size);
+    }
 
-  /* Hide the menu toggle */
-  math-field::part(menu-toggle) {
-    display: none;
-  }
-
-  math-field {
-    background-color: unset !important;
-    color: var(--text-primary-color);
-    border: 0;
-    padding: 0;
-    min-width: 0.5em;
-    --selection-background-color: var(--bg-color-lighter);
-    --selection-color: var(--text-primary-color);
-    --contains-highlight-background-color: var(--bg-color-lighter);
-  }
-
-  math-field::selection {
-    background-color: transparent !important;
-  }
-
-  math-field:focus {
-    border: 0;
-    padding: 0;
-    outline: 1px dotted var(--text-secondary-color);
-    /** may be a bad idea?*/
-    position: relative;
-    z-index: 99;
-  }
-
-  math-field::part(content) {
-    padding-top: 0;
-    padding-bottom: 0;
-    padding-right: 0;
+    .katex-display {
+      margin: 0;
+    }
   }
 }
 </style>

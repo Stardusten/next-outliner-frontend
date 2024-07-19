@@ -574,7 +574,7 @@ onUnmounted(() => {
   position: relative;
 
   .pad-bottom {
-    background-color: var(--bg-color);
+    background-color: var(--bg-color-primary);
     position: relative;
     z-index: 99;
   }
@@ -608,7 +608,7 @@ onUnmounted(() => {
 // 高亮
 .block-item.highlight-keep .block-content,
 .block-item.highlight-keep .bullet {
-  background-color: var(--highlight-color);
+  background-color: var(--highlight-block-bg);
 }
 
 .block-item.highlight-fade .block-content,

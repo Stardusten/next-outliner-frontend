@@ -94,10 +94,10 @@ onMounted(() => {
   position: fixed;
   min-width: 200px;
   border-radius: 8px;
-  padding: 4px;
-  background-color: var(--bg-color);
-  border: solid 1px var(--bg-color-lighter);
-  box-shadow: 0 0 10px var(--bg-color-darker);
+  padding: 6px;
+  background-color: var(--bg-color-secondary);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-s);
   z-index: 99;
   font-size: 0.9em;
 
@@ -121,12 +121,7 @@ onMounted(() => {
     z-index: 100;
 
     &:hover {
-      background: var(--bg-color-lighter);
-      color: var(--text-primary-color);
-    }
-
-    &:active {
-      filter: brightness(0.95);
+      background: var(--bg-hover);
     }
 
     svg {

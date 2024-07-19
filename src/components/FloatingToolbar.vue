@@ -151,12 +151,12 @@ const buttonSpecs: ButtonSpec[] = [
   position: fixed;
   display: flex;
   flex-direction: row;
-  padding: 3px;
+  padding: 4px;
   height: 24px;
-  border: solid 1px var(--bg-color-lighter);
-  border-radius: 5px;
-  box-shadow: 0 0 10px var(--bg-color-darker);
-  background-color: var(--bg-color);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  box-shadow: var(--shadow-s);
+  background-color: var(--bg-color-primary);
   z-index: 999;
 
   .floating-toolbar-item {

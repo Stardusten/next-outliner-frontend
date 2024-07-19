@@ -15,8 +15,8 @@ body {
     --ui-font-size-m: 15px;
     --ui-font-size-l: 20px;
     --text-font-size: 16px;
-    --code-font-size: 16px;
-    --math-font-size: 1.05em;
+    --code-font-size: 15px;
+    --math-font-size: 1.1em;
 
     /// Line Height
     --line-height-tight: 1.3;
@@ -26,7 +26,7 @@ body {
     font-family: var(--ui-font);
     font-size: var(--ui-font-size-m);
     color: var(--text-primary-color);
-    background-color: var(--bg-color);
+    background-color: var(--bg-color-primary);
 }
 
 *:focus {
@@ -64,23 +64,23 @@ body {
 }
 
 ::-webkit-scrollbar-corner {
-    background-color: var(--bg-color);
+    background-color: var(--bg-color-primary);
 }
 
 .light {
-    --bg-color: #fff;
-    --link-color: #868c90;
-    --tag-color: #868c90;
-    --link-color2: #9876aa;
+    --bg-color-primary: hsl(0, 100%, 100%);
     --bg-color-darker: rgb(248, 249, 250);
     --bg-color-darker-darker: #a4a4a4;
     --bg-color-lighter: #eceef0;
     --bg-color-lighter2: #797979;
+
+    --link-color: #868c90;
+    --tag-color: #868c90;
     --text-primary-color: rgb(42, 49, 53);
     --text-secondary-color: rgb(134, 140, 144);
-    --code-background: var(--bg-color);
+    --code-background: var(--bg-color-primary);
     --code-color: rgb(42, 49, 53);
-    --highlight-color: #d5f1ff;
+    --highlight-block-bg: #d5f1ff;
     --highlight-1: rgb(186, 230, 253);
     --highlight-2: rgb(188, 240, 218);
     --highlight-3: rgb(251, 213, 213);
@@ -95,8 +95,6 @@ body {
     --dangerous: #e24e4e;
     --dangerous-bg: #a65b65;
     --sticky-toolbar-bg: #343434;
-    --left-sidebar-bg: rgb(248, 249, 250);
-    /* colors: #3399ff 蓝 #daa520 黄 #808080 灰 #9581a9 紫 #5f9ea0 绿 #f08080 红 */
     --todo-color: #9581a9;
     --now-color: #3399ff;
     --later-color: #daa520;
@@ -120,19 +118,17 @@ body {
 }
 
 .dark {
-    --bg-color: #2b2b2b;
-    --link-color2: #9876aa;
-    /*--link-color: #6897BB;*/
-    --link-color: #797979;
-    --bg-color-darker: #282828;
-    --bg-color-darker-darker: #202020;
-    --bg-color-lighter: #414141;
-    --bg-color-lighter2: #797979;
-    --text-primary-color: #a5a5a5;
-    --text-secondary-color: #757777;
-    --code-background: #414141;
+    --bg-color-primary: hsl(0, 0%, 15%);
+    --bg-color-secondary: hsl(0, 0%, 13%);
+    --bg-hover: hsla(0 ,0% , 55%, 0.12);
+    --text-primary-color: hsl(0 , 0%, 70%);
+    --text-secondary-color: hsl(0 , 0%, 60%);
+    --link-color: hsl(201 , 17% , 60%);
+    --selection-bg-color: #414141;
+    --highlight-block-bg: var(--selected-block-item-bg);
+    --selected-block-item-bg: #363636;
     --code-color: #acacac;
-    --highlight-color: #385570;
+
     --highlight-1: #385570;
     --highlight-2: #294436;
     --highlight-3: #5e3838;
@@ -140,15 +136,43 @@ body {
     --highlight-5: #444444;
     --highlight-6: #704523;
     --highlight-7: #503466;
-    --selection-bg-color: #414141;
+
+    // icon
+    --icon-color: hsl(0, 0%, 60%);
+    --icon-active-color: hsl(0 , 0%, 82%);
+    --icon-opacity: 0.85;
+    --icon-opacity-hover: 1;
+
+    // button
+    --button-bg: hsla(0 ,0% , calc(15% + 40%), 0.12);
+    --button-shadow: inset 0 0.5px 0.5px 0.5px rgba(255, 255, 255, 0.09), 0 2px 4px 0 rgba(0,0,0,.15), 0 1px 1.5px 0 rgba(0,0,0,.1), 0 1px 2px 0 rgba(0,0,0,.2), 0 0 0 0 transparent;
+    --button-hover-bg: hsl(0 , 0% , calc( 15% + 6%));
+    --button-hover-shadow: inset 0 0.5px 1px 0.5px rgba(255, 255, 255, 0.16), 0 2px 3px 0 rgba(0,0,0,.3), 0 1px 1.5px 0 rgba(0,0,0,.2), 0 1px 2px 0 rgba(0,0,0,.4), 0 0 0 0 transparent;
+
+    /// border
+    --border-primary: hsl(0 ,0% , 27%);
+
+    /// shadow
+    --shadow-s: 0px 1px 2px rgba(0, 0, 0, 0.121), 0px 3.4px 6.7px rgba(0, 0, 0, 0.179), 0px 15px 30px rgba(0, 0, 0, 0.3);
+    --shadow-l: 0px 1.8px 7.3px rgba(0, 0, 0, 0.071), 0px 6.3px 24.7px rgba(0, 0, 0, 0.112), 0px 30px 90px rgba(0, 0, 0, 0.2);
+
+    // input
+    --input-placeholder-color: ;
+    --input-radius: 5px;
+    --input-height: 32px;
+    --input-bg: var(--bg-color-primary);
+    --input-border: 1px solid hsl(0 ,0% , 21%);
+    --input-active-shadow: 0 0 2px hsl(0 ,0% , 35%);
+    --input-text-indent: .5em;
+
     --border-indent: 1px solid #414141;
     --bullet-color: #a8aaaa;
     --bullet-background: #414141;
-    --dangerous: #d04255;
-    --dangerous-bg: #a65b65;
-    --sticky-toolbar-bg: #343434;
-    --left-sidebar-bg: #313131;
-    --selected-block-item-bg: #363636;
+
+    --drop-area-bg: hsl(201 , 17% , 60%);
+
+    --toast-bg: rgba(0, 0, 0, 0.9);
+    --toast-font-color: #FAFAFA;
 }
 
 u {
@@ -178,9 +202,9 @@ s {
         border: 0;
         padding: 0;
         min-width: 0.5em;
-        --selection-background-color: var(--bg-color-lighter);
+        --selection-background-color: var(--selection-bg-color);
         --selection-color: var(--text-primary-color);
-        --contains-highlight-background-color: var(--bg-color-lighter);
+        --contains-highlight-background-color: var(--bg-hover);
     }
 
     math-field::selection {
@@ -201,6 +225,18 @@ s {
         padding-bottom: 0;
         padding-right: 0;
     }
+
+    .katex {
+        font-size: var(--math-font-size);
+    }
+
+    .katex-src-input {
+        outline: 1px dashed var(--text-secondary-color);
+        padding: 0 4px;
+        margin-right: 4px;
+        font-family: var(--code-font);
+        font-size: var(--code-font-size);
+    }
 }
 
 .fireworks-container {
@@ -210,4 +246,30 @@ s {
     height: 100vh;
     width: 100vw;
     z-index: 999;
+}
+
+button {
+    -webkit-app-region: no-drag;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary-color);
+    font-size: var(--ui-font-size-s);
+    background-color: var(--button-bg);
+    box-shadow: var(--button-shadow);
+    border-radius: 5px;
+    border: 0;
+    padding: 4px 12px;
+    height: 32px;
+    cursor: default;
+    font-family: inherit;
+    outline: none;
+    user-select: none;
+    white-space: nowrap;
+    transition: background-color .2s ease-out,border-color .2s ease-out
+}
+
+button:hover {
+    background-color: var(--button-hover-bg);
+    box-shadow: var(--button-hover-shadow);
 }

@@ -1,8 +1,5 @@
 <template>
   <div class="reviewer-panel" v-if="app.isReviewing.value">
-    <!--    <div class="grip-icon">-->
-    <!--      <GripVertical></GripVertical>-->
-    <!--    </div>-->
     <div class="ratings" v-if="app.showAnswerOrNot.value">
       <div class="again button" @click="ratingAs(Rating.Again)"><Frown></Frown>Again</div>
       <div class="hard button" @click="ratingAs(Rating.Hard)"><Meh></Meh>Hard</div>
@@ -47,7 +44,7 @@ const ratingAs = (rating: Grade) => {
   display: flex;
   border-radius: 8px;
   padding: 6px;
-  background-color: var(--bg-color);
+  background-color: var(--bg-color-primary);
   box-shadow:
     rgba(43, 41, 0, 0.12) 0px 8px 31px 0px,
     rgba(0, 0, 0, 0.03) 0px 0px 0px 1px;
@@ -71,21 +68,6 @@ const ratingAs = (rating: Grade) => {
 
     .easy {
       color: var(--easy-color);
-    }
-  }
-
-  .grip-icon {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2px;
-    border-radius: 4px;
-    cursor: pointer;
-
-    svg {
-      height: 18px;
-      width: 18px;
-      color: var(--bg-color-lighter2);
     }
   }
 

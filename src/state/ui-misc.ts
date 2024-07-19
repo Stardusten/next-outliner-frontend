@@ -32,7 +32,7 @@ declare module "@/state/state" {
     theme: Ref<string>;
     getCurrentSelectionInfo: () => UndoPointInfo;
     restoreSelection: (info: UndoPointInfo, onNextUpdate?: boolean) => void;
-    // 一个用于打破 unselect-on-blur.ts 和 inline-math.ts 之间无限递归的辅助变量
+    // 一个用于打破 unselect-on-blur.ts 和 inline-math-mathlive.ts 之间无限递归的辅助变量
     selectFromUnselectOnBlur: boolean;
     foldingStatus: Ref<FoldingStatus>;
     // 如果指定了一个 blockTree 的固定 offset

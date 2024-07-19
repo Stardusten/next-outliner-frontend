@@ -63,7 +63,7 @@
   <div
     class="drop-area"
     v-if="dropAreaPos?.blockId == item.id"
-    :style="{marginLeft: `${dropAreaPos.level * 25 + 25}px`}"
+    :style="{marginLeft: `${dropAreaPos.level * 36 + 25}px`}"
   ></div>
 </template>
 
@@ -151,7 +151,7 @@ const onDragOver = (e: DragEvent) => {
   // 悬停在块的上半部分还是下半部分
   const upperHalf = e.y < rect.y + rect.height / 2;
   // 悬停处的缩进层级
-  const level = Math.floor((e.x - rect.x) / 25) - 1;
+  const level = Math.floor((e.x - rect.x) / 36) - 1;
   // 根据 upperHalf 和 level 计算拖放目标位置
   if (upperHalf) {
     const predId = app.getPredecessorBlockId(props.item.id, true);
@@ -258,7 +258,7 @@ const onDragOver = (e: DragEvent) => {
     align-items: center;
     padding-right: 6px;
     cursor: pointer;
-    background-color: var(--bg-color);
+    background-color: var(--bg-color-primary);
 
     .no {
       float: right;
@@ -290,7 +290,7 @@ const onDragOver = (e: DragEvent) => {
   .block-content {
     flex-grow: 1;
     width: min-content;
-    background-color: var(--bg-color);
+    background-color: var(--bg-color-primary);
 
     // 直接改 .block-content 的 opacity 会导致 indent lines 透出来
     @at-root .block-item.completed .block-content .ProseMirror {
@@ -301,30 +301,9 @@ const onDragOver = (e: DragEvent) => {
   }
 
   .unsupported-block-content {
-    background-color: var(--bg-color);
+    background-color: var(--bg-color-primary);
     flex-grow: 1;
     color: red;
-  }
-
-  .backlink-counter {
-    margin-right: 8px;
-    color: var(--text-primary-color);
-    width: fit-content;
-    min-width: 12px;
-    height: 12px;
-    font-size: 0.8em;
-    padding: 4px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 4px;
-    background-color: var(--bg-color-lighter);
-    opacity: 0.5;
-    cursor: pointer;
-
-    &:hover {
-      opacity: 1;
-    }
   }
 
   ///// 标签颜色

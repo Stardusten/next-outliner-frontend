@@ -158,7 +158,7 @@ export const mkKeymap = () => {
               await tree.nextUpdate();
               await app.locateBlock(tree, focusNext);
             }
-            app.addUndoPoint({ message: "insert display math block" });
+            app.addUndoPoint({ message: "delete block" });
           });
           return true;
         } else if (sel.from == 0 && blockAbove) {
@@ -223,7 +223,7 @@ export const mkKeymap = () => {
               await tree.nextUpdate();
               await app.locateBlock(tree, focusNext);
             }
-            app.addUndoPoint({ message: "delete empty block" });
+            app.addUndoPoint({ message: "delete block" });
           });
           return true;
         } else if (sel.eq(docEnd) && blockBelow) {

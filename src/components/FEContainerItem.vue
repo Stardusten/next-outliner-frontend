@@ -73,7 +73,7 @@ onMounted(() => {
 <style lang="scss">
 .fe-container-item {
   .bg {
-    background-color: var(--bg-color);
+    background-color: var(--bg-color-primary);
   }
 
   .items {

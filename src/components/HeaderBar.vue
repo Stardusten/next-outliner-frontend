@@ -143,22 +143,20 @@ onUnmounted(() => {
       align-items: center;
       padding: 4px;
       border-radius: 4px;
-      opacity: 0.7;
+      color: var(--icon-color);
+      opacity: var(--icon-opacity);
 
       &:hover {
-        opacity: 1;
-        background-color: var(--bg-color-lighter);
+        opacity: var(--icon-opacity-hover);
+        background-color: var(--bg-hover);
         cursor: pointer;
       }
 
-      // &:active {
-      //   svg {
-      //     color: var(--text-primary-color);
-      //   }
-      // }
+      &:active {
+        color: var(--icon-active-color);
+      }
 
       svg {
-        color: var(--text-secondary-color);
         width: 20px;
         height: 20px;
       }

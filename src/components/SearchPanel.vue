@@ -192,7 +192,7 @@ const onKeydown = async (e: KeyboardEvent) => {
     left: 0;
     height: 100%;
     width: 100%;
-    background-color: var(--bg-color);
+    background-color: var(--bg-color-primary);
     filter: brightness(0.5);
     opacity: 0.5;
   }
@@ -208,9 +208,10 @@ const onKeydown = async (e: KeyboardEvent) => {
       flex-direction: column;
       width: 100%;
       max-height: 100%;
-      border-radius: 10px;
-      background-color: var(--bg-color);
-      border: solid 1px var(--bg-color-lighter);
+      border-radius: 12px;
+      background-color: var(--bg-color-primary);
+      border: solid 1px var(--border-primary);
+      box-shadow: var(--shadow-s);
       overflow: clip;
 
       .input-container {
@@ -218,7 +219,7 @@ const onKeydown = async (e: KeyboardEvent) => {
         justify-content: center;
         align-items: center;
         padding: 0 20px;
-        border-bottom: 1px solid var(--bg-color-lighter);
+        border-bottom: 1px solid var(--border-primary);
 
         // search icon
         svg {
@@ -262,7 +263,7 @@ const onKeydown = async (e: KeyboardEvent) => {
           }
 
           &.focus {
-            background-color: var(--bg-color-lighter);
+            background-color: var(--bg-hover);
             border-radius: 5px;
           }
 
@@ -285,13 +286,13 @@ const onKeydown = async (e: KeyboardEvent) => {
       .included-types {
         font-size: 0.95em;
         color: var(--text-secondary-color);
-        background-color: var(--bg-color-darker);
-        padding: 6px 20px;
-        border-bottom: 1px solid var(--bg-color-lighter);
+        background-color: var(--bg-color-secondary);
+        padding: 8px 20px;
+        border-bottom: 1px solid var(--border-primary);
 
         .block-type {
           margin-right: 6px;
-          padding: 0 5px;
+          padding: 2px 5px;
           color: var(--text-secondary-color);
           cursor: pointer;
           transition: all 100ms ease-in-out;
@@ -302,8 +303,8 @@ const onKeydown = async (e: KeyboardEvent) => {
 
           &.included {
             color: var(--text-primary-color);
-            background-color: var(--bg-color-lighter);
-            border-radius: 5px;
+            background-color: var(--bg-hover);
+            border-radius: 4px;
           }
         }
       }

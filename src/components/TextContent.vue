@@ -25,12 +25,13 @@ import { mkPasteLinkPlugin } from "@/pm/plugins/paste-link";
 import { mkPasteBlockTagsPlugin } from "@/pm/plugins/paste-block-tags";
 import { mkPasteBlockRefsPlugin } from "@/pm/plugins/paste-block-refs";
 import { mkUnselectOnBlurPlugin } from "@/pm/plugins/unselect-on-blur";
-import { InlineMathNodeView } from "@/pm/node-views/inline-math";
+import { InlineMathMathLive } from "@/pm/node-views/inline-math-mathlive";
 import { mkPasteImagePlugin } from "@/pm/plugins/paste-image";
 import {toNumberedList} from "@/pm/input-rules/to-numbered-list";
 import {mkPasteBlockMirrorsPlugin} from "@/pm/plugins/paste-block-mirrors";
 import {mkOpenFloatingToolBarPlugin} from "@/pm/plugins/open-floating-toolbar";
 import {openRefSuggestions} from "@/pm/input-rules/open-ref-suggestions";
+import {MathInlineKatex} from "@/pm/node-views/inline-math-katex";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -165,7 +166,7 @@ onMounted(() => {
     editable: () => !props.readonly,
     nodeViews: {
       mathInline(node, view, getPos) {
-        return new InlineMathNodeView(node, view, getPos);
+        return new MathInlineKatex(node, view, getPos);
       },
     },
   });
@@ -340,7 +341,7 @@ a:before {
   content: "";
   height: 15px;
   width: 15px;
-  background-color: var(--text-secondary-color);
+  background-color: var(--link-color);
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-link'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
 }
 

@@ -169,7 +169,7 @@ document.body.addEventListener("keydown", keydownHandler);
 
   .header-bar {
     height: 50px;
-    border-bottom: 1px solid var(--bg-color-lighter);
+    border-bottom: 1px solid var(--border-primary);
     margin-bottom: 10px;
   }
 

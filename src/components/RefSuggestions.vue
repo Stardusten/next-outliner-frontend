@@ -1,13 +1,8 @@
 <template>
   <div v-if="showPos" class="ref-suggestions" @keydown="onKeydown">
-    <div class="input-container">
-      <div class="input-container-icon">
-        <Search/>
-      </div>
-      <input autofocus @input="onInput" @compositionend="onCompositionEnd" v-model="query"/>
-    </div>
+    <input autofocus @input="onInput" @compositionend="onCompositionEnd" v-model="query"/>
     <div v-if="suggestions.length == 0" class="no-results">No results</div>
-    <div class="suggestions">
+    <div class="suggestions" v-if="suggestions.length > 0">
       <div
           v-for="(block, index) in suggestions"
           :class="{ focus: index == focusItemIndex }"
@@ -166,93 +161,65 @@ const updateSuggestions = debounce(() => {
 }, 100);
 </script>
 
-<style>
+<style lang="scss">
 .ref-suggestions {
   position: fixed;
   display: block;
   width: 300px;
   height: fit-content;
   max-height: 300px;
-  border: solid 1px var(--bg-color-lighter);
-  border-radius: 4px;
-  padding: 5px 5px;
-  background-color: var(--bg-color);
-  box-shadow: 0 10px 20px var(--bg-color-darker-darker);
+
+  background-color: var(--bg-color-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: var(--shadow-s);
+
   z-index: 99;
   overflow: clip;
-}
 
-.ref-suggestions .input-container {
-  color: var(--bg-color-lighter);
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  background-color: var(--bg-color-darker);
-  border: solid 1px var(--bg-color-lighter);
-  border-radius: 5px;
-  height: 1.5em;
-  margin-bottom: 5px;
-}
+  input {
+    width: calc(100% - 5px);
+    background-color: var(--input-bg);
+    border: var(--input-border);
+    height: 2em;
+    caret-color: var(--text-primary-color);
+    color: var(--text-primary-color);
+    border-radius: var(--input-radius);
+    text-indent: var(--input-text-indent);
 
-.ref-suggestions .input-container .input-container-icon {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.ref-suggestions .input-container .input-container-icon svg {
-  height: 1em;
-}
-
-.ref-suggestions .input-container input {
-  background-color: transparent;
-  border: none;
-  caret-color: var(--text-primary-color);
-  color: var(--text-primary-color);
-  width: 260px;
-}
-
-.ref-suggestions .input-container input:focus {
-  outline: none;
-}
-
-.ref-suggestions .suggestions {
-  max-height: 270px;
-  overflow-y: overlay; /* chrome 上不挤占空间 */
-}
-
-.ref-suggestions .suggestion-item {
-  font-size: 0.8em;
-  line-height: 1.5em;
-  padding: 5px 8px;
-  margin: 0 2px;
-
-  .text-content {
-    max-width: unset;
-    font-size: var(--ui-font-size-s);
-    line-height: var(--line-height-tight);
+    &:focus {
+      outline: none;
+      box-shadow: var(--input-active-shadow);
+    }
   }
-}
 
-.ref-suggestions .suggestion-item code {
-  font-size: 0.85em;
-}
+  .no-results {
+    font-size: var(--ui-font-size-s);
+    color: var(--text-secondary-color);
+    text-align: center;
+    margin: 8px 0 2px 0;
+  }
 
-.ref-suggestions .suggestion-item.focus {
-  background-color: var(--bg-color-lighter);
-  border-radius: 5px;
-}
+  .suggestions {
+    margin-top: 8px;
+    max-height: 270px;
+    overflow-y: overlay; /* chrome 上不挤占空间 */
 
-.ref-suggestions .no-results {
-  font-size: 0.8em;
-  color: var(--text-secondary-color);
-  text-align: center;
-  line-height: 1.5em;
-}
+    .suggestion-item {
+      padding: 4px 8px;
 
-.ref-suggestions .block-body .highlight {
-  background-color: var(--highlight-color);
-  color: var(--text-primary-color);
+      .text-content {
+        max-width: unset;
+        font-size: var(--ui-font-size-s);
+        line-height: var(--line-height-tight);
+      }
+
+      &.focus {
+        background-color: var(--bg-hover);
+        border-radius: 5px;
+      }
+    }
+  }
 }
 </style>

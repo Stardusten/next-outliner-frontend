@@ -42,6 +42,7 @@ import type {BlockTree} from "@/state/block-tree";
 import type {ABlock, CodeContent} from "@/state/block";
 import {useAppState} from "@/state/state";
 import {basicLight} from "@/cm/themes/cm-basic-light";
+import {basicDark} from "@/cm/themes/cm-basic-dark";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -54,18 +55,23 @@ const app = useAppState();
 const $contentEl = ref<HTMLElement | null>(null);
 let editorView: EditorView | null = null;
 const languageCompartment = new Compartment();
+const themeCompartment = new Compartment();
 const langNames = ref<string[]>([]);
+const registeredThemes = {
+  light: basicLight,
+  dark: basicDark,
+};
 const extensions = props.readonly
     ? [
       // plugins for readonly content
       languageCompartment.of([]),
-      basicLight,
+      themeCompartment.of([]),
       EditorState.readOnly.of(true),
     ]
     : [
       // plugins for editable content
       languageCompartment.of([]),
-      basicLight,
+      themeCompartment.of([]),
       EditorView.lineWrapping,
       indentOnInput(),
       bracketMatching(),
@@ -262,6 +268,19 @@ const configureLanguage = async (
   });
 };
 
+const changeTheme = (
+    editorView: EditorView,
+    compartment: Compartment,
+    theme: string,
+) => {
+  const themePlugin = registeredThemes[theme];
+  if (themePlugin) {
+    editorView.dispatch({
+      effects: compartment.reconfigure([themePlugin])
+    });
+  }
+}
+
 watch(
     () => props.block.content,
     (value) => {
@@ -295,6 +314,12 @@ watch(
     },
 );
 
+// 根据 app.theme 动态更新代码块样式
+watch(app.theme, (theme) => {
+  if (!editorView) return;
+  changeTheme(editorView, themeCompartment, theme);
+});
+
 const onLangChange = (e: any) => {
   const selected = (e.target as HTMLSelectElement).value;
   app.taskQueue.addTask(() => {
@@ -319,6 +344,7 @@ onMounted(() => {
   langNames.value.unshift("unknown");
 
   configureLanguage(editorView, languageCompartment, props.block.content.lang);
+  changeTheme(editorView, themeCompartment, app.theme.value);
   updateHighlightTerms(props.highlightTerms ?? [], editorView);
   // attach editorView
   Object.assign($contentEl.value, { cmView: editorView });
@@ -364,14 +390,6 @@ onBeforeUnmount(() => {
   padding-left: 0;
 }
 
-.ͼ1 .cm-gutters {
-  line-height: 1.3em;
-  font-size: 1.2em;
-  width: 30px; // avoid shaking
-  background-color: var(--bg-color);
-  border-color: var(--bg-color-lighter2);
-}
-
 .cm-cursor {
   // 光标稍向左移动，否则 tauri 中光标在开头是看不到
   margin-left: 1px !important;
@@ -380,7 +398,7 @@ onBeforeUnmount(() => {
 }
 
 .cm-matchingBracket {
-  background-color: var(--bg-color-lighter) !important;
+  background-color: var(--bg-hover) !important;
   outline: none;
 }
 </style>

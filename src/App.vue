@@ -19,6 +19,7 @@
     <FloatingToolbar></FloatingToolbar>
     <ReviewerController></ReviewerController>
     <ToastPanel></ToastPanel>
+    <FloatingInfoPanel></FloatingInfoPanel>
   </template>
 </template>
 
@@ -40,6 +41,7 @@ import ReviewerController from "@/components/ReviewerController.vue";
 import FloatingToolbar from "@/components/FloatingToolbar.vue";
 import ToastPanel from "@/components/ToastPanel.vue";
 import RefSuggestions from "@/components/RefSuggestions.vue";
+import FloatingInfoPanel from "@/components/FloatingInfoPanel.vue";
 
 const app = useAppState();
 const firstSyncFinished = ref(false);

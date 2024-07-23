@@ -1,25 +1,40 @@
 /// Types
 import type {AppState} from "@/state/state";
-import axios, {type AxiosInstance} from "axios";
-import {computed, ref, type Ref} from "vue";
+import axios, {type AxiosInstance, type AxiosRequestConfig} from "axios";
+import {computed, type ComputedRef, ref, type Ref} from "vue";
 import {type Disposable, disposableComputed} from "@/state/tracking";
 
 declare module "@/state/tracking" {
   interface TrackingProps {
+    // 后端地址
     backendUrl: string | null;
-    dbLocation: string | null;
+    // 登录后后端传回的 token
+    token: string | null;
+    // 当前打开的数据库下标
+    openedDatabaseIndex: number;
   }
+}
+
+type Database = {
+  name: string;
+  location: string;
+  imagesDir: string;
+  attachmentsDir: string;
+  [key: string]: any;
 }
 
 declare module "@/state/state" {
   interface AppState {
-    connectBackend: (backendUrl?: string, dbLocation?: string) => void;
-    disconnectBackend: () => void;
+    // 当前后端管理的所有数据库
+    databases: Ref<Database[]>;
+    // 当前打开的数据库
+    openedDatabase: ComputedRef<Database | null>;
     axios: Disposable<AxiosInstance | null>;
+
+    // Actions
+    connectBackend: (backendUrl: string, password: string) => void;
+    disconnectBackend: () => void;
     fetchWebpageTitle: (url: string) => Promise<string>;
-    imagesDir: Ref<string>;
-    imagesAbsDir: Disposable<string>;
-    attachmentsDir: Ref<string>;
     fs: {
       stat: (filePath: string) => Promise<{
         ctime: Date;
@@ -41,91 +56,91 @@ declare module "@/state/state" {
 }
 
 export const backendApiPlugin = (s: AppState) => {
-  s.registerTrackingProp("backendUrl", null);
-  s.registerTrackingProp("dbLocation", null);
-  s.decorate("imagesDir", ref("/attachments/images"));
-  s.decorate("attachmentsDir", ref("/attachments"));
-  s.decorate("imagesAbsDir", disposableComputed((scope) => {
-    const dbLocation = s.getTrackingPropReactive("dbLocation");
-    scope.addDisposable(dbLocation);
-    return dbLocation.value + s.imagesDir.value;
-  }));
+  /// Data
 
-  const _axios = disposableComputed((scope) => {
+  // tracking props
+  s.registerTrackingProp("backendUrl", null);
+  s.registerTrackingProp("token", null);
+  s.registerTrackingProp("openedDatabaseIndex", -1);
+
+  // reactive vars
+  const databases = ref<Database[]>([]);
+  s.decorate("databases", databases);
+
+  // computed vars
+  const openedDatabase = disposableComputed<Database | null>(() => {
+    const openedDatabaseIndex = s.getTrackingPropReactive("openedDatabaseIndex");
+    if (openedDatabaseIndex.value == -1)
+      return null;
+    return databases.value[openedDatabaseIndex.value] ?? null;
+  });
+  s.decorate("openedDatabase", openedDatabase)
+
+  const _axios = disposableComputed(() => {
     const backendUrl = s.getTrackingPropReactive("backendUrl");
+    const token = s.getTrackingPropReactive("token");
     if (backendUrl.value) {
       return axios.create({
         baseURL: `http://${backendUrl.value}`,
         timeout: 10000,
+        headers: {
+          Authorization: token.value ?? "",
+        }
       });
     } else return null;
   });
   s.decorate("axios", _axios);
 
-  const connectBackend = (backendUrl?: string, dbLocation?: string) => {
-    if (backendUrl && dbLocation) {
-      s.applyPatches([
-        {
-          op: "replace",
-          path: ["backendUrl"],
-          value: backendUrl,
-        },
-        {
-          op: "replace",
-          path: ["dbLocation"],
-          value: dbLocation,
-        }
-      ]);
-    }
-    s.connectYjsPersister?.();
+  /// Actions
+  const _axiosPost = async (url: string, data?: any, config?: AxiosRequestConfig) => {
+    if (!_axios.value) return null;
+    const resp = await _axios.value.post(url, data, config);
+    if ("error" in resp.data) return null;
+    return resp.data;
+  }
+
+  const connectBackend = async (backendUrl: string, password: string) => {
+    // 更新 backendUrl
+    s.replaceTrackingProp("backendUrl", backendUrl);
+    s.replaceTrackingProp("token", null);
+    s.replaceTrackingProp("openedDatabaseIndex", -1);
+    databases.value = [];
+
+    // 尝试登录
+    const token = (await _axiosPost("/auth", {password}))?.token;
+    if (token) s.replaceTrackingProp("token", token);
+    else return;
+
+    console.info("receive token=", token);
+
+    // 获取所有数据库
+    databases.value = await _axiosPost("/db/getAllDatabasesInfo") ?? [];
+    console.info("databases=", databases.value);
   }
   s.decorate("connectBackend", connectBackend);
 
   const disconnectBackend = () => {
-    s.disconnectYjsPersister?.();
+    // s.disconnectYjsPersister?.();
   };
   s.decorate("disconnectBackend", disconnectBackend);
 
   const fetchWebpageTitle = async (url: string) => {
-    if (_axios.value == null) return url; // axios 没有，原样返回
-    try {
-      const resp = await _axios.value.post("/fetch-webpage-title", {
-        webpageUrl: url,
-      });
-      return resp.data;
-    } catch (err) {
-      console.log(err);
-      return null;
-    }
+    const data = await _axiosPost("/fetch-webpage-title", { webpageUrl: url })
+    return data?.title;
   };
   s.decorate("fetchWebpageTitle", fetchWebpageTitle);
 
   const stat = async (filePath: string) => {
-    if (_axios.value == null) return null;
-    try {
-      const resp = await _axios.value.post("/fs/stat", {
-        filePath,
-      });
-      if ("error" in resp.data) return null;
-      return {
-        ...resp.data,
-        ctime: new Date(resp.data),
-        mtime: new Date(resp.data),
-      };
-    } catch (err) {
-      return null;
-    }
+    const data = await _axiosPost("/fs/stat", { filePath });
+    return {
+      ...data,
+      ctime: new Date(data.ctime),
+      mtime: new Date(data.mtime),
+    };
   };
 
   const list = async (dirPath: string) => {
-    if (_axios.value == null) return null;
-    try {
-      const resp = await _axios.value.post("/fs/list", { dirPath });
-      if ("error" in resp.data) return null;
-      return resp.data;
-    } catch (err) {
-      return null;
-    }
+    return await _axiosPost("/fs/list", { dirPath });
   };
 
   const download = async (filePath: string) => {
@@ -145,16 +160,11 @@ export const backendApiPlugin = (s: AppState) => {
     formData.append("path", path);
     formData.append("file", file);
 
-    try {
-      const resp = await _axios.value.post("/fs/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      return resp.data;
-    } catch (err) {
-      return { error: "Failed" };
-    }
+    return await _axiosPost("/fs/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
   };
 
   s.decorate("fs", {

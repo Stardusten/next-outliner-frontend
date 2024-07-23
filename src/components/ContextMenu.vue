@@ -33,8 +33,7 @@ import {addCaption} from "@/contextmenu/add-caption";
 import {deleteBlock} from "@/contextmenu/delete-block";
 import {calcPopoutPos} from "@/util/popout";
 import {addMetadata} from "@/contextmenu/add-metadata";
-import {changeTypeNumber} from "@/contextmenu/metadata/change-type-number";
-import {changeTypeText} from "@/contextmenu/metadata/change-type-text";
+import {changeTypeBlockRefs, changeTypeNumber, changeTypeText} from "@/contextmenu/metadata-entry-type";
 
 const app = useAppState();
 const availableItems = computed(() => {
@@ -86,6 +85,7 @@ onMounted(() => {
   registerContextMenuItem(addMetadata);
   registerContextMenuItem(changeTypeNumber);
   registerContextMenuItem(changeTypeText);
+  registerContextMenuItem(changeTypeBlockRefs);
 });
 </script>
 

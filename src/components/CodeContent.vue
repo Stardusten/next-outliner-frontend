@@ -72,7 +72,7 @@ const extensions = props.readonly
       // plugins for editable content
       languageCompartment.of([]),
       themeCompartment.of([]),
-      EditorView.lineWrapping,
+      // EditorView.lineWrapping,
       indentOnInput(),
       bracketMatching(),
       closeBrackets(),
@@ -362,12 +362,21 @@ onBeforeUnmount(() => {
 <style lang="scss">
 .code-content {
   z-index: 0;
+  overflow-x: overlay;
 
   .lang-selector {
     position: absolute;
     right: 20px;
     z-index: 2;
     display: none;
+
+    select {
+      color: var(--text-primary-color);
+      background-color: var(--bg-color-primary);
+      border: 1px solid var(--border-primary);
+      border-radius: 4px;
+      padding: 2px 4px;
+    }
   }
 
   &:hover .lang-selector {
@@ -399,6 +408,7 @@ onBeforeUnmount(() => {
 
 .cm-matchingBracket {
   background-color: var(--bg-hover) !important;
+  color: var(--text-primary-color) !important;
   outline: none;
 }
 </style>

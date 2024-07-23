@@ -40,18 +40,31 @@ export const parseMetadata = (getEditorView: () => EditorView | null) =>
     });
 
     // TODO 推测值的类型
-    const value = valid ? (refs.length == 1 ? refs[0] : refs) : match[2];
+    const value = valid ? refs : match[2];
 
     const tr = state.tr.delete(start, end);
     view.dispatch(tr);
 
     const newMetadata = structuredClone(focusedBlock.metadata);
     newMetadata[key] = value;
-    app.setMetadataEntry(
-      focusedBlock.id,
-      key,
-      value as string, // TODO
-      { type: "text" }
-    );
+    if (typeof value == "string") {
+      app.taskQueue.addTask(() => {
+        app.setMetadataEntry(
+          focusedBlock.id,
+          key,
+          value,
+          {type: "text"}
+        );
+      });
+    } else if (Array.isArray(value)) {
+      app.taskQueue.addTask(() => {
+        app.setMetadataEntry(
+          focusedBlock.id,
+          key,
+          value,
+          {type: "blockRefs"}
+        );
+      });
+    }
     return view.state.tr.setMeta("", ""); // empty transaction
   });

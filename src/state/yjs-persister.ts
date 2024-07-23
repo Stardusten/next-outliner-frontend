@@ -15,18 +15,23 @@ declare module "@/state/state" {
     yjsPersister: Ref<YjsPersister | null>;
     connectYjsPersister: () => void;
     disconnectYjsPersister: () => void;
+    isConnected: () => boolean;
     isSynced: () => boolean;
     transact: <T>(cb: () => T) => T;
   }
 }
 
 /// Helper: YjsPersister
-const mkYjsPersister = (gs: AppState, wsServerUrl: string, docName: string, location: string) => {
+const mkYjsPersister = (app: AppState, wsServerUrl: string, docName: string, location: string) => {
+  const token = app.getTrackingProp("token");
+  if (!token) return;
+
   const yDoc = new Y.Doc();
   const websocketProvider = new WebsocketProvider(wsServerUrl, "DEFAULT", yDoc, {
     params: {
       docName,
       location,
+      authorization: token,
     },
   });
 
@@ -34,7 +39,7 @@ const mkYjsPersister = (gs: AppState, wsServerUrl: string, docName: string, loca
   const yBlocks = yDoc.getMap("blocks");
 
   // local model -> binding
-  gs.on("afterPatches", ([patches]) => {
+  app.on("afterPatches", ([patches]) => {
     if (patches[0]?.meta?.from != "remote")
       // TODO
       console.log("local -> binding");
@@ -96,7 +101,7 @@ const mkYjsPersister = (gs: AppState, wsServerUrl: string, docName: string, loca
         patches.push({
           op: "replace",
           path: ["blocks", key],
-          value: augmentBlock(block, gs.getBlock),
+          value: augmentBlock(block, app.getBlock),
           meta: { from: "remote" },
         });
       } else {
@@ -115,24 +120,24 @@ const mkYjsPersister = (gs: AppState, wsServerUrl: string, docName: string, loca
           patches.push({
             op: "add",
             path: ["blocks", key],
-            value: augmentBlock(block, gs.getBlock),
+            value: augmentBlock(block, app.getBlock),
             meta: {from: "remote"},
           });
         } else nonNormalBlocksToAdd.push(block);
       }
     }
-    gs.applyPatches(patches);
+    app.applyPatches(patches);
     // add 之前没有 add 的 nonNormalBlocks
     patches.length = 0;
     for (const block of nonNormalBlocksToAdd) {
       patches.push({
         op: "add",
         path: ["blocks", block.id],
-        value: augmentBlock(block, gs.getBlock),
+        value: augmentBlock(block, app.getBlock),
         meta: {from: "remote"},
       });
     }
-    gs.applyPatches(patches);
+    app.applyPatches(patches);
   });
 
   yRepeatables.observe((event) => {
@@ -181,7 +186,7 @@ const mkYjsPersister = (gs: AppState, wsServerUrl: string, docName: string, loca
         });
       }
     }
-    gs.applyPatches(patches);
+    app.applyPatches(patches);
   });
 
   return {
@@ -211,13 +216,13 @@ export const yjsPersisterPlugin = (s: AppState) => {
   /// Actions
   const connectYjsPersister = () => {
     const backendUrl = s.getTrackingProp("backendUrl");
-    const dbLocation = s.getTrackingProp("dbLocation");
-    if (backendUrl && dbLocation) {
+    const database = s.openedDatabase.value;
+    if (backendUrl && database) {
       yjsPersister.value = mkYjsPersister(
         s,
         `ws://${backendUrl}`,
         "test", // TODO
-        dbLocation,
+        database.location,
       );
     } else throw new Error("backendUrl or dbLocation is not set");
   };
@@ -230,6 +235,7 @@ export const yjsPersisterPlugin = (s: AppState) => {
   };
   s.decorate("disconnectYjsPersister", disconnectYjsPersister);
 
+  s.decorate("isConnected", () => yjsPersister.value?.webSocketProvider?.wsconnected);
   s.decorate("isSynced", () => yjsPersister.value?.synced);
   s.decorate("transact", <T>(cb: () => T) => yjsPersister.value?.transact(cb));
 };

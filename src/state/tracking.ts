@@ -516,6 +516,39 @@ const mkTrackingSystem = () => {
     return _ref;
   };
 
+  // sugars
+  const addTrackingProp = (path: StatePath, value: any) => {
+    if (typeof path == "string") path = path.split(".");
+    applyPatches([
+      {
+        op: "add",
+        path: path,
+        value: value,
+      },
+    ]);
+  }
+
+  const replaceTrackingProp = (path: StatePath, value: any) => {
+    if (typeof path == "string") path = path.split(".");
+    applyPatches([
+      {
+        op: "replace",
+        path: path,
+        value: value,
+      },
+    ]);
+  }
+
+  const removeTrackingProp = (path: StatePath) => {
+    if (typeof path == "string") path = path.split(".");
+    applyPatches([
+      {
+        op: "remove",
+        path: path,
+      },
+    ]);
+  }
+
   return {
     registerTrackingProp,
     getTrackingProp,
@@ -523,6 +556,9 @@ const mkTrackingSystem = () => {
     applyPatches,
     getTrackingPropReactive,
     getTrackingPropByPathReactive,
+    addTrackingProp,
+    replaceTrackingProp,
+    removeTrackingProp,
     undo: undoManager.undo,
     redo: undoManager.redo,
     clearUndoHistory: undoManager.clearHistory,

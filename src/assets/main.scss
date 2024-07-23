@@ -44,27 +44,27 @@ body {
 
 /* 设置滚动条的样式 */
 ::-webkit-scrollbar {
-    /*width: 4px;*/
+    width: 7px;
+    height: 7px;
 }
 
 /* 滚动槽 */
 ::-webkit-scrollbar-track {
-    -webkit-box-shadow: var(--bg-color-darker);
+    background-color: transparent;
 }
 
 /* 滚动条滑块 */
 ::-webkit-scrollbar-thumb {
-    width: 4px;
-    border-radius: 8px;
-    background: var(--bg-color-lighter);
+    background-color: #383838;
+    border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--bg-color-lighter2);
+    background-color: #5a5a5a;
 }
 
 ::-webkit-scrollbar-corner {
-    background-color: var(--bg-color-primary);
+    background-color: transparent;
 }
 
 .light {
@@ -122,7 +122,7 @@ body {
     --bg-color-secondary: hsl(0, 0%, 13%);
     --bg-hover: hsla(0 ,0% , 55%, 0.12);
     --text-primary-color: hsl(0 , 0%, 70%);
-    --text-secondary-color: hsl(0 , 0%, 60%);
+    --text-secondary-color: hsl(0 , 0%, 50%);
     --link-color: hsl(201 , 17% , 60%);
     --selection-bg-color: #414141;
     --highlight-block-bg: var(--selected-block-item-bg);

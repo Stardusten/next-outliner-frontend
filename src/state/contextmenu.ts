@@ -14,6 +14,7 @@ export type ContextmenuItem = {
   displayText: string;
   available: (ctx: ContextmenuContext) => boolean;
   onClick: (ctx: ContextmenuContext) => void | Promise<void>;
+  subItems?: ContextmenuItem[];
 };
 
 declare module "@/state/state" {

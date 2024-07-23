@@ -103,6 +103,12 @@ export function generateKeydownHandler<
         }
       }
     }
+    const wildcard = bindings["*"];
+    if (wildcard && wildcard.run(...keyBindingParams)) {
+      wildcard.stopPropagation && event.stopPropagation();
+      wildcard.preventDefault && event.preventDefault();
+      return true;
+    }
     return false;
   };
 }

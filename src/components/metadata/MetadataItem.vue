@@ -2,7 +2,7 @@
   <div
     class="metadata-item"
     :class="{ expand: expand }"
-    :style="{ marginLeft: `${(item.level + 1) * 36}px` }"
+    :style="{ paddingLeft: `${(item.level + 1) * 36}px` }"
     :block-id="item.id.slice(8)"
     v-if="Object.keys(entriesToDisplay).length > 0"
     ref="$metadataItem"
@@ -33,6 +33,7 @@
         <div class="type-icon">
           <Hash v-if="entry.type == 'number'"></Hash>
           <Text v-else-if="entry.type == 'text'"></Text>
+          <AtSign v-else-if="entry.type == 'blockRefs'"></AtSign>
         </div>
         <TextField
           :value="entry.key"
@@ -54,6 +55,11 @@
           :value="entry.value"
           @update="(value) => onValueUpdated(entry.key, value)"
         ></NumberField>
+        <RefsField
+          v-else-if="entry.type == 'blockRefs'"
+          :value="entry.value"
+          @update="(value) => onValueUpdated(entry.key, value)"
+        ></RefsField>
       </div>
     </div>
     <div
@@ -69,10 +75,11 @@
 import type {BlockTree} from "@/state/block-tree";
 import type {MetadataDisplayItem} from "@/state/ui-misc";
 import {computed, onMounted, onUnmounted, ref} from "vue";
-import {Triangle, Circle, Hash, Text} from "lucide-vue-next";
+import {Triangle, Circle, Hash, Text, AtSign} from "lucide-vue-next";
 import {useAppState} from "@/state/state";
 import TextField from "@/components/metadata/TextField.vue";
 import NumberField from "@/components/metadata/NumberField.vue";
+import RefsField from "@/components/metadata/RefsField.vue";
 
 const props = defineProps<{
   blockTree: BlockTree;
@@ -147,10 +154,11 @@ onMounted(() => {
 <style lang="scss">
 .metadata-item {
   position: relative;
-  background: var(--bg-color-primary);
 
   .metadata-header {
     display: flex;
+    align-items: center;
+    background-color: var(--bg-color-primary);
 
     .header-title {
       margin-left: 4px;
@@ -164,7 +172,7 @@ onMounted(() => {
     }
 
     .fold-button {
-      height: 24px;
+      height: 28px;
       width: 18px;
       display: flex;
       justify-content: center;
@@ -177,6 +185,7 @@ onMounted(() => {
         fill: var(--bullet-color);
         transform: rotate(180deg);
         opacity: 0;
+        padding: 4px;
       }
 
       @at-root .metadata-header:hover .fold-button svg {
@@ -189,8 +198,8 @@ onMounted(() => {
     }
 
     .bullet {
-      height: 24px;
-      width: 18px;
+      height: 30px;
+      min-width: 18px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -199,8 +208,9 @@ onMounted(() => {
       background-color: var(--bg-color-primary);
 
       svg {
-        height: 5px;
-        width: 5px;
+        height: 7px;
+        width: 7px;
+        stroke: none;
         fill: var(--bullet-color);
         padding: 3px;
         border-radius: 9px;
@@ -212,10 +222,11 @@ onMounted(() => {
   .metadata-entry {
     display: flex;
     margin-left: 50px;
+    background-color: var(--bg-color-primary);
 
     .type-icon {
-      height: 24px;
-      width: 18px;
+      height: 30px;
+      min-width: 18px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -233,6 +244,7 @@ onMounted(() => {
     .metadata-key, .metadata-value {
       flex: 1;
       display: flex;
+      align-items: center;
       position: relative;
 
       input {
@@ -255,8 +267,8 @@ onMounted(() => {
     }
 
     .bullet {
-      height: 24px;
-      width: 18px;
+      height: 30px;
+      min-width: 18px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -265,24 +277,31 @@ onMounted(() => {
       background-color: var(--bg-color-primary);
 
       svg {
-        height: 5px;
-        width: 5px;
+        height: 7px;
+        width: 7px;
         fill: var(--bullet-color);
-        padding: 3px;
+        padding: 4px;
       }
     }
   }
 
   .add-new-property {
     font-size: .9em;
-    color: var(--text-secondary-color);
     margin-left: 55px;
+    padding: 4px 0;
+    width: calc(100% - 55px);
     cursor: pointer;
     transition: all 100ms ease-in-out;
-    width: fit-content;
+    opacity: var(--icon-opacity);
+    color: var(--icon-color);
+    background-color: var(--bg-color-primary);
 
     &:hover {
-      color: var(--text-primary-color);
+      opacity: var(--icon-opacity-hover);
+    }
+
+    &:active {
+      color: var(--icon-active-color);
     }
   }
 }

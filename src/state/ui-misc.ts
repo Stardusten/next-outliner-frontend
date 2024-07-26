@@ -38,6 +38,7 @@ declare module "@/state/state" {
     // 如果指定了一个 blockTree 的固定 offset
     // 则在 virtList 更新后，会强制滚动到指定的 offset
     virtListFixedOffset: Ref<Record<BlockTreeId, number>>;
+    showDatabaseManager: Ref<boolean>;
   }
 }
 
@@ -137,6 +138,9 @@ export const uiMiscPlugin = (s: AppState) => {
 
   const foldingStatus = ref<FoldingStatus>({ op: "none" });
   s.decorate("foldingStatus", foldingStatus);
+
+  const showDatabaseManager = ref(false);
+  s.decorate("showDatabaseManager", showDatabaseManager);
 
   const getFocusedBlockId = () => {
     let el = document.activeElement;

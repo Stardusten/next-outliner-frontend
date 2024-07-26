@@ -617,6 +617,15 @@ onUnmounted(() => {
   transition: all 300ms ease-out;
 }
 
+.suggestion-item .highlight-keep {
+  background-color: var(--text-highlight);
+}
+
+.suggestion-item .highlight-fade {
+  background-color: unset !important;
+  transition: all 300ms ease-out;
+}
+
 span.cloze.highlight-keep {
   background-color: var(--cloze-highlight-color);
   box-shadow: var(--cloze-highlight-color) 0 0 10px 2px;

@@ -18,6 +18,9 @@ declare module "@/state/state" {
     isConnected: () => boolean;
     isSynced: () => boolean;
     transact: <T>(cb: () => T) => T;
+    withSyncDelayed: (cb: () => void) => void;
+    suppressSync: () => void;
+    enableSync: () => void;
   }
 }
 
@@ -29,23 +32,34 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, docName: string, loc
   const yDoc = new Y.Doc();
   const websocketProvider = new WebsocketProvider(wsServerUrl, "DEFAULT", yDoc, {
     params: {
-      docName,
       location,
       authorization: token,
     },
+    disableBc: true,
   });
 
   const yRepeatables = yDoc.getMap("repeatables");
   const yBlocks = yDoc.getMap("blocks");
 
+  // 如果 isSyncSuppressed 为 true，则暂缓同步，并将之后所有 patches 全部放入 backlogPatches
+  // 在下次变为 false 时，一次性同步所有 patches
+  let isSyncSuppressed = false;
+  const backlogPatches: TrackPatch[] = [];
+
   // local model -> binding
-  app.on("afterPatches", ([patches]) => {
+  const localToBinding = ([patches]: [TrackPatch[]]) => {
+    // 如果暂缓同步，则将 patches 加入 backlogPatches
+    if (isSyncSuppressed) {
+      backlogPatches.push(...patches);
+      return;
+    }
+
     if (patches[0]?.meta?.from != "remote")
-      // TODO
-      console.log("local -> binding");
+      console.log("local -> binding"); // TODO
+
     yDoc.transact(() => {
       for (const patch of patches) {
-        const { from } = patch.meta ?? {};
+        const {from} = patch.meta ?? {};
         // 忽略所有来自 server 的 command
         if (from == "remote") continue;
         if (patch.path[0] == "blocks") {
@@ -71,7 +85,20 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, docName: string, loc
         }
       }
     }, "local");
-  });
+  }
+  app.on("afterPatches", localToBinding);
+
+  // 暂缓同步
+  const suppressSync = () => {
+    isSyncSuppressed = true;
+  }
+
+  // 重启同步
+  const enableSync = () => {
+    isSyncSuppressed = false;
+    localToBinding([backlogPatches]);
+    backlogPatches.length = 0;
+  }
 
   // binding -> local model
   yBlocks.observe((event) => {
@@ -189,20 +216,29 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, docName: string, loc
     app.applyPatches(patches);
   });
 
+  const getWebSocketProvider = () => websocketProvider;
+  const isConnected = () => websocketProvider.wsconnected;
+  const isSynced = () => websocketProvider.synced;
+  const destroy = () => {
+    websocketProvider.destroy();
+    yDoc.destroy();
+  };
+  const transact = <T>(cb: () => T) => yDoc.transact(cb);
+  const withSyncDelayed = (cb: () => void) => {
+    suppressSync();
+    cb();
+    enableSync();
+  };
+
   return {
-    get webSocketProvider() {
-      return websocketProvider;
-    },
-    destroy: () => {
-      websocketProvider.destroy();
-      yDoc.destroy();
-    },
-    transact: <T>(cb: () => T) => {
-      return yDoc.transact(cb);
-    },
-    get synced() {
-      return websocketProvider.synced;
-    },
+    getWebSocketProvider,
+    destroy,
+    isConnected,
+    isSynced,
+    transact,
+    suppressSync,
+    enableSync,
+    withSyncDelayed,
   };
 };
 
@@ -235,7 +271,16 @@ export const yjsPersisterPlugin = (s: AppState) => {
   };
   s.decorate("disconnectYjsPersister", disconnectYjsPersister);
 
-  s.decorate("isConnected", () => yjsPersister.value?.webSocketProvider?.wsconnected);
-  s.decorate("isSynced", () => yjsPersister.value?.synced);
-  s.decorate("transact", <T>(cb: () => T) => yjsPersister.value?.transact(cb));
+  s.decorate("isConnected", () => yjsPersister.value?.isConnected() ?? false);
+  s.decorate("isSynced", () => yjsPersister.value?.isSynced() ?? false);
+  s.decorate("transact", <T>(cb: () => T) => {
+    if (yjsPersister.value) yjsPersister.value.transact(cb);
+    else cb();
+  });
+  s.decorate("withSyncDelayed", (cb: () => void) => {
+    if (yjsPersister.value) yjsPersister.value.withSyncDelayed(cb);
+    else cb();
+  });
+  s.decorate("suppressSync", yjsPersister.value?.suppressSync());
+  s.decorate("enableSync", yjsPersister.value?.enableSync());
 };

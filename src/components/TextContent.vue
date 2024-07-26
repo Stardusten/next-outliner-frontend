@@ -32,6 +32,7 @@ import {mkPasteBlockMirrorsPlugin} from "@/pm/plugins/paste-block-mirrors";
 import {mkOpenFloatingToolBarPlugin} from "@/pm/plugins/open-floating-toolbar";
 import {openRefSuggestions} from "@/pm/input-rules/open-ref-suggestions";
 import {MathInlineKatex} from "@/pm/node-views/inline-math-katex";
+import {mkLongTextPastePlugin} from "@/pm/plugins/long-text-paste";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -75,6 +76,7 @@ const mkProseMirrorPlugins = () => {
       mkUnselectOnBlurPlugin(),
       mkPasteImagePlugin(),
       mkOpenFloatingToolBarPlugin(),
+      mkLongTextPastePlugin(),
     ];
   }
 };

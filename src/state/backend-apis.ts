@@ -15,13 +15,15 @@ declare module "@/state/tracking" {
   }
 }
 
-type Database = {
+export type Database = {
   name: string;
   location: string;
   imagesDir: string;
   attachmentsDir: string;
   [key: string]: any;
 }
+
+export type SyncStatus = "disconnected" | "syncing" | "synced";
 
 declare module "@/state/state" {
   interface AppState {
@@ -30,6 +32,7 @@ declare module "@/state/state" {
     // 当前打开的数据库
     openedDatabase: ComputedRef<Database | null>;
     axios: Disposable<AxiosInstance | null>;
+    syncStatus: Ref<SyncStatus>;
 
     // Actions
     connectBackend: (backendUrl: string, password: string) => void;
@@ -51,7 +54,8 @@ declare module "@/state/state" {
         path: string,
         file: string | Blob,
       ) => Promise<{ success: true } | { error: string }>;
-    }
+    },
+    backupDatabase: (index: number, name: string) => Promise<void>;
   }
 }
 
@@ -66,6 +70,16 @@ export const backendApiPlugin = (s: AppState) => {
   // reactive vars
   const databases = ref<Database[]>([]);
   s.decorate("databases", databases);
+
+  const syncStatus = ref<"disconnected" | "syncing" | "synced">("disconnected");
+  s.decorate("syncStatus", syncStatus);
+
+  // 每 500ms 更新一次同步状态
+  setInterval(() => {
+    if (!s.isConnected()) syncStatus.value = "disconnected";
+    else if (s.isSynced()) syncStatus.value = "synced";
+    else syncStatus.value = "syncing";
+  }, 500);
 
   // computed vars
   const openedDatabase = disposableComputed<Database | null>(() => {
@@ -173,4 +187,10 @@ export const backendApiPlugin = (s: AppState) => {
     download,
     upload,
   });
+
+  const backupDatabase = async (index: number, name: string) => {
+    const data = await _axiosPost("/db/newBackup", { index, name });
+    return !("error" in data);
+  }
+  s.decorate("backupDatabase", backupDatabase);
 }

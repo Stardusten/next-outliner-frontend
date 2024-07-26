@@ -11,14 +11,10 @@
 </template>
 
 <script setup lang="ts">
-import {onBeforeUnmount, onMounted, ref, watch} from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { EditorView, keymap } from "@codemirror/view";
 import { Compartment, EditorState } from "@codemirror/state";
-import {
-  bracketMatching,
-  indentOnInput,
-  LanguageDescription,
-} from "@codemirror/language";
+import { bracketMatching, indentOnInput, LanguageDescription } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { mkContentChangePlugin } from "@/cm/plugins/content-change";
 import { updateHighlightTerms } from "@/cm/plugins/highlight-matches";
@@ -33,16 +29,12 @@ import {
   indentMore,
   insertNewlineAndIndent,
 } from "@codemirror/commands";
-import {
-  autocompletion,
-  closeBrackets,
-  completionKeymap,
-} from "@codemirror/autocomplete";
-import type {BlockTree} from "@/state/block-tree";
-import type {ABlock, CodeContent} from "@/state/block";
-import {useAppState} from "@/state/state";
-import {basicLight} from "@/cm/themes/cm-basic-light";
-import {basicDark} from "@/cm/themes/cm-basic-dark";
+import { autocompletion, closeBrackets, completionKeymap } from "@codemirror/autocomplete";
+import type { BlockTree } from "@/state/block-tree";
+import type { ABlock, CodeContent } from "@/state/block";
+import { useAppState } from "@/state/state";
+import { basicLight } from "@/cm/themes/cm-basic-light";
+import { basicDark } from "@/cm/themes/cm-basic-dark";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -62,13 +54,13 @@ const registeredThemes = {
   dark: basicDark,
 };
 const extensions = props.readonly
-    ? [
+  ? [
       // plugins for readonly content
       languageCompartment.of([]),
       themeCompartment.of([]),
       EditorState.readOnly.of(true),
     ]
-    : [
+  : [
       // plugins for editable content
       languageCompartment.of([]),
       themeCompartment.of([]),
@@ -77,23 +69,23 @@ const extensions = props.readonly
       bracketMatching(),
       closeBrackets(),
       mkContentChangePlugin(
-          (newSrc) => {
-            const blockId = props.block.id;
-            const newBlockContent = {
-              ...props.block.content,
-              code: newSrc,
-            } as CodeContent;
-            app.taskQueue.addTask(
-              () => {
-                app.changeContent(blockId, newBlockContent);
-                app.addUndoPoint({ message: "change code block content" })
-              },
-              "updateBlockContent" + blockId,
-              500,
-              true
-            );
-          },
-          () => true,
+        (newSrc) => {
+          const blockId = props.block.id;
+          const newBlockContent = {
+            ...props.block.content,
+            code: newSrc,
+          } as CodeContent;
+          app.taskQueue.addTask(
+            () => {
+              app.changeContent(blockId, newBlockContent);
+              app.addUndoPoint({ message: "change code block content" });
+            },
+            "updateBlockContent" + blockId,
+            500,
+            true,
+          );
+        },
+        () => true,
       ),
       keymap.of([
         {
@@ -247,9 +239,9 @@ const extensions = props.readonly
     ];
 
 const configureLanguage = async (
-    editorView: EditorView,
-    compartment: Compartment,
-    lang: string,
+  editorView: EditorView,
+  compartment: Compartment,
+  lang: string,
 ) => {
   if (lang == "" || lang == "unknown") {
     editorView.dispatch({
@@ -257,61 +249,53 @@ const configureLanguage = async (
     });
     return;
   }
-  const l = await (await LanguageDescription.matchLanguageName(
-      languages,
-      lang,
-      true,
-  ))?.load();
+  const l = await (await LanguageDescription.matchLanguageName(languages, lang, true))?.load();
   if (!l) return;
   editorView.dispatch({
     effects: compartment.reconfigure([l]),
   });
 };
 
-const changeTheme = (
-    editorView: EditorView,
-    compartment: Compartment,
-    theme: string,
-) => {
+const changeTheme = (editorView: EditorView, compartment: Compartment, theme: string) => {
   const themePlugin = registeredThemes[theme];
   if (themePlugin) {
     editorView.dispatch({
-      effects: compartment.reconfigure([themePlugin])
+      effects: compartment.reconfigure([themePlugin]),
     });
   }
-}
+};
 
 watch(
-    () => props.block.content,
-    (value) => {
-      if (!editorView || value.type != "code") return; // IMPOSSIBLE
+  () => props.block.content,
+  (value) => {
+    if (!editorView || value.type != "code") return; // IMPOSSIBLE
 
-      configureLanguage(editorView, languageCompartment, value.lang); // TODO 放在这里是否恰当？
-      // 如果放到下面，会导致更改代码块语言时，因为 value?.code 不更新而不更新 UI
+    configureLanguage(editorView, languageCompartment, value.lang); // TODO 放在这里是否恰当？
+    // 如果放到下面，会导致更改代码块语言时，因为 value?.code 不更新而不更新 UI
 
-      if (editorView.hasFocus) return; // TODO may cause problem?
+    if (editorView.hasFocus) return; // TODO may cause problem?
 
-      if (value?.code == editorView.state.doc.toString()) {
-        return;
-      }
+    if (value?.code == editorView.state.doc.toString()) {
+      return;
+    }
 
-      editorView.setState(
-          EditorState.create({
-            doc: value.code,
-            extensions,
-          }),
-      );
+    editorView.setState(
+      EditorState.create({
+        doc: value.code,
+        extensions,
+      }),
+    );
 
-      updateHighlightTerms(props.highlightTerms ?? [], editorView);
-    },
+    updateHighlightTerms(props.highlightTerms ?? [], editorView);
+  },
 );
 
 watch(
-    () => props.highlightTerms,
-    () => {
-      if (!editorView) return;
-      updateHighlightTerms(props.highlightTerms ?? [], editorView);
-    },
+  () => props.highlightTerms,
+  () => {
+    if (!editorView) return;
+    updateHighlightTerms(props.highlightTerms ?? [], editorView);
+  },
 );
 
 // 根据 app.theme 动态更新代码块样式
@@ -391,7 +375,7 @@ onBeforeUnmount(() => {
 
 .ͼ1 .cm-content {
   line-height: 1.3em;
-  font-size: 0.9em;
+  font-size: var(--code-font-size);
   font-family: var(--code-font);
 }
 

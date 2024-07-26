@@ -1,6 +1,7 @@
 <template>
   <template v-if="!firstSyncFinished">
     <ConnectBackend></ConnectBackend>
+    <DatabaseManager></DatabaseManager>
   </template>
   <template v-else>
     <HeaderBar></HeaderBar>
@@ -18,9 +19,9 @@
     <RefSuggestions></RefSuggestions>
     <FloatingToolbar></FloatingToolbar>
     <ReviewerController></ReviewerController>
-    <ToastPanel></ToastPanel>
     <FloatingInfoPanel></FloatingInfoPanel>
   </template>
+  <ToastPanel></ToastPanel>
 </template>
 
 <script setup lang="ts">
@@ -42,6 +43,7 @@ import FloatingToolbar from "@/components/FloatingToolbar.vue";
 import ToastPanel from "@/components/ToastPanel.vue";
 import RefSuggestions from "@/components/RefSuggestions.vue";
 import FloatingInfoPanel from "@/components/FloatingInfoPanel.vue";
+import DatabaseManager from "@/components/DatabaseManager.vue";
 
 const app = useAppState();
 const firstSyncFinished = ref(false);
@@ -153,6 +155,16 @@ const bindings: { [key: string]: SimpleKeyBinding } = {
     stopPropagation: true,
     preventDefault: true,
   },
+  "Delete": {
+    run: app.deleteSelectedBlocks,
+    stopPropagation: true,
+    preventDefault: true,
+  },
+  "Backspace": {
+    run: app.deleteSelectedBlocks,
+    stopPropagation: true,
+    preventDefault: true,
+  }
 };
 const keydownHandler = generateKeydownHandlerSimple(bindings);
 document.body.addEventListener("keydown", keydownHandler);

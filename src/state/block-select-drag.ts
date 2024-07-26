@@ -3,6 +3,8 @@ import {computed, type ComputedRef, type Ref, ref, watch} from "vue";
 import type {BlockId} from "@/state/block";
 import {generateKeydownHandler, generateKeydownHandlerSimple, type SimpleKeyBinding} from "@/util/keybinding";
 import {sortAcc} from "@/util/array";
+import {EditorView as PmEditorView} from "prosemirror-view";
+import {EditorView as CmEditorView} from "@codemirror/view";
 
 /// Types
 declare module "@/state/state" {
@@ -80,6 +82,16 @@ export const blockSelectDragPlugin = (s: AppState) => {
   s.decorate("clearSelected", clearSelected);
 
   const selectBlock = (...blockIds: BlockId[]) => {
+    // 当前块失焦点
+    if (blockIds.length > 0) {
+      const view = s.lastFocusedEditorView.value;
+      if (view instanceof PmEditorView) {
+        view.dom.blur();
+      } else if (view instanceof CmEditorView) {
+        view.contentDOM.blur();
+      }
+    }
+
     for (const blockId of blockIds) {
       const block = s.getBlock(blockId);
       if (!block) continue;

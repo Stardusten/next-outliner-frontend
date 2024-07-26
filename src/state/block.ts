@@ -222,6 +222,7 @@ declare module "@/state/state" {
       content: BlockContent,
       metadata?: any,
     ) => { focusNext: BlockId | null; newNormalBlockId: BlockId } | null;
+    insertManyNormalBlocks: (pos: BlockPosParentChild, newBlocks: ANormalBlock[]) => void;
     insertMirrorBlock: (
       pos: BlockPosParentChild,
       src: BlockId
@@ -241,6 +242,7 @@ declare module "@/state/state" {
     swapDownSelectedOrFocusedBlock: () => boolean;
     promoteSelectedOrFocusedBlock: () => boolean;
     demoteSelectedOrFocusedBlock: () => boolean;
+    deleteSelectedBlocks: () => boolean;
   }
 }
 
@@ -810,6 +812,65 @@ export const blockManagePlugin = (s: AppState) => {
     return { focusNext, newNormalBlockId };
   };
   s.decorate("insertNormalBlock", insertNormalBlock);
+
+  const insertManyNormalBlocks = (pos: BlockPosParentChild, newBlocks: ANormalBlock[]) => {
+    s.withSyncDelayed(() => {
+      const {parentId, childIndex} = pos;
+      const parentBlock = getBlock(parentId, true);
+      if (!parentBlock) return;
+
+      const parentSrcBlock = (
+        parentBlock.actualSrc ? getBlock(parentBlock.actualSrc, true) : parentBlock
+      ) as ANormalBlock | null;
+      if (!parentSrcBlock) return;
+
+      for (const block of newBlocks)
+        _setBlock(block);
+
+      const newBlockIds = newBlocks.map(b => b.id);
+      parentSrcBlock.childrenIds = [
+        ...parentSrcBlock.childrenIds.slice(0, childIndex),
+        ...newBlockIds,
+        ...parentSrcBlock.childrenIds.slice(childIndex),
+      ];
+      _setBlock(parentSrcBlock);
+
+      const parentOccurs = s.getOccurs(parentSrcBlock.id, false);
+      for (const occurId of parentOccurs) {
+        const occurBlock = getBlock(occurId, true) as AMirrorBlock | AVirtualBlock | null;
+        if (!occurBlock) continue;
+        if (occurBlock.childrenIds == "null") continue;
+        const virtualBlockIds: BlockId[] = [];
+        for (const b of newBlocks) {
+          const newVirtualBlock: AVirtualBlock = {
+            id: getUUID(),
+            parent: occurId,
+            type: "virtualBlock",
+            childrenIds: [],
+            fold: true,
+            src: b.id,
+            actualSrc: b.id,
+            content: b.content,
+            ctext: b.ctext,
+            metadata: b.metadata,
+            mtext: b.mtext,
+            clozeIds: b.clozeIds,
+            olinks: b.olinks,
+            boosting: b.boosting,
+          };
+          _setBlock(newVirtualBlock);
+          virtualBlockIds.push(newVirtualBlock.id);
+        }
+        occurBlock.childrenIds = [
+          ...occurBlock.childrenIds.slice(0, childIndex),
+          ...virtualBlockIds,
+          ...occurBlock.childrenIds.slice(childIndex),
+        ];
+        _setBlock(occurBlock);
+      }
+    });
+  }
+  s.decorate("insertManyNormalBlocks", insertManyNormalBlocks);
 
   const insertMirrorBlock = (pos: BlockPosParentChild, src: BlockId) => {
     let focusNext;
@@ -1423,6 +1484,19 @@ export const blockManagePlugin = (s: AppState) => {
     return true;
   };
   s.decorate("demoteSelectedOrFocusedBlock", demoteSelectedOrFocusedBlock);
+
+  const deleteSelectedBlocks = () => {
+    const seleceted = s.selectedBlockIds.value;
+    if (seleceted.length > 0) {
+      s.taskQueue.addTask(() => {
+        for (const id of seleceted)
+          s.deleteBlock(id);
+      });
+      return true;
+    }
+    return false;
+  }
+  s.decorate("deleteSelectedBlocks", deleteSelectedBlocks);
 };
 
 /// Help functions

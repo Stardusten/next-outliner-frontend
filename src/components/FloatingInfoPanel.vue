@@ -21,20 +21,7 @@ import {onMounted, onUnmounted, ref} from "vue";
 import {Dot} from "lucide-vue-next";
 
 const app = useAppState();
-const syncStatus = ref<"disconnected" | "syncing" | "synced">("disconnected");
-let h = -1;
-
-onMounted(() => {
-  h = setInterval(() => {
-    if (!app.isConnected()) syncStatus.value = "disconnected";
-    else if (app.isSynced()) syncStatus.value = "synced";
-    else syncStatus.value = "syncing";
-  }, 500);
-});
-
-onUnmounted(() => {
-  if (h != -1) clearInterval(h);
-});
+const { syncStatus } = app;
 </script>
 
 <style lang="scss">

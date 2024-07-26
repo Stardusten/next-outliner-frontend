@@ -32,7 +32,6 @@ const toasts = app.toasts;
   z-index: 999;
 
   .toast {
-    min-width: 150px;
     background-color: var(--toast-bg);
     border-radius: 8px;
     padding: .75em 1em .75em 1em;
@@ -42,9 +41,12 @@ const toasts = app.toasts;
     color: var(--toast-font-color);
     line-height: var(--line-height-tight);
     margin-bottom: 8px;
-    white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: break-word;
+
+    .toast-message {
+      max-width: 300px;
+    }
   }
 
   .list-move,

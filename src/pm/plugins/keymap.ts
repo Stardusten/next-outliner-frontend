@@ -44,75 +44,71 @@ export const mkKeymap = () => {
     },
     Enter: {
       run: () => {
-        const rootBlockId = app.getTrackingProp("mainRootBlockId");
-        const block = app.lastFocusedBlock.value;
-        const tree = app.lastFocusedBlockTree.value;
-        const view = app.lastFocusedEditorView.value;
-        if (!rootBlockId
-          || !block
-          || !tree
-          || !(view instanceof EditorView)
-        ) return false;
+        app.taskQueue.addTask(async () => {
+          const rootBlockId = app.getTrackingProp("mainRootBlockId");
+          const block = app.lastFocusedBlock.value;
+          const tree = app.lastFocusedBlockTree.value;
+          const view = app.lastFocusedEditorView.value;
+          if (!rootBlockId
+            || !block
+            || !tree
+            || !(view instanceof EditorView)
+          ) return;
 
-        const sel = view.state.selection;
-        const docEnd = AllSelection.atEnd(view.state.doc);
-        const onRoot = rootBlockId == block.id;
+          const sel = view.state.selection;
+          const docEnd = AllSelection.atEnd(view.state.doc);
+          const onRoot = rootBlockId == block.id;
 
-        // 新创建的块要继承的元信息
-        const inheritMetadata = block.metadata.paragraph ? { paragraph: true } : {};
+          // 新创建的块要继承的元信息
+          const inheritMetadata = block.metadata.paragraph ? { paragraph: true } : {};
 
-        // 1. 在块末尾按 Enter，下面创建空块
-        if (sel.eq(docEnd)) {
-          const pos = onRoot
-            ? app.normalizePos({
+          // 1. 在块末尾按 Enter，下面创建空块
+          if (sel.eq(docEnd)) {
+            const pos = onRoot
+              ? app.normalizePos({
                 parentId: rootBlockId,
                 childIndex: "last-space",
               })
-            : app.normalizePos({
+              : app.normalizePos({
                 baseBlockId: block.id,
                 offset: 1,
               });
-          if (!pos) return false;
-          app.taskQueue.addTask(async () => {
+            if (!pos) return;
             const { focusNext } =
-              app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
+            app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
             if (focusNext && tree) {
               await tree.nextUpdate();
-              await app.locateBlock(tree, focusNext, false, true);
+              tree.focusBlockInView(focusNext);
             }
             app.addUndoPoint({ message: "insert block" });
-          });
-          return true;
-        } else if (sel.head == 0) {
-          // 2. 块开头按 Enter，上面创建块
-          if (onRoot) return false; // 不处理根块的情况
-          const pos = app.normalizePos({
-            baseBlockId: block.id,
-            offset: 0,
-          });
-          if (!pos) return false;
-          app.taskQueue.addTask(async () => {
+            return;
+          } else if (sel.head == 0) {
+            // 2. 块开头按 Enter，上面创建块
+            if (onRoot) return; // 不处理根块的情况
+            const pos = app.normalizePos({
+              baseBlockId: block.id,
+              offset: 0,
+            });
+            if (!pos) return;
             const { focusNext } =
-              app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
+            app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
             if (focusNext && tree) {
               await tree.nextUpdate();
-              await app.locateBlock(tree, focusNext, false, true);
+              tree.focusBlockInView(focusNext);
             }
             app.addUndoPoint({ message: "insert block" });
-          });
-          return true;
-        } else {
-          // 3. 中间按 Enter，上面创建一个新块，将光标左边的内容挪到新块中
-          if (onRoot) return false; // 不处理根块的情况
-          const curSel = view.state.selection;
-          const content1 = view.state.doc.cut(0, curSel.anchor);
-          const content2 = view.state.doc.cut(curSel.anchor);
-          // 删去折到第二行的内容
-          const tr = view.state.tr.replaceWith(0, view.state.doc.content.size, content2);
-          tr.setSelection(AllSelection.atStart(tr.doc));
-          view.dispatch(tr);
-          // 上方插入块
-          app.taskQueue.addTask(async () => {
+            return;
+          } else {
+            // 3. 中间按 Enter，上面创建一个新块，将光标左边的内容挪到新块中
+            if (onRoot) return; // 不处理根块的情况
+            const curSel = view.state.selection;
+            const content1 = view.state.doc.cut(0, curSel.anchor);
+            const content2 = view.state.doc.cut(curSel.anchor);
+            // 删去折到第二行的内容
+            const tr = view.state.tr.replaceWith(0, view.state.doc.content.size, content2);
+            tr.setSelection(AllSelection.atStart(tr.doc));
+            view.dispatch(tr);
+            // 上方插入块
             const pos = app.normalizePos({
               baseBlockId: block.id,
               offset: 0,
@@ -127,9 +123,10 @@ export const mkKeymap = () => {
               inheritMetadata,
             );
             app.addUndoPoint({ message: "split block" });
-          });
-          return true;
-        }
+            return;
+          }
+        });
+        return true;
       },
       stopPropagation: true,
     },
@@ -137,38 +134,36 @@ export const mkKeymap = () => {
       run: (state, dispatch) => {
         deleteUfeffBeforeCursor(state, dispatch!);
 
-        const block = app.lastFocusedBlock.value;
-        const tree = app.lastFocusedBlockTree.value;
-        const view = app.lastFocusedEditorView.value;
-        if (!block || !tree || !(view instanceof EditorView)) return false;
+        app.taskQueue.addTask(async () => {
+          const block = app.lastFocusedBlock.value;
+          const tree = app.lastFocusedBlockTree.value;
+          const view = app.lastFocusedEditorView.value;
+          if (!block || !tree || !(view instanceof EditorView)) return;
 
-        const blockAbove = tree.getBlockAbove(block.id);
-        const blockBelow = tree.getBlockBelow(block.id);
-        const focusNext = blockAbove?.id || blockBelow?.id;
+          const blockAbove = tree.getBlockAbove(block.id);
+          const blockBelow = tree.getBlockBelow(block.id);
+          const focusNext = blockAbove?.id || blockBelow?.id;
 
-        const sel = view.state.selection;
-        // 1. 如果选中了东西，则执行默认逻辑（删除选区）
-        if (!sel.empty) return false;
+          const sel = view.state.selection;
+          // 1. 如果选中了东西，则执行默认逻辑（删除选区）
+          if (!sel.empty) return;
 
-        // 2. 当前块为空，直接删掉这个块
-        if (view.state.doc.content.size == 0) {
-          app.taskQueue.addTask(async () => {
+          // 2. 当前块为空，直接删掉这个块
+          if (view.state.doc.content.size == 0) {
             app.deleteBlock(block.id);
             if (focusNext && tree) {
               await tree.nextUpdate();
               await app.locateBlock(tree, focusNext);
             }
             app.addUndoPoint({ message: "delete block" });
-          });
-          return true;
-        } else if (sel.from == 0 && blockAbove) {
-          // 3. 尝试将这个块与上一个块合并
-          // 仅当上一个块也是文本块，与自己同级，并且没有孩子时允许合并
-          if (blockAbove.content.type != "text"
-            || blockAbove.childrenIds.length > 0
-            || block.parent != blockAbove.parent
-          ) return false;
-          app.taskQueue.addTask(async () => {
+            return;
+          } else if (sel.from == 0 && blockAbove) {
+            // 3. 尝试将这个块与上一个块合并
+            // 仅当上一个块也是文本块，与自己同级，并且没有孩子时允许合并
+            if (blockAbove.content.type != "text"
+              || blockAbove.childrenIds.length > 0
+              || block.parent != blockAbove.parent
+            ) return;
             if (blockAbove.content.type != "text") return;
             const aboveDoc = Node.fromJSON(pmSchema, blockAbove.content.docContent);
             const thisDoc = view.state.doc;
@@ -190,9 +185,9 @@ export const mkKeymap = () => {
               }
             }
             app.addUndoPoint({ message: "merge blocks" });
-          });
-          return true;
-        }
+            return;
+          }
+        });
         return false;
       },
       stopPropagation: true,

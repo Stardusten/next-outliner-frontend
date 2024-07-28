@@ -25,17 +25,19 @@ declare module "@/state/state" {
 }
 
 /// Helper: YjsPersister
-const mkYjsPersister = (app: AppState, wsServerUrl: string, docName: string, location: string) => {
+const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) => {
   const token = app.getTrackingProp("token");
   if (!token) return;
 
   const yDoc = new Y.Doc();
-  const websocketProvider = new WebsocketProvider(wsServerUrl, "DEFAULT", yDoc, {
+
+  // 如果启用了 bc，必须将 roomname 设为 location，防止不同 location 的数据互相冲突
+  const websocketProvider = new WebsocketProvider(wsServerUrl, location, yDoc, {
     params: {
       location,
       authorization: token,
     },
-    disableBc: true,
+    // disableBc: true,
   });
 
   const yRepeatables = yDoc.getMap("repeatables");
@@ -257,7 +259,6 @@ export const yjsPersisterPlugin = (s: AppState) => {
       yjsPersister.value = mkYjsPersister(
         s,
         `ws://${backendUrl}`,
-        "test", // TODO
         database.location,
       );
     } else throw new Error("backendUrl or dbLocation is not set");

@@ -213,7 +213,7 @@ watch(
       }
     });
   },
-  { immediate: true, deep: true },
+  { immediate: true },
 );
 
 const addEventListener: BlockTree["addEventListener"] = (event, listener, options) => {

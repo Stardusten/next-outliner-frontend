@@ -171,7 +171,8 @@ const deselect = () => {
 
 <style lang="scss">
 .math-content {
-  padding: .5em 0;
+  padding: .5em 1em;
+  overflow-x: overlay;
 
   .katex-src-input {
     width: fit-content;

@@ -8,10 +8,7 @@
     ref="$metadataItem"
   >
     <div class="metadata-header">
-      <div
-          class="fold-button"
-          @click="expand = !expand"
-      >
+      <div class="fold-button" @click="expand = !expand">
         <Triangle></Triangle>
       </div>
       <div class="bullet">
@@ -62,28 +59,23 @@
         ></RefsField>
       </div>
     </div>
-    <div
-        v-if="expand"
-        class="add-new-property"
-        @click="addNewProperty">
-      + Add new property
-    </div>
+    <div v-if="expand" class="add-new-property" @click="addNewProperty">+ Add new property</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type {BlockTree} from "@/state/block-tree";
-import type {MetadataDisplayItem} from "@/state/ui-misc";
-import {computed, onMounted, onUnmounted, ref} from "vue";
-import {Triangle, Circle, Hash, Text, AtSign} from "lucide-vue-next";
-import {useAppState} from "@/state/state";
-import TextField from "@/components/metadata/TextField.vue";
-import NumberField from "@/components/metadata/NumberField.vue";
-import RefsField from "@/components/metadata/RefsField.vue";
+import type { BlockTree } from "@/state/block-tree";
+import type { MetadataDI } from "@/state/ui-misc";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { Triangle, Circle, Hash, Text, AtSign } from "lucide-vue-next";
+import { useAppState } from "@/state/state";
+import TextField from "@/components/display-items/metadata/TextField.vue";
+import NumberField from "@/components/display-items/metadata/NumberField.vue";
+import RefsField from "@/components/display-items/metadata/RefsField.vue";
 
 const props = defineProps<{
   blockTree: BlockTree;
-  item: MetadataDisplayItem;
+  item: MetadataDI;
 }>();
 
 const app = useAppState();
@@ -113,7 +105,7 @@ const onKeyUpdated = (oldKey: string, newKey: string) => {
   metadata[newKey] = value;
   metadata.specs![newKey] = spec;
   app.changeMetadata(blockId, metadata);
-}
+};
 
 const onDeleteEntry = (key: string) => {
   const metadata = props.item.metadata;
@@ -121,32 +113,31 @@ const onDeleteEntry = (key: string) => {
   delete metadata[key];
   delete metadata.specs![key];
   app.changeMetadata(blockId, metadata);
-}
+};
 
 const onValueUpdated = (key: string, value: any) => {
   const metadata = props.item.metadata;
   const blockId = props.item.id.slice(8); // 剪掉前面的 metadata
   metadata[key] = value;
   app.changeMetadata(blockId, metadata);
-}
+};
 
 const addNewProperty = () => {
   const metadata = props.item.metadata;
-  let key = "key", suffix = "";
-  while ((key + suffix) in metadata) {
-    suffix = suffix == ""
-        ? "0"
-        : (parseInt(suffix) + 1).toString();
+  let key = "key",
+    suffix = "";
+  while (key + suffix in metadata) {
+    suffix = suffix == "" ? "0" : (parseInt(suffix) + 1).toString();
   }
   key = key + suffix;
   const blockId = props.item.id.slice(8); // 剪掉前面的 metadata
   app.setMetadataEntry(blockId, key, "", { type: "text" });
-}
+};
 
 onMounted(() => {
   if (!$metadataItem.value) return;
   Object.assign($metadataItem.value, {
-    expand: () => expand.value = true, // 将展开 metadata 的方法绑定到 $metadataItem 上
+    expand: () => (expand.value = true), // 将展开 metadata 的方法绑定到 $metadataItem 上
   });
 });
 </script>
@@ -241,7 +232,8 @@ onMounted(() => {
       }
     }
 
-    .metadata-key, .metadata-value {
+    .metadata-key,
+    .metadata-value {
       flex: 1;
       display: flex;
       align-items: center;
@@ -286,7 +278,7 @@ onMounted(() => {
   }
 
   .add-new-property {
-    font-size: .9em;
+    font-size: 0.9em;
     margin-left: 55px;
     padding: 4px 0;
     width: calc(100% - 55px);

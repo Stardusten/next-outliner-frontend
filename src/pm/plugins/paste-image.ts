@@ -14,6 +14,9 @@ export const mkPasteImagePlugin = () => {
         const blockId = app.lastFocusedBlockId.value;
         if (blockId == null) return;
 
+        const imagesDir = app.openedDatabase.value?.imagesDir;
+        if (!imagesDir) return;
+
         // find image
         let imageExt: string | null = null;
         let imageFile: File | null = null;
@@ -31,7 +34,7 @@ export const mkPasteImagePlugin = () => {
 
         // save image
         if (imageExt && imageFile) {
-          const imagePath = `${app.imagesAbsDir.value}/${getUUID()}.${imageExt}`;
+          const imagePath = `${imagesDir}/${getUUID()}.${imageExt}`;
           const imageContent: ImageContent = {
             type: "image",
             path: imagePath,

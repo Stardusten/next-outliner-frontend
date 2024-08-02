@@ -14,6 +14,8 @@ import { repeatablePlugin } from "@/state/repeatable";
 import {floatingToolbarPlugin} from "@/state/floating-toolbar";
 import {toastPlugin} from "@/state/toast";
 import {refSuggestionsPlugin} from "@/state/ref-suggestions";
+import {imageCachePlugin} from "@/state/image-cache";
+import {leftSidebarPlugin} from "@/state/left-sidebar";
 
 
 /// Types
@@ -62,6 +64,8 @@ export const mkState = async () => {
   floatingToolbarPlugin(_state);
   toastPlugin(_state);
   refSuggestionsPlugin(_state);
+  imageCachePlugin(_state);
+  leftSidebarPlugin(_state);
 
   INSTANCE = _state;
 };

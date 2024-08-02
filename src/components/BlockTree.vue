@@ -22,24 +22,32 @@
           v-if="itemData.itemType == 'alblock'"
           :block-tree="controller"
           :item="itemData"
+          :highlight-terms="highlightTerms"
+          :highlight-refs="highlightRefs"
+          :force-fold="forceFold"
         ></BlockItem>
         <MultiColRow
-            v-else-if="itemData.itemType == 'multiColRow'"
-            :item="itemData"
-            :block-tree="controller"
+          v-else-if="itemData.itemType == 'multiCol'"
+          :item="itemData"
+          :block-tree="controller"
         ></MultiColRow>
         <MetadataItem
           v-else-if="itemData.itemType == 'metadata'"
           :block-tree="controller"
           :item="itemData"
         ></MetadataItem>
-        <!--        <BacklinkItem-->
-        <!--          v-else-if="itemData.itemType == 'backlink'"-->
-        <!--          :block-tree="controller"-->
-        <!--          :item="itemData"-->
-        <!--        ></BacklinkItem>-->
+        <BacklinksItem
+          v-else-if="itemData.itemType == 'backlinks'"
+          :block-tree="controller"
+          :item="itemData"
+        ></BacklinksItem>
+        <BlockPathItem
+          v-else-if="itemData.itemType == 'blockPath'"
+          :block-tree="controller"
+          :item="itemData"
+        ></BlockPathItem>
         <FEContainerItem
-          v-else-if="itemData.itemType == 'foldingExpandingContainer'"
+          v-else-if="itemData.itemType == 'foldingExpanding'"
           :block-tree="controller"
           :item="itemData"
         ></FEContainerItem>
@@ -57,29 +65,34 @@
 </template>
 
 <script setup lang="ts">
-import {nextTick, onMounted, onUnmounted, ref, shallowRef, watch,} from "vue";
-import {VirtList} from "vue-virt-list";
-import type {
-  BlockDisplayItem,
-  DisplayItem,
-  FoldingExpandingContainerItem,
-  MetadataDisplayItem,
-  MultiColRowItem,
-} from "@/state/ui-misc";
-import {useAppState} from "@/state/state";
-import type {ALBlock, BlockId, ForDescendantsOfOptions} from "@/state/block";
-import type {BlockTree} from "@/state/block-tree";
-import {AllSelection} from "prosemirror-state";
-import {EditorView as PmEditorView} from "prosemirror-view";
-import {EditorView as CmEditorView} from "@codemirror/view";
-import BlockItem from "@/components/BlockItem.vue";
-import MetadataItem from "@/components/metadata/MetadataItem.vue";
-import type {Cloze} from "@/state/repeatable";
-import {highlightElements} from "@/util/highlight";
-import {getHoveredElementWithClass, scrollIntoViewIfNotVisible} from "@/util/dom";
-import MultiColRow from "@/components/MultiColRow.vue";
-import {throttle} from "lodash";
-import FEContainerItem from "@/components/FEContainerItem.vue";
+import { nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
+import { VirtList } from "vue-virt-list";
+import {
+  type BacklinksDI,
+  type BlockDI,
+  type DisplayItem,
+  type DisplayItemGenerator,
+  type FoldingExpandingDI,
+  type MetadataDI,
+  type MultiColDI,
+  normalGenerator,
+} from "@/state/display-items";
+import { useAppState } from "@/state/state";
+import type { ALBlock, BlockId, ForDescendantsOfOptions } from "@/state/block";
+import type { BlockTree } from "@/state/block-tree";
+import { AllSelection } from "prosemirror-state";
+import { EditorView as PmEditorView } from "prosemirror-view";
+import { EditorView as CmEditorView } from "@codemirror/view";
+import BlockItem from "@/components/display-items/BlockItem.vue";
+import MetadataItem from "@/components/display-items/metadata/MetadataItem.vue";
+import type { Cloze } from "@/state/repeatable";
+import { highlightElements } from "@/util/highlight";
+import { getHoveredElementWithClass, scrollIntoViewIfNotVisible } from "@/util/dom";
+import MultiColRow from "@/components/display-items/MultiColRow.vue";
+import { throttle } from "lodash";
+import FEContainerItem from "@/components/display-items/FEContainerItem.vue";
+import BacklinksItem from "@/components/display-items/BacklinksItem.vue";
+import BlockPathItem from "@/components/display-items/BlockPathItem.vue";
 
 const props = defineProps<{
   id: string;
@@ -87,6 +100,13 @@ const props = defineProps<{
   rootBlockIds?: BlockId[];
   rootBlockLevel?: number;
   paddingBottom?: number;
+  // 要高亮的所有 terms
+  highlightTerms?: string[];
+  // 要高亮的所有块引用
+  highlightRefs?: BlockId[];
+  // 是否忽略块的 fold 属性，强制折叠显示所有块
+  forceFold?: boolean;
+  diGenerator?: DisplayItemGenerator;
 }>();
 const $blockTree = ref<HTMLElement | null>(null);
 const $vlist = ref<InstanceType<typeof VirtList> | null>(null);
@@ -97,124 +117,44 @@ const eventListeners: any = {
 };
 const onceListeners = new Set<any>();
 const blocks = app.getTrackingPropReactive("blocks");
+let fixedOffset: number | null = null;
+// 在设置了 forceFold 时，仍展开显示的所有块
+const tempExpanded = ref(new Set<BlockId>());
 
-watch(
-  [() => props.rootBlockIds, blocks, app.foldingStatus],
-  () => {
-    if (!props.rootBlockIds) {
-      displayItems.value = [];
-      return;
+const updateDisplayItems = () => {
+  const diGenerator = props.diGenerator ?? normalGenerator;
+
+  // 计算 displayItems
+  console.time("calc displayItems");
+  displayItems.value = diGenerator({
+    rootBlockIds: props.rootBlockIds,
+    rootBlockLevel: props.rootBlockLevel,
+    forceFold: props.forceFold,
+    tempExpanded: tempExpanded.value,
+  });
+  console.timeEnd("calc displayItems");
+
+  // 更新 $vlist
+  $vlist.value?.forceUpdate?.();
+
+  nextTick(() => {
+    // 如果设置了 fixedOffset，则使 $vlist 滚动到 fixedOffset
+    if (fixedOffset != null) $vlist.value?.scrollToOffset(fixedOffset);
+
+    // 触发 displayItemsUpdated 事件
+    for (const listener of eventListeners.displayItemsUpdated) {
+      listener();
+      if (onceListeners.has(listener)) {
+        eventListeners.displayItemsUpdated.delete(listener);
+        onceListeners.delete(listener);
+      }
     }
+  });
+};
 
-    console.time("calc displayItems");
+watch([() => props.rootBlockIds, blocks], updateDisplayItems, { immediate: true });
 
-    const newDisplayItems: DisplayItem[] = [];
-    const options: Partial<ForDescendantsOfOptions> = {};
-
-    options.rootBlockLevel = 0;
-    options.nonFoldOnly = true;
-    options.includeSelf = true;
-
-    options.onEachBlock = async (block: ALBlock) => {
-      newDisplayItems.push({
-        itemType: "alblock",
-        ...block,
-      } as BlockDisplayItem);
-      // 如果有任何非内置 metadata，并且这个块是展开的，则加一个 MetadataDisplayItem
-      if (!block.fold && block.mtext.trim().length > 0) {
-        newDisplayItems.push({
-          ...block,
-          id: "metadata" + block.id,
-          itemType: "metadata",
-        } as MetadataDisplayItem);
-      }
-    };
-
-    options.afterLeavingChildrens = async (block: ALBlock) => {
-      let index;
-
-      // 支持多栏布局
-      if ("ncols" in block.metadata && block.metadata.ncols > 1) {
-        index = newDisplayItems.findIndex((item) => item.itemType == "alblock" && item.id == block.id);
-        const childrenDisplayItems = newDisplayItems.slice(index + 1);
-        // 要求 childrenDisplayItems 里的 displayItems 全都是 BlockDisplayItems 并且 level 都相同
-        // 这是实现所限
-        if (childrenDisplayItems.length > 0) {
-          const level = childrenDisplayItems[0].level;
-          const isValid = childrenDisplayItems.every((item) => item.itemType == "alblock" && item.level == level);
-          if (isValid) {
-            const nrows = Math.ceil(childrenDisplayItems.length / 2);
-            const rows = [];
-            for (let i = 0; i < nrows; i++) {
-              const blockItems = !childrenDisplayItems[i + nrows]
-                ? [childrenDisplayItems[i]]
-                : [childrenDisplayItems[i], childrenDisplayItems[i + nrows]];
-              rows.push({
-                id: "multicol" + (blockItems[0] as any).id,
-                itemType: "multiColRow",
-                level,
-                blockItems,
-              } as MultiColRowItem);
-            }
-            newDisplayItems.splice(index + 1, childrenDisplayItems.length, ...rows);
-          }
-        }
-      }
-
-      const { op, blockId } = app.foldingStatus.value;
-      if (op != "none" && blockId == block.id) {
-        if (!index)
-          index = newDisplayItems.findIndex((item) => item.itemType == "alblock" && item.id == block.id);
-        const level = newDisplayItems[index + 1].level;
-        const maxItemNum = window.innerHeight / 36; // 不准确的估计，但应该没问题
-        const item: FoldingExpandingContainerItem = {
-          id: op + blockId,
-          itemType: "foldingExpandingContainer",
-          blockItems: newDisplayItems.slice(index + 1)
-              .slice(0, maxItemNum),
-          level,
-          op,
-        };
-        newDisplayItems.splice(index + 1, newDisplayItems.length, item)
-      }
-    };
-
-    for (const blockId of props.rootBlockIds) {
-      options.rootBlockId = blockId;
-      if (props.rootBlockLevel != null) {
-        options.rootBlockLevel = props.rootBlockLevel;
-      } else {
-        const path = app.getBlockPath(blockId);
-        if (path == null) {
-          console.error("cannot get path of ", blockId);
-          continue;
-        }
-        options.rootBlockLevel = path.length - 1;
-      }
-      app.forDescendantsOf(options as any);
-    }
-
-    displayItems.value = newDisplayItems;
-    $vlist.value?.forceUpdate?.();
-    console.timeEnd("calc displayItems");
-
-    nextTick(() => {
-      if (props.id in app.virtListFixedOffset.value) {
-        const offset = app.virtListFixedOffset.value[props.id];
-        $vlist.value?.scrollToOffset(offset);
-      }
-
-      for (const listener of eventListeners.displayItemsUpdated) {
-        listener();
-        if (onceListeners.has(listener)) {
-          eventListeners.displayItemsUpdated.delete(listener);
-          onceListeners.delete(listener);
-        }
-      }
-    });
-  },
-  { immediate: true },
-);
+watch([app.foldingStatus, tempExpanded], updateDisplayItems, { immediate: true, deep: true });
 
 const addEventListener: BlockTree["addEventListener"] = (event, listener, options) => {
   if (event in eventListeners) {
@@ -255,7 +195,7 @@ const scrollBlockIntoView = (blockId: BlockId) => {
   const index = displayItems.value?.findIndex((b) => {
     return (
       (b.itemType == "alblock" && b.id == blockId) ||
-      (b.itemType == "multiColRow" && b.blockItems.some((item) => item.id == blockId))
+      (b.itemType == "multiCol" && b.blockItems.some((item) => item.id == blockId))
     );
   });
   // 滚动到此处
@@ -323,19 +263,19 @@ const getBlockAbove = (blockId: BlockId): ALBlock | null => {
         const itemJ = displayItems.value![j];
         if (itemJ.itemType == "alblock") {
           return itemJ;
-        } else if (itemJ.itemType == "multiColRow") {
+        } else if (itemJ.itemType == "multiCol") {
           return itemJ.blockItems[itemJ.blockItems.length - 1]; // 最后一列的块
         }
       }
       return null;
-    } else if (itemI.itemType == "multiColRow") {
+    } else if (itemI.itemType == "multiCol") {
       const index = itemI.blockItems.findIndex((b) => b.id == blockId);
       if (index != -1) {
         for (let j = i - 1; j >= 0; j--) {
           const itemJ = displayItems.value![j];
           if (itemJ.itemType == "alblock") {
             return itemJ;
-          } else if (itemJ.itemType == "multiColRow") {
+          } else if (itemJ.itemType == "multiCol") {
             return itemJ.blockItems[index]; // 对应列的块
           }
         }
@@ -354,19 +294,19 @@ const getBlockBelow = (blockId: BlockId): ALBlock | null => {
         const itemJ = displayItems.value![j];
         if (itemJ.itemType == "alblock") {
           return itemJ;
-        } else if (itemJ.itemType == "multiColRow") {
+        } else if (itemJ.itemType == "multiCol") {
           return itemJ.blockItems[0]; // 第一列的块
         }
       }
       return null;
-    } else if (itemI.itemType == "multiColRow") {
+    } else if (itemI.itemType == "multiCol") {
       const index = itemI.blockItems.findIndex((b) => b.id == blockId);
       if (index != -1) {
         for (let j = i + 1; j < displayItems.value!.length; j++) {
           const itemJ = displayItems.value![j];
           if (itemJ.itemType == "alblock") {
             return itemJ;
-          } else if (itemJ.itemType == "multiColRow") {
+          } else if (itemJ.itemType == "multiCol") {
             return itemJ.blockItems[index]; // 第一列的块
           }
         }
@@ -385,12 +325,12 @@ const getPredecessorBlock = (blockId: BlockId): ALBlock | null => {
         const itemJ = displayItems.value![j];
         if (itemJ.itemType == "alblock") {
           return itemJ;
-        } else if (itemJ.itemType == "multiColRow") {
+        } else if (itemJ.itemType == "multiCol") {
           return itemJ.blockItems[itemJ.blockItems.length - 1]; // 最后一列的块
         }
       }
       return null;
-    } else if (itemI.itemType == "multiColRow") {
+    } else if (itemI.itemType == "multiCol") {
       const index = itemI.blockItems.findIndex((b) => b.id == blockId);
       if (index > 0) {
         return itemI.blockItems[index - 1];
@@ -399,7 +339,7 @@ const getPredecessorBlock = (blockId: BlockId): ALBlock | null => {
           const itemJ = displayItems.value![j];
           if (itemJ.itemType == "alblock") {
             return itemJ;
-          } else if (itemJ.itemType == "multiColRow") {
+          } else if (itemJ.itemType == "multiCol") {
             return itemJ.blockItems[itemJ.blockItems.length - 1]; // 最后一列的块
           }
         }
@@ -418,12 +358,12 @@ const getSuccessorBlock = (blockId: BlockId): ALBlock | null => {
         const itemJ = displayItems.value![j];
         if (itemJ.itemType == "alblock") {
           return itemJ;
-        } else if (itemJ.itemType == "multiColRow") {
+        } else if (itemJ.itemType == "multiCol") {
           return itemJ.blockItems[0]; // 第一列的块
         }
       }
       return null;
-    } else if (itemI.itemType == "multiColRow") {
+    } else if (itemI.itemType == "multiCol") {
       const index = itemI.blockItems.findIndex((b) => b.id == blockId);
       if (index >= 0 && index < itemI.blockItems.length - 1) {
         return itemI.blockItems[index + 1];
@@ -432,7 +372,7 @@ const getSuccessorBlock = (blockId: BlockId): ALBlock | null => {
           const itemJ = displayItems.value![j];
           if (itemJ.itemType == "alblock") {
             return itemJ;
-          } else if (itemJ.itemType == "multiColRow") {
+          } else if (itemJ.itemType == "multiCol") {
             return itemJ.blockItems[0]; // 第一列的块
           }
         }
@@ -474,7 +414,7 @@ const getBelongingDisplayItem = (blockId: BlockId): DisplayItem | null => {
   for (const item of displayItems.value) {
     if (item.itemType == "alblock") {
       if (item.id == blockId) return item;
-    } else if (item.itemType == "multiColRow") {
+    } else if (item.itemType == "multiCol") {
       // 返回的是最外面的 blockItem
       for (const colItem of item.blockItems) {
         if (colItem.id == blockId) return item;
@@ -490,7 +430,29 @@ const expandMetadataItemInView = (blockId: BlockId) => {
   if ($el) {
     ($el as any)?.expand();
   }
-}
+};
+
+const suppressScroll = (value: boolean) => {
+  const vlist = $vlist.value;
+  if (!vlist) return;
+  if (value) fixedOffset = vlist.reactiveData.offset;
+  else {
+    fixedOffset && vlist.scrollToOffset(fixedOffset);
+    fixedOffset = null;
+  }
+};
+
+const inTempExpanded = (blockId: BlockId) => {
+  return tempExpanded.value.has(blockId);
+};
+
+const addToTempExpanded = (...blockIds: BlockId[]) => {
+  for (const blockId of blockIds) tempExpanded.value.add(blockId);
+};
+
+const removeFromTempExpanded = (...blockIds: BlockId[]) => {
+  for (const blockId of blockIds) tempExpanded.value.delete(blockId);
+};
 
 const controller: BlockTree = {
   getId: () => props.id,
@@ -512,8 +474,12 @@ const controller: BlockTree = {
   moveCursorToTheEnd,
   getBelongingDisplayItem,
   expandMetadataItemInView,
-  getVirtList: () => $vlist.value!,
+  suppressScroll,
+  inTempExpanded,
+  addToTempExpanded,
+  removeFromTempExpanded,
 };
+defineExpose(controller);
 
 /// 拖拽以多选块
 const onMouseDown = (e: MouseEvent) => {
@@ -526,19 +492,19 @@ const onMouseDown = (e: MouseEvent) => {
   const ctx = app.dragSelectContext;
   const blockItem = getHoveredElementWithClass(e.target, "block-item");
   const hoveredBlockId = blockItem?.getAttribute("block-id");
-  if (hoveredBlockId)  {
+  if (hoveredBlockId) {
     ctx.value = {
       fromBlockId: hoveredBlockId,
-      toBlockId: hoveredBlockId
-    }
+      toBlockId: hoveredBlockId,
+    };
   } else ctx.value = null;
-}
+};
 
 const onMouseMove = throttle((e: MouseEvent) => {
   const blockItem = getHoveredElementWithClass(e.target, "block-item");
   const hoveredBlockId = blockItem?.getAttribute("block-id");
   const ctx = app.dragSelectContext;
-  if (hoveredBlockId && ctx.value)  {
+  if (hoveredBlockId && ctx.value) {
     ctx.value.toBlockId = hoveredBlockId;
   }
 }, 50);
@@ -547,7 +513,7 @@ const onMouseUp = (e: MouseEvent) => {
   const el = $blockTree.value;
   if (!el) return;
   el.removeEventListener("mousemove", onMouseMove);
-}
+};
 
 onMounted(() => {
   const el = $blockTree.value;

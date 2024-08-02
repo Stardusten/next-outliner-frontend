@@ -185,6 +185,12 @@ body {
 
   // search panel
   --text-highlight: rgba(255, 177, 80, 0.3);
+
+  // left sidebar
+  --bg-left-sidebar: var(--bg-color-primary);
+  --border-left-sidebar: 1px solid var(--border-primary);
+
+  --errmsg-color: red;
 }
 
 u {
@@ -338,7 +344,7 @@ button {
 }
 
 // Icon
-.icon, .icon-14, .icon-16, .icon-18, .icon-20 {
+.icon, .icon-12, .icon-14, .icon-16, .icon-18, .icon-20 {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -356,6 +362,11 @@ button {
 
   &:active {
     color: var(--icon-active-color);
+  }
+
+  &.icon-12 svg {
+    width: 12px;
+    height: 12px;
   }
 
   &.icon-14 svg {

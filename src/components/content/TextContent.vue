@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import type { BlockTree } from "@/state/block-tree";
-import type { ABlock, TextContent } from "@/state/block";
+import type { ABlock, BlockId, TextContent } from "@/state/block";
 import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from "vue";
 import { useAppState } from "@/state/state";
 import { EditorView } from "prosemirror-view";
@@ -27,17 +27,19 @@ import { mkPasteBlockRefsPlugin } from "@/pm/plugins/paste-block-refs";
 import { mkUnselectOnBlurPlugin } from "@/pm/plugins/unselect-on-blur";
 import { InlineMathMathLive } from "@/pm/node-views/inline-math-mathlive";
 import { mkPasteImagePlugin } from "@/pm/plugins/paste-image";
-import {toNumberedList} from "@/pm/input-rules/to-numbered-list";
-import {mkPasteBlockMirrorsPlugin} from "@/pm/plugins/paste-block-mirrors";
-import {mkOpenFloatingToolBarPlugin} from "@/pm/plugins/open-floating-toolbar";
-import {openRefSuggestions} from "@/pm/input-rules/open-ref-suggestions";
-import {MathInlineKatex} from "@/pm/node-views/inline-math-katex";
-import {mkLongTextPastePlugin} from "@/pm/plugins/long-text-paste";
+import { toNumberedList } from "@/pm/input-rules/to-numbered-list";
+import { mkPasteBlockMirrorsPlugin } from "@/pm/plugins/paste-block-mirrors";
+import { mkOpenFloatingToolBarPlugin } from "@/pm/plugins/open-floating-toolbar";
+import { openRefSuggestions } from "@/pm/input-rules/open-ref-suggestions";
+import { MathInlineKatex } from "@/pm/node-views/inline-math-katex";
+import { mkLongTextPastePlugin } from "@/pm/plugins/long-text-paste";
+import { mkHighlightRefsPlugin } from "@/pm/plugins/highlight-refs";
 
 const props = defineProps<{
   blockTree?: BlockTree;
   block: ABlock;
   highlightTerms?: string[];
+  highlightRefs?: BlockId[];
   readonly?: boolean;
 }>();
 
@@ -52,7 +54,10 @@ const mkProseMirrorPlugins = () => {
   const getBlockTree = () => props.blockTree ?? null;
 
   if (props.readonly) {
-    return [mkHighlightMatchesPlugin(() => props.highlightTerms ?? [])];
+    return [
+      mkHighlightMatchesPlugin(() => props.highlightTerms ?? []),
+      mkHighlightRefsPlugin(() => props.highlightRefs ?? []),
+    ];
   } else {
     return [
       inputRules({
@@ -77,6 +82,7 @@ const mkProseMirrorPlugins = () => {
       mkPasteImagePlugin(),
       mkOpenFloatingToolBarPlugin(),
       mkLongTextPastePlugin(),
+      mkHighlightRefsPlugin(() => props.highlightRefs ?? []),
     ];
   }
 };
@@ -276,16 +282,21 @@ code {
   word-break: break-all;
 }
 
-// 链接，块引用与本地路径引用
+// 链接与本地路径引用
 a,
-span.block-ref,
-span.block-ref-v2,
 span.local-path {
   color: var(--link-color);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
   text-decoration-thickness: 1px;
+}
+
+// 块引用
+span.block-ref,
+span.block-ref-v2 {
+  color: var(--link-color);
+  cursor: pointer;
 }
 
 span.cloze {
@@ -354,7 +365,7 @@ a:before {
   cursor: pointer;
 
   &:hover {
-    opacity: .5;
+    opacity: 0.5;
   }
 }
 </style>

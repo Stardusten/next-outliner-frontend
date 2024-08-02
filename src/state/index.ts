@@ -1,9 +1,10 @@
 import type { AppState } from "@/state/state";
-import type { ShallowReactive } from "vue";
+import { shallowReactive, type ShallowReactive } from "vue";
 import {
   type ABlock,
   type Block,
   type BlockId,
+  extractOutgoingLinks,
   isMirrorBlock,
   isNormalBlock,
   isVirtualBlock,
@@ -17,25 +18,31 @@ declare module "@/state/state" {
       mirrors: ShallowReactive<Map<BlockId, Set<BlockId>>>;
       virtuals: ShallowReactive<Map<BlockId, Set<BlockId>>>;
       fulltextIndex: MiniSearch;
+      backlinks: ShallowReactive<Map<BlockId, Set<BlockId>>>;
     };
     getMirrors: (blockId: BlockId) => Set<BlockId>;
     getVirtuals: (blockId: BlockId) => Set<BlockId>;
     getOccurs: (blockId: BlockId, includeSelf?: boolean) => BlockId[];
+    getBacklinks: (blockId: BlockId) => Set<BlockId>;
     search: (query: string, opts: SearchOptions) => SearchResult[];
   }
 }
 
 export const indexPlugin = (s: AppState) => {
   /// Data
-  const mirrors = new Map<BlockId, Set<BlockId>>();
-  const virtuals = new Map<BlockId, Set<BlockId>>();
+  const mirrors = shallowReactive(new Map<BlockId, Set<BlockId>>());
+  const virtuals = shallowReactive(new Map<BlockId, Set<BlockId>>());
   const fulltextIndex = new MiniSearch({
     fields: ["ctext", "mtext"],
     storeFields: ["id"],
   });
-  s.decorate("index.mirrors", mirrors);
-  s.decorate("index.virtuals", virtuals);
-  s.decorate("index.fulltextIndex", fulltextIndex);
+  const backlinks = shallowReactive(new Map<BlockId, Set<BlockId>>());
+  s.decorate("index", {
+    mirrors,
+    virtuals,
+    fulltextIndex,
+    backlinks,
+  });
 
   /// Actions
   const _addMirror = (
@@ -44,11 +51,9 @@ export const indexPlugin = (s: AppState) => {
     _mirrors?: Map<BlockId, Set<BlockId>>,
   ) => {
     _mirrors = _mirrors || mirrors;
-    if (_mirrors.has(srcBlockId)) {
-      _mirrors.get(srcBlockId)!.add(mirrorBlockId);
-    } else {
-      _mirrors.set(srcBlockId, new Set([mirrorBlockId]));
-    }
+    const set = _mirrors.get(srcBlockId);
+    if (set) set.add(mirrorBlockId);
+    else _mirrors.set(srcBlockId, new Set([mirrorBlockId]));
   };
   s.decorate("_addMirror", _addMirror);
 
@@ -58,13 +63,19 @@ export const indexPlugin = (s: AppState) => {
     _virtuals?: Map<BlockId, Set<BlockId>>,
   ) => {
     _virtuals = _virtuals || virtuals;
-    if (_virtuals.has(srcBlockId)) {
-      _virtuals.get(srcBlockId)!.add(virtualBlockId);
-    } else {
-      _virtuals.set(srcBlockId, new Set([virtualBlockId]));
-    }
+    const set = _virtuals.get(srcBlockId);
+    if (set) set.add(virtualBlockId);
+    else _virtuals.set(srcBlockId, new Set([virtualBlockId]));
   };
   s.decorate("_addVirtual", _addVirtual);
+
+  const _addBacklink = (from: BlockId, to: BlockId, _backlinks?: Map<BlockId, Set<BlockId>>) => {
+    _backlinks = _backlinks || backlinks;
+    const set = _backlinks.get(to);
+    if (set) set.add(from);
+    else _backlinks.set(to, new Set([from]));
+  };
+  s.decorate("_addBacklink", _addBacklink);
 
   const _deleteMirror = (
     srcBlockId: BlockId,
@@ -72,8 +83,8 @@ export const indexPlugin = (s: AppState) => {
     _mirrors?: Map<BlockId, Set<BlockId>>,
   ) => {
     _mirrors = _mirrors || mirrors;
-    if (_mirrors.has(srcBlockId)) {
-      const set = _mirrors.get(srcBlockId)!;
+    const set = _mirrors.get(srcBlockId);
+    if (set) {
       set.delete(mirrorBlockId);
       if (set.size == 0) _mirrors.delete(srcBlockId);
     }
@@ -86,13 +97,27 @@ export const indexPlugin = (s: AppState) => {
     _virtuals?: Map<BlockId, Set<BlockId>>,
   ) => {
     _virtuals = _virtuals || virtuals;
-    if (_virtuals.has(srcBlockId)) {
-      const set = _virtuals.get(srcBlockId)!;
+    const set = _virtuals.get(srcBlockId);
+    if (set) {
       set.delete(virtualBlockId);
       if (set.size == 0) _virtuals.delete(srcBlockId);
     }
   };
   s.decorate("_deleteVirtual", _deleteVirtual);
+
+  const _deleteBacklinks = (
+    from: BlockId,
+    to: BlockId,
+    _backlinks?: Map<BlockId, Set<BlockId>>,
+  ) => {
+    _backlinks = _backlinks || backlinks;
+    const set = _backlinks.get(to);
+    if (set) {
+      set.delete(from);
+      if (set.size == 0) _backlinks.delete(to);
+    }
+  };
+  s.decorate("_deleteBacklinks", _deleteBacklinks);
 
   const getMirrors = (blockId: BlockId): Set<BlockId> => {
     const mirrors = s.index.mirrors;
@@ -115,6 +140,12 @@ export const indexPlugin = (s: AppState) => {
   };
   s.decorate("getOccurs", getOccurs);
 
+  const getBacklinks = (blockId: BlockId) => {
+    const ret = backlinks.get(blockId);
+    return ret ?? new Set();
+  };
+  s.decorate("getBacklinks", getBacklinks);
+
   // 根据 patches 更新索引
   const dirtySet = new Set<BlockId>();
   s.on("afterPatches", ([patches]) => {
@@ -123,14 +154,36 @@ export const indexPlugin = (s: AppState) => {
       if (patch.path[0] != "blocks") continue;
       if (patch.op == "remove") {
         const removed = patch.oldValue! as ABlock;
+        // mirrors and virtuals
         if (isNormalBlock(removed)) dirtySet.add(removed.id);
         else if (isMirrorBlock(removed)) _deleteMirror(removed.src, removed.id);
         else if (isVirtualBlock(removed)) _deleteVirtual(removed.src, removed.id);
+        // backlinks
+        if (isNormalBlock(removed) && removed.content.type == "text") {
+          const docContent = removed.content.docContent;
+          const olinks = extractOutgoingLinks(docContent, removed.metadata);
+          for (const olink of olinks) _deleteBacklinks(removed.id, olink);
+        }
       } else {
         const newBlock = patch.value! as ABlock;
+        // mirrors and virtuals
         if (isNormalBlock(newBlock)) dirtySet.add(newBlock.id);
         else if (isMirrorBlock(newBlock)) _addMirror(newBlock.actualSrc, newBlock.id);
         else if (isVirtualBlock(newBlock)) _addVirtual(newBlock.actualSrc, newBlock.id);
+        // backlinks
+        const oldBlock = patch.oldValue;
+        if (oldBlock) {
+          const oldOlinks =
+            isNormalBlock(oldBlock) && oldBlock.content.type == "text"
+              ? extractOutgoingLinks(oldBlock.content.docContent, oldBlock.metadata)
+              : [];
+          for (const oldOlink of oldOlinks) _deleteBacklinks(oldBlock.id, oldOlink);
+        }
+        const newOlinks =
+          isNormalBlock(newBlock) && newBlock.content.type == "text"
+            ? extractOutgoingLinks(newBlock.content.docContent, newBlock.metadata)
+            : [];
+        for (const newOlink of newOlinks) _addBacklink(newBlock.id, newOlink);
       }
     }
   });

@@ -35,57 +35,14 @@ declare module "@/state/state" {
     // 一个用于打破 unselect-on-blur.ts 和 inline-math-mathlive.ts 之间无限递归的辅助变量
     selectFromUnselectOnBlur: boolean;
     foldingStatus: Ref<FoldingStatus>;
-    // 如果指定了一个 blockTree 的固定 offset
-    // 则在 virtList 更新后，会强制滚动到指定的 offset
-    virtListFixedOffset: Ref<Record<BlockTreeId, number>>;
     showDatabaseManager: Ref<boolean>;
   }
 }
 
-export type BlockDisplayItem = ABlock & {
-  itemType: "alblock";
-  level: number;
-};
-
-export type MetadataDisplayItem = ABlock & {
-  // id 以 metadata 开头，防止和 BlockDisplayItem 的 id 重复
-  itemType: "metadata";
-  level: number;
-};
-
-export type BacklinkDisplayItem = ABlock & {
-  // id 以 metadata 开头，防止和 BlockDisplayItem 的 id 重复
-  itemType: "backlink";
-  level: number;
-};
-
-export type MultiColRowItem = {
-  id: string;
-  itemType: "multiColRow";
-  blockItems: BlockDisplayItem[];
-  level: number;
-};
-
-export type FoldingExpandingContainerItem = {
-  id: string;
-  itemType: "foldingExpandingContainer",
-  blockItems: DisplayItem[];
-  level: number;
-  op: "expanding" | "folding";
-}
-
-export type DisplayItem =
-  | BlockDisplayItem
-  | MetadataDisplayItem
-  | MultiColRowItem
-  | BacklinkDisplayItem
-  | FoldingExpandingContainerItem
-  ;
-
 export type FoldingStatus = {
   op: "folding" | "expanding" | "none";
   blockId?: BlockId;
-}
+};
 
 /// Data
 export const uiMiscPlugin = (s: AppState) => {
@@ -132,9 +89,6 @@ export const uiMiscPlugin = (s: AppState) => {
 
   const theme = ref("dark");
   s.decorate("theme", theme);
-
-  const virtListFixedOffset = ref({});
-  s.decorate("virtListFixedOffset", virtListFixedOffset);
 
   const foldingStatus = ref<FoldingStatus>({ op: "none" });
   s.decorate("foldingStatus", foldingStatus);

@@ -1,27 +1,27 @@
 <template>
   <div v-if="showPos" class="ref-suggestions" @keydown="onKeydown">
-    <input autofocus @input="onInput" @compositionend="onCompositionEnd" v-model="query"/>
+    <input autofocus @input="onInput" @compositionend="onCompositionEnd" v-model="query" />
     <div v-if="suggestions.length == 0" class="no-results">No results</div>
     <div class="suggestions" v-if="suggestions.length > 0">
       <div
-          v-for="(block, index) in suggestions"
-          :class="{ focus: index == focusItemIndex }"
-          :key="index"
-          class="suggestion-item"
-          @mouseover="focusItemIndex = index"
-          @click="clickResultItem(block.id)"
+        v-for="(block, index) in suggestions"
+        :class="{ focus: index == focusItemIndex }"
+        :key="index"
+        class="suggestion-item"
+        @mouseover="focusItemIndex = index"
+        @click="clickResultItem(block.id)"
       >
         <TextContent
-            v-if="block.content.type == 'text'"
-            :block="block"
-            :highlight-terms="queryTerms"
-            :readonly="true"
+          v-if="block.content.type == 'text'"
+          :block="block"
+          :highlight-terms="queryTerms"
+          :readonly="true"
         ></TextContent>
         <CodeContent
-            v-else
-            :block="block"
-            :highlight-terms="queryTerms"
-            :readonly="true"
+          v-else
+          :block="block"
+          :highlight-terms="queryTerms"
+          :readonly="true"
         ></CodeContent>
       </div>
     </div>
@@ -29,27 +29,19 @@
 </template>
 
 <script setup lang="ts">
-import {useAppState} from "@/state/state";
-import {computed, nextTick, ref, watch} from "vue";
-import {simpleTokenize} from "@/util/tokenizer";
-import type {ABlock, BlockId} from "@/state/block";
-import {debounce} from "lodash";
-import {Search} from "lucide-vue-next";
-import {calcPopoutPos} from "@/util/popout";
-import TextContent from "@/components/TextContent.vue";
-import CodeContent from "@/components/CodeContent.vue";
+import { useAppState } from "@/state/state";
+import { computed, nextTick, ref, watch } from "vue";
+import { simpleTokenize } from "@/util/tokenizer";
+import type { ABlock, BlockId } from "@/state/block";
+import { debounce } from "lodash";
+import { Search } from "lucide-vue-next";
+import { calcPopoutPos } from "@/util/popout";
+import TextContent from "@/components/content/TextContent.vue";
+import CodeContent from "@/components/content/CodeContent.vue";
 
 const app = useAppState();
-const {
-  query,
-  showPos,
-  selected,
-  queryTerms,
-  callback,
-  suggestions,
-  focusItemIndex,
-  hide,
-} = app.refSuggestions;
+const { query, showPos, selected, queryTerms, callback, suggestions, focusItemIndex, hide } =
+  app.refSuggestions;
 
 watch(showPos, async () => {
   if (!showPos.value) return;
@@ -58,7 +50,7 @@ watch(showPos, async () => {
   await nextTick(); // 等更新完
   const el = document.body.querySelector(".ref-suggestions");
   if (!(el instanceof HTMLElement)) return;
-  const {x, y} = showPos.value;
+  const { x, y } = showPos.value;
   const pos = calcPopoutPos(200, 300, x, y);
   el.style.left = pos.left ? `${pos.left}px` : "unset";
   el.style.right = pos.right ? `${pos.right}px` : "unset";
@@ -77,7 +69,7 @@ const onInput = (e: any) => {
 };
 
 const onCompositionEnd = (e: any) => {
-  updateSuggestions()
+  updateSuggestions();
 };
 
 const clickResultItem = async (id: BlockId | null) => {
@@ -140,23 +132,23 @@ const updateSuggestions = debounce(() => {
   }
   const result = app.search(query.value, { prefix: true });
   suggestions.value = result
-      .slice(0, 100)
-      .map((item) => {
-        const block = app.getBlock(item.id);
-        // TODO support more block content?
-        if (block == null || block.content.type != "text") return null;
-        const path = app.getBlockPath(item.id);
-        if (path == null) return null;
-        const ancestors = path.map((id) => app.getBlock(id)).filter((b) => b != null) as ABlock[];
-        ancestors.reverse();
-        ancestors.shift();
-        ancestors.pop();
-        return {
-          ...block,
-          ancestors,
-        };
-      })
-      .filter((o) => o != null) as any;
+    .slice(0, 100)
+    .map((item) => {
+      const block = app.getBlock(item.id);
+      // TODO support more block content?
+      if (block == null || block.content.type != "text") return null;
+      const path = app.getBlockPath(item.id);
+      if (path == null) return null;
+      const ancestors = path.map((id) => app.getBlock(id)).filter((b) => b != null) as ABlock[];
+      ancestors.reverse();
+      ancestors.shift();
+      ancestors.pop();
+      return {
+        ...block,
+        ancestors,
+      };
+    })
+    .filter((o) => o != null) as any;
   focusItemIndex.value = 0;
 }, 100);
 </script>

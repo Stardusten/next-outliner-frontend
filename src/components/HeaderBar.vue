@@ -1,8 +1,8 @@
 <template>
   <div class="header-bar">
     <div class="left-part">
-      <div class="button settings" @click="showSettingsMenu = true">
-        <Menu></Menu>
+      <div class="button settings" @click="showLeftSidebar = !showLeftSidebar">
+        <PanelLeft></PanelLeft>
       </div>
     </div>
     <div class="root-block-path" v-if="path">
@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronRight, LogOut, Menu, Search, Moon, Sun } from "lucide-vue-next";
+import { ChevronRight, LogOut, Menu, Search, Moon, Sun, PanelLeft } from "lucide-vue-next";
 import { useAppState } from "@/state/state";
 import { computed, onUnmounted, ref } from "vue";
 import type { ABlock } from "@/state/block";
@@ -45,9 +45,8 @@ import { disposableComputed } from "@/state/tracking";
 import Flashcards from "@/components/icons/Flashcards.vue";
 
 const app = useAppState();
-const showSettingsMenu = ref(false);
 const mainRootBlockId = app.getTrackingPropReactive("mainRootBlockId");
-const repeatablesToReview = app.repeatablesToReview;
+const {repeatablesToReview, showLeftSidebar} = app;
 
 const path = disposableComputed<ABlock[]>((scope) => {
   if (mainRootBlockId.value == null) return [];

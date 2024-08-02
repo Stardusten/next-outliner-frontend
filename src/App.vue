@@ -5,14 +5,18 @@
   </template>
   <template v-else>
     <HeaderBar></HeaderBar>
-    <BlockTree
-      id="main"
-      v-if="mainRootBlockId"
-      :virtual="true"
-      :root-block-ids="[mainRootBlockId]"
-      :root-block-level="0"
-      :padding-bottom="200"
-    ></BlockTree>
+    <div class="main-pane">
+      <LeftSidebar></LeftSidebar>
+      <BlockTree
+        id="main"
+        class="main-block-tree"
+        v-if="mainRootBlockId"
+        :virtual="true"
+        :root-block-ids="[mainRootBlockId]"
+        :root-block-level="0"
+        :padding-bottom="200"
+      ></BlockTree>
+    </div>
     <ContextMenu></ContextMenu>
     <!--    <FileExplorer></FileExplorer>-->
     <SearchPanel></SearchPanel>
@@ -44,6 +48,8 @@ import ToastPanel from "@/components/ToastPanel.vue";
 import RefSuggestions from "@/components/RefSuggestions.vue";
 import FloatingInfoPanel from "@/components/FloatingInfoPanel.vue";
 import DatabaseManager from "@/components/DatabaseManager.vue";
+import LeftSidebar from "@/components/LeftSidebar.vue";
+import CodeMirror from "@/components/CodeMirror.vue";
 
 const app = useAppState();
 const firstSyncFinished = ref(false);
@@ -155,16 +161,16 @@ const bindings: { [key: string]: SimpleKeyBinding } = {
     stopPropagation: true,
     preventDefault: true,
   },
-  "Delete": {
+  Delete: {
     run: app.deleteSelectedBlocks,
     stopPropagation: true,
     preventDefault: true,
   },
-  "Backspace": {
+  Backspace: {
     run: app.deleteSelectedBlocks,
     stopPropagation: true,
     preventDefault: true,
-  }
+  },
 };
 const keydownHandler = generateKeydownHandlerSimple(bindings);
 document.body.addEventListener("keydown", keydownHandler);
@@ -184,12 +190,16 @@ document.body.addEventListener("keydown", keydownHandler);
   .header-bar {
     height: 50px;
     border-bottom: 1px solid var(--border-primary);
-    margin-bottom: 10px;
   }
 
-  .block-tree {
-    max-height: calc(100% - 60px);
-    font-size: var(--text-font-size);
+  .main-pane {
+    position: relative;
+    max-height: calc(100% - 50px);
+
+    .main-block-tree {
+      margin-top: 10px;
+      height: 100%;
+    }
   }
 }
 </style>

@@ -6,7 +6,7 @@ import { getUUID } from "@/util/uuid";
 import { timeout } from "@/util/timeout";
 import type { BlockTree } from "@/state/block-tree";
 import type { Cloze, RepeatableId } from "@/state/repeatable";
-import {nextTick} from "vue";
+import { nextTick } from "vue";
 
 /// Types
 export type BlockId = string;
@@ -131,10 +131,21 @@ export type ForDescendantsOfOptions = {
   rootBlockLevel?: number;
   nonFoldOnly?: boolean;
   includeSelf?: boolean;
-  ignore?: (block: ABlock) => "keep" | "ignore-this" | "ignore-descendants";
+  // keep - 保留这个节点及其子节点（可以覆盖 nonFoldOnly）
+  // ignore-this - 忽略这个节点
+  // ignore-descendants - 忽略这个节点的所有后代
+  // ignore-this-and-descendants - 忽略这个节点及其所有后代
+  ignore?: (
+    block: ABlock,
+  ) => "keep" | "ignore-this" | "ignore-descendants" | "ignore-this-and-descendants";
 };
 
-export type BlockContent = TextContent | ImageContent | CodeContent | MathDisplayContent;
+export type BlockContent =
+  | TextContent
+  | ImageContent
+  | CodeContent
+  | MathDisplayContent
+  | QueryContent;
 
 export type TextContent = {
   type: "text";
@@ -160,6 +171,14 @@ export type MathDisplayContent = {
   type: "mathDisplay";
   src: string;
 };
+
+export type QueryContent = {
+  type: "query";
+  query: string;
+  fold: boolean;
+};
+
+///////////////////
 
 export type BlockPos = BlockPosSiblingOffset | NonNormalizedBlockPosParentChild;
 
@@ -194,8 +213,10 @@ declare module "@/state/state" {
     getBlockReactive: (blockId: BlockId) => Disposable<ABlock | null>;
     _setBlock: (block: ABlock, meta?: TrackPatch["meta"]) => void;
     _deleteBlock: (blockId: BlockId, meta?: TrackPatch["meta"]) => void;
+    // [当前块...根块]
     getBlockPath: (blockId: BlockId) => BlockId[] | null;
     getBlockLevel: (blockId: BlockId) => number;
+    // [当前块...根块]
     getBlockPathReactive: (blockId: BlockId) => Disposable<BlockId[] | null>;
     getPredecessorBlockId: (blockId: BlockId, considerFold?: boolean) => BlockId | null;
     getSuccessorBlockId: (blockId: BlockId, considerFold?: boolean) => BlockId | null;
@@ -225,7 +246,7 @@ declare module "@/state/state" {
     insertManyNormalBlocks: (pos: BlockPosParentChild, newBlocks: ANormalBlock[]) => void;
     insertMirrorBlock: (
       pos: BlockPosParentChild,
-      src: BlockId
+      src: BlockId,
     ) => { focusNext: BlockId | null; newMirrorBlockId: BlockId } | null;
     moveBlock: (blockId: BlockId, pos: BlockPosParentChild) => BlockId | null;
     promoteBlock: (blockId: BlockId) => { focusNext: BlockId | null } | null;
@@ -277,7 +298,10 @@ export const blockManagePlugin = (s: AppState) => {
   };
   s.decorate("getBlockReactive", getBlockReactive);
 
-  const getPredecessorBlockId = (blockId: BlockId, considerFold: boolean = false): BlockId | null => {
+  const getPredecessorBlockId = (
+    blockId: BlockId,
+    considerFold: boolean = false,
+  ): BlockId | null => {
     const block = getBlock(blockId);
     if (block == null || block.parent == null) return null;
     const parent = getBlock(block.parent);
@@ -291,15 +315,14 @@ export const blockManagePlugin = (s: AppState) => {
       for (;;) {
         const block1 = getBlock(currId);
         if (block1 == null) return null;
-        if ((considerFold && block1.fold)
-          || block1.childrenIds.length == 0) return block1.id;
+        if ((considerFold && block1.fold) || block1.childrenIds.length == 0) return block1.id;
         currId = block1.childrenIds[block1.childrenIds.length - 1];
       }
     } else {
       // 否则是父节点
       return parent.id;
     }
-  }
+  };
   s.decorate("getPredecessorBlockId", getPredecessorBlockId);
 
   const getSuccessorBlockId = (blockId: BlockId, considerFold: boolean = false): BlockId | null => {
@@ -308,8 +331,7 @@ export const blockManagePlugin = (s: AppState) => {
 
     // 有孩子，则是最左边的孩子
     if (block.childrenIds.length > 0) {
-      if (!considerFold || !block.fold)
-      return block.childrenIds[0];
+      if (!considerFold || !block.fold) return block.childrenIds[0];
     }
 
     // 否则从当前节点往上找，找到第一个有下一个兄弟的
@@ -326,16 +348,14 @@ export const blockManagePlugin = (s: AppState) => {
       }
       currId = parent.id;
     }
-  }
+  };
   s.decorate("getSuccessorBlockId", getSuccessorBlockId);
 
   const isDescendantOf = (a: BlockId, b: BlockId, allowSame: boolean = true) => {
     const pathA = getBlockPath(a);
     if (pathA == null) return false;
-    return allowSame
-      ? pathA.includes(b)
-      : pathA.slice(1).includes(b);
-  }
+    return allowSame ? pathA.includes(b) : pathA.slice(1).includes(b);
+  };
   s.decorate("isDescendantOf", isDescendantOf);
 
   const _setBlock = (block: ABlock, meta: TrackPatch["meta"] = { from: "local" }) => {
@@ -381,7 +401,7 @@ export const blockManagePlugin = (s: AppState) => {
   const getBlockLevel = (blockId: BlockId) => {
     const path = getBlockPath(blockId);
     return path ? path.length - 1 : -1;
-  }
+  };
   s.decorate("getBlockLevel", getBlockLevel);
 
   const getBlockPathReactive = (blockId: BlockId) => {
@@ -433,14 +453,16 @@ export const blockManagePlugin = (s: AppState) => {
       const block = getBlock(blockId);
       if (!block) return;
       const ignoreResult = ignore?.(block);
-      if (ignoreResult == "ignore-descendants") return;
+      if (ignoreResult == "ignore-this-and-descendants") return;
       const alBlock = { ...block, level: currLevel };
       if (includeSelf || blockId != rootBlockId) {
         if (ignoreResult != "ignore-this") {
           onEachBlock(alBlock);
         }
       }
-      if (nonFoldOnly && block.fold) return;
+      // "keep" 可以覆盖 nonFoldOnly 的效果
+      if (ignoreResult != "keep")
+        if ((nonFoldOnly && block.fold) || ignoreResult == "ignore-descendants") return;
       if (typeof block.childrenIds == "string") return;
       for (const childId of block.childrenIds) {
         dfs(childId, currLevel + 1);
@@ -651,9 +673,7 @@ export const blockManagePlugin = (s: AppState) => {
     if (!block || fold == block.fold) return false; // 折叠状态没有改变
 
     const blockTree = s.lastFocusedBlockTree.value;
-    const offset = blockTree?.getVirtList()?.reactiveData.offset;
-    if (blockTree != null && offset != null)
-      s.virtListFixedOffset.value[blockTree.getId()] = offset;
+    if (blockTree != null) blockTree.suppressScroll(true);
 
     if (fold) {
       s.foldingStatus.value = { op: "folding", blockId };
@@ -671,10 +691,10 @@ export const blockManagePlugin = (s: AppState) => {
 
     if (blockTree != null) {
       blockTree.nextUpdate(() => {
-        delete s.virtListFixedOffset.value[blockTree.getId()];
+        blockTree.suppressScroll(false);
       });
     }
-  }
+  };
   s.decorate("toggleFoldWithAnimation", toggleFoldWithAnimation);
 
   const changeMetadata = (blockId: BlockId, newMetadata: any) => {
@@ -688,7 +708,7 @@ export const blockManagePlugin = (s: AppState) => {
       if (!occurBlock) continue;
       occurBlock.metadata = newMetadata;
       occurBlock.mtext = mtext; // 只有 normal block 的 metadata 发生变化才需要 persist
-      _setBlock(occurBlock)
+      _setBlock(occurBlock);
     }
   };
   s.decorate("changeMetadata", changeMetadata);
@@ -721,7 +741,8 @@ export const blockManagePlugin = (s: AppState) => {
     // 计算 occurs, ctext, olinks 和 boosting
     const occurs = s.getOccurs(blockSrcId);
     const ctext = getCtext(content);
-    const olinks = content.type == "text" ? extractOutgoingLinks(content.docContent) : [];
+    const olinks =
+      content.type == "text" ? extractOutgoingLinks(content.docContent, block.metadata) : [];
     const boosting = getBoosting(content);
     const clozeIds = getClozeIds(content);
     // 更新所有 occurrences
@@ -760,7 +781,7 @@ export const blockManagePlugin = (s: AppState) => {
       ctext: getCtext(content),
       metadata: metadata ?? {},
       mtext: "",
-      olinks: content.type == "text" ? extractOutgoingLinks(content.docContent) : [],
+      olinks: content.type == "text" ? extractOutgoingLinks(content.docContent, metadata) : [],
       clozeIds: getClozeIds(content),
       boosting: getBoosting(content),
       actualSrc: newNormalBlockId,
@@ -815,7 +836,7 @@ export const blockManagePlugin = (s: AppState) => {
 
   const insertManyNormalBlocks = (pos: BlockPosParentChild, newBlocks: ANormalBlock[]) => {
     s.withSyncDelayed(() => {
-      const {parentId, childIndex} = pos;
+      const { parentId, childIndex } = pos;
       const parentBlock = getBlock(parentId, true);
       if (!parentBlock) return;
 
@@ -824,10 +845,9 @@ export const blockManagePlugin = (s: AppState) => {
       ) as ANormalBlock | null;
       if (!parentSrcBlock) return;
 
-      for (const block of newBlocks)
-        _setBlock(block);
+      for (const block of newBlocks) _setBlock(block);
 
-      const newBlockIds = newBlocks.map(b => b.id);
+      const newBlockIds = newBlocks.map((b) => b.id);
       parentSrcBlock.childrenIds = [
         ...parentSrcBlock.childrenIds.slice(0, childIndex),
         ...newBlockIds,
@@ -869,7 +889,7 @@ export const blockManagePlugin = (s: AppState) => {
         _setBlock(occurBlock);
       }
     });
-  }
+  };
   s.decorate("insertManyNormalBlocks", insertManyNormalBlocks);
 
   const insertMirrorBlock = (pos: BlockPosParentChild, src: BlockId) => {
@@ -880,9 +900,7 @@ export const blockManagePlugin = (s: AppState) => {
     if (!parentBlock) return;
 
     const parentSrcBlock = (
-      parentBlock.actualSrc
-        ? s.getBlock(parentBlock.actualSrc, true)
-        : parentBlock
+      parentBlock.actualSrc ? s.getBlock(parentBlock.actualSrc, true) : parentBlock
     ) as ANormalBlock | null;
     if (!parentSrcBlock) return;
 
@@ -956,7 +974,7 @@ export const blockManagePlugin = (s: AppState) => {
     }
 
     return { focusNext, newMirrorBlockId };
-  }
+  };
   s.decorate("insertMirrorBlock", insertMirrorBlock);
 
   const moveBlock = (blockId: BlockId, pos: BlockPosParentChild) => {
@@ -1352,17 +1370,18 @@ export const blockManagePlugin = (s: AppState) => {
             j = targetPath.length - 1;
           while (i >= 0 && j >= 0) {
             if (rootPath[i] != targetPath[j]) break;
-            i --; j--;
+            i--;
+            j--;
           }
-          const newRoot = i < 0 ? rootPath[0]
-            : j < 0 ? targetPath[0]
-            : rootPath[i + 1];
-          const blockIdsToExpand = i < 0 ? targetPath.slice(0, j + 1)
-            : j < 0 ? rootPath.slice(0, i + 1)
-            : targetPath.slice(j);
+          const newRoot = i < 0 ? rootPath[0] : j < 0 ? targetPath[0] : rootPath[i + 1];
+          const blockIdsToExpand =
+            i < 0
+              ? targetPath.slice(0, j + 1)
+              : j < 0
+                ? rootPath.slice(0, i + 1)
+                : targetPath.slice(j);
           setMainRootBlock(newRoot);
-          for (const id of blockIdsToExpand)
-            toggleFold(id, false);
+          for (const id of blockIdsToExpand) toggleFold(id, false);
           await blockTree.nextUpdate();
           blockTree.scrollBlockIntoView(targetBlockId);
           if (highlight || focus) {
@@ -1489,13 +1508,12 @@ export const blockManagePlugin = (s: AppState) => {
     const seleceted = s.selectedBlockIds.value;
     if (seleceted.length > 0) {
       s.taskQueue.addTask(() => {
-        for (const id of seleceted)
-          s.deleteBlock(id);
+        for (const id of seleceted) s.deleteBlock(id);
       });
       return true;
     }
     return false;
-  }
+  };
   s.decorate("deleteSelectedBlocks", deleteSelectedBlocks);
 };
 
@@ -1518,14 +1536,25 @@ export const isBlock = (object: Block | undefined | null): object is Block => {
   );
 };
 
-const extractOutgoingLinks = (docContent: any) => {
+export const extractOutgoingLinks = (docContent: any, metadata?: BlockMetadata) => {
   const doc = Node.fromJSON(pmSchema, docContent);
   const olinks: BlockId[] = [];
+  // 从 content 中提取
   doc.descendants((node) => {
     if (node.isAtom && node.type.name == "blockRef_v2") {
       olinks.push(node.attrs.toBlockId);
     }
   });
+  // 从 metadata 中提取
+  if (metadata) {
+    for (const key in metadata.specs) {
+      const spec = metadata.specs[key];
+      if (spec.type == "blockRefs") {
+        const blockIds = metadata[key];
+        olinks.push(...blockIds);
+      }
+    }
+  }
   return olinks;
 };
 

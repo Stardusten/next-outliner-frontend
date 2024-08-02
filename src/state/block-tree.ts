@@ -3,9 +3,9 @@ import { type EditorView as PmEditorView } from "prosemirror-view";
 import { type EditorView as CmEditorView } from "@codemirror/view";
 import type { AppState } from "@/state/state";
 import { shallowReactive } from "vue";
-import type { DisplayItem } from "@/state/ui-misc";
+import type { DisplayItem } from "@/state/display-items";
 import type { Cloze } from "@/state/repeatable";
-import {VirtList} from "vue-virt-list";
+import { VirtList } from "vue-virt-list";
 
 /// Types
 export type BlockTreeId = string;
@@ -46,7 +46,10 @@ export type BlockTree = {
   moveCursorToBegin: (blockId: BlockId) => void;
   getBelongingDisplayItem: (blockId: BlockId) => DisplayItem | null;
   expandMetadataItemInView: (blockId: BlockId) => void;
-  getVirtList: () => InstanceType<typeof VirtList>;
+  suppressScroll: (value: boolean) => void;
+  inTempExpanded: (blockId: BlockId) => boolean;
+  addToTempExpanded: (...blockId: BlockId[]) => void;
+  removeFromTempExpanded: (...blockId: BlockId[]) => void;
 };
 
 declare module "@/state/state" {

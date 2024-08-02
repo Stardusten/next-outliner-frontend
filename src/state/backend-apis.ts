@@ -49,7 +49,7 @@ declare module "@/state/state" {
       ) => Promise<
         { isFile: boolean; name: string; hasChildren: boolean }[] | null
       >;
-      download: (filePath: string) => Promise<void>;
+      download: (filePath: string) => Promise<Blob | null>;
       upload: (
         path: string,
         file: string | Blob,
@@ -157,14 +157,18 @@ export const backendApiPlugin = (s: AppState) => {
     return await _axiosPost("/fs/list", { dirPath });
   };
 
-  const download = async (filePath: string) => {
+  const download = async (filePath: string): Promise<Blob | null> => {
+    if (!_axios.value) return null;
     const backendUrl = s.getTrackingProp("backendUrl");
     if (backendUrl) {
       const url = `http://${backendUrl}/fs/download/${encodeURIComponent(filePath)}`;
-      const a = document.createElement("a");
-      a.href = url;
-      a.click();
-    } else throw new Error("backend is not connected!");
+      try {
+        const resp = await _axios.value.get(url, {responseType: "blob"});
+        return resp.data;
+      } catch (err) {
+        return null;
+      }
+    } else return null;
   };
 
   const upload = async (path: string, file: string | Blob) => {

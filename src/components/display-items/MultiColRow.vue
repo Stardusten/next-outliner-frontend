@@ -1,28 +1,25 @@
 <template>
-  <div
-      class="multi-col-row-item"
-      :style="{ marginLeft: `${item.level * 36 + 20}px` }"
-  >
+  <div class="multi-col-row-item" :style="{ marginLeft: `${item.level * 36 + 20}px` }">
     <BlockItem
-        v-for="(item, index) in props.item.blockItems"
-        :key="index"
-        :item="item"
-        :block-tree="blockTree"
-        :hide-fold-button="hideFoldButton"
-        :hide-bullet="hideBullet"
-        :highlight-terms="highlightTerms"
+      v-for="(item, index) in props.item.blockItems"
+      :key="index"
+      :item="item"
+      :block-tree="blockTree"
+      :hide-fold-button="hideFoldButton"
+      :hide-bullet="hideBullet"
+      :highlight-terms="highlightTerms"
     ></BlockItem>
   </div>
 </template>
 
 <script setup lang="ts">
 import BlockItem from "./BlockItem.vue";
-import type {BlockTree} from "@/state/block-tree";
-import type {MultiColRowItem} from "@/state/ui-misc";
+import type { BlockTree } from "@/state/block-tree";
+import type { MultiColDI } from "@/state/ui-misc";
 
 const props = defineProps<{
   blockTree: BlockTree;
-  item: MultiColRowItem;
+  item: MultiColDI;
   // 透传
   hideFoldButton?: boolean;
   hideBullet?: boolean;

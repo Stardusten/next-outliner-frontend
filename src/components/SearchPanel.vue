@@ -66,8 +66,8 @@
 <script setup lang="ts">
 import { debounce } from "lodash";
 import { computed, ref } from "vue";
-import TextContent from "@/components/TextContent.vue";
-import CodeContent from "@/components/CodeContent.vue";
+import TextContent from "@/components/content/TextContent.vue";
+import CodeContent from "@/components/content/CodeContent.vue";
 import { ChevronRight } from "lucide-vue-next";
 import { simpleTokenize } from "@/util/tokenizer";
 import { useAppState } from "@/state/state";

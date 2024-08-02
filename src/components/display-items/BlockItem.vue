@@ -1,119 +1,144 @@
 <template>
   <div
-      class="block-item"
-      :class="{
-        fold: item.fold, // 是否折叠
-        hasChildren, // 是否有孩子
-        hasMetadata: item.mtext.length > 0, // 是否有非内部 metadata
-        paragraph: item.metadata.paragraph,
-        hasMirror,
-        // 'has-ilinks': item.ilinks.length > 0,
-        no: item.metadata.no,
-        selected: app.isBlockSelected(item.id),
-        [item.content.type]: item.content.type,
-      }"
-      :style="{ paddingLeft: `${item.level * 36}px` }"
-      :level="item.level"
-      :block-id="item.id"
-      ref="$blockItem"
-      @focusin="onFocusin"
-      @dragover="onDragOver"
-      tabindex="-1"
+    class="block-item"
+    :class="{
+      fold: shouldFold, // 是否折叠
+      hasChildren, // 是否有孩子
+      hasMetadata: item.mtext.length > 0, // 是否有非内部 metadata
+      paragraph: item.metadata.paragraph,
+      hasMirror,
+      hasBacklink: backlinks.size > 0,
+      no: item.metadata.no,
+      selected: app.isBlockSelected(item.id),
+      [item.content.type]: item.content.type,
+    }"
+    :style="{ paddingLeft: `${item.level * 36}px` }"
+    :level="item.level"
+    :block-id="item.id"
+    ref="$blockItem"
+    @focusin="onFocusin"
+    @dragover="onDragOver"
+    tabindex="-1"
   >
     <div class="fold-button" v-if="!hideFoldButton" @click="onClickFoldButton">
       <Triangle></Triangle>
     </div>
     <div
-        class="bullet"
-        v-if="!hideBullet"
-        @click="onClickBullet"
-        draggable="true"
-        @dragstart="onDragStart"
+      class="bullet"
+      v-if="!hideBullet"
+      @click="onClickBullet"
+      draggable="true"
+      @dragstart="onDragStart"
     >
       <div class="no" v-if="item.metadata.no">{{ item.metadata.no }}.</div>
       <SharpDiamond class="diamond" v-else-if="hasMirror"></SharpDiamond>
       <Circle class="circle" v-else></Circle>
     </div>
     <TextContent
-        v-if="item.content.type == 'text'"
-        :block="item"
-        :block-tree="blockTree"
-        :highlight-terms="highlightTerms"
+      v-if="item.content.type == 'text'"
+      :block="item"
+      :block-tree="blockTree"
+      :highlight-terms="highlightTerms"
+      :highlight-refs="highlightRefs"
     ></TextContent>
     <CodeContent
-        v-else-if="item.content.type == 'code'"
-        :block="item"
-        :block-tree="blockTree"
-        :highlight-terms="highlightTerms"
+      v-else-if="item.content.type == 'code'"
+      :block="item"
+      :block-tree="blockTree"
+      :highlight-terms="highlightTerms"
     ></CodeContent>
     <MathContent
-        v-else-if="item.content.type == 'mathDisplay'"
-        :block="item"
-        :block-tree="blockTree"
+      v-else-if="item.content.type == 'mathDisplay'"
+      :block="item"
+      :block-tree="blockTree"
     ></MathContent>
     <ImageContent
-        v-else-if="item.content.type == 'image'"
-        :block="item"
-        :block-tree="blockTree"
+      v-else-if="item.content.type == 'image'"
+      :block="item"
+      :block-tree="blockTree"
     ></ImageContent>
-    <div class="unsupported-block-content" v-else>
-      Unsupported Block Content
-    </div>
+    <QueryContent
+      v-else-if="item.content.type == 'query'"
+      :block="item"
+      :block-tree="blockTree"
+      :highlight-terms="highlightTerms"
+      :highlight-refs="highlightRefs"
+    ></QueryContent>
+    <div class="unsupported-block-content" v-else>Unsupported Block Content</div>
   </div>
   <div
     class="drop-area"
     v-if="dropAreaPos?.blockId == item.id"
-    :style="{marginLeft: `${dropAreaPos.level * 36 + 25}px`}"
+    :style="{ marginLeft: `${dropAreaPos.level * 36 + 25}px` }"
   ></div>
 </template>
 
 <script setup lang="ts">
-import type {BlockTree} from "@/state/block-tree";
-import {computed, ref} from "vue";
-import {useAppState} from "@/state/state";
-import CodeContent from "@/components/CodeContent.vue";
-import TextContent from "@/components/TextContent.vue";
-import type {BlockDisplayItem} from "@/state/ui-misc";
-import {Circle, Triangle, Diamond} from "lucide-vue-next";
-import MathContent from "@/components/MathContent.vue";
-import ImageContent from "@/components/ImageContent.vue";
-import {clip} from "@/util/popout";
+import type { BlockTree } from "@/state/block-tree";
+import { computed, onUnmounted, ref } from "vue";
+import { useAppState } from "@/state/state";
+import CodeContent from "@/components/content/CodeContent.vue";
+import TextContent from "@/components/content/TextContent.vue";
+import type { BlockDI } from "@/state/display-items";
+import { Circle, Triangle, ChevronRight } from "lucide-vue-next";
+import MathContent from "@/components/content/MathContent.vue";
+import ImageContent from "@/components/content/ImageContent.vue";
+import { clip } from "@/util/popout";
 import SharpDiamond from "@/components/icons/SharpDiamond.vue";
+import type { ABlock, BlockId } from "@/state/block";
+import { disposableComputed } from "@/state/tracking";
+import QueryContent from "@/components/content/QueryContent.vue";
 
 const props = defineProps<{
   blockTree: BlockTree;
-  item: BlockDisplayItem;
+  item: BlockDI;
   hideFoldButton?: boolean;
   hideBullet?: boolean;
   highlightTerms?: string[];
+  highlightRefs?: BlockId[];
+  forceFold?: boolean;
+  showPath?: boolean;
 }>();
 
 const app = useAppState();
 const { dropAreaPos } = app;
 const $blockItem = ref<HTMLElement | null>(null);
-const hasChildren = computed(() =>
-    props.item.childrenIds != "null"
-    && props.item.childrenIds.length > 0
+const hasChildren = computed(
+  () => props.item.childrenIds != "null" && props.item.childrenIds.length > 0,
 );
-const hasMirror = computed(() => {
-  const mirrors = app.index.mirrors.get(props.item.actualSrc);
-  return mirrors && mirrors.size > 0;
+const hasMirror = computed(() => app.getMirrors(props.item.actualSrc).size > 0);
+const backlinks = computed(() => app.getBacklinks(props.item.actualSrc));
+
+// 这个块是否应该折叠
+const shouldFold = computed(() => {
+  const blockId = props.item.id;
+  // 如果处于强制折叠模式，并且不在 tempExpanded 中，则折叠
+  if (props.forceFold) return !props.blockTree.inTempExpanded(blockId);
+  else return props.item.fold; // 否则看 block.fold 属性
 });
 
 const onClickFoldButton = () => {
   const blockId = props.item.id;
-  app.taskQueue.addTask(async () => {
-    await app.toggleFoldWithAnimation(blockId, !props.item.fold);
-    app.addUndoPoint({ message: "toggle fold" });
-  });
+  if (props.forceFold) {
+    // 强制折叠模式，则点击折叠按钮时修改 tempExpanded
+    if (props.blockTree.inTempExpanded(blockId)) props.blockTree.removeFromTempExpanded(blockId);
+    else props.blockTree.addToTempExpanded(blockId);
+  } else {
+    app.taskQueue.addTask(async () => {
+      await app.toggleFoldWithAnimation(blockId, !props.item.fold);
+      app.addUndoPoint({ message: "toggle fold" });
+    });
+  }
 };
 
 const onClickBullet = () => {
-  app.applyPatches([{
-    op: "replace",
-    path: ["mainRootBlockId"],
-    value: props.item.id,
-  }])
+  app.applyPatches([
+    {
+      op: "replace",
+      path: ["mainRootBlockId"],
+      value: props.item.id,
+    },
+  ]);
 };
 
 const onFocusin = () => {
@@ -171,10 +196,10 @@ const onDragOver = (e: DragEvent) => {
     if (predBlock == null || predLevel == -1) return;
     const predFoldAndHasChild = predBlock.fold && predBlock.childrenIds.length > 0;
     const clippedLevel = clip(
-        level,
-        // 如果 pred 折叠了，并且有孩子，则不允许拖成 pred 的子级
-        predFoldAndHasChild ? predLevel : predLevel + 1,
-        props.item.level,
+      level,
+      // 如果 pred 折叠了，并且有孩子，则不允许拖成 pred 的子级
+      predFoldAndHasChild ? predLevel : predLevel + 1,
+      props.item.level,
     );
     app.dropAreaPos.value = {
       blockId: predId,
@@ -184,26 +209,23 @@ const onDragOver = (e: DragEvent) => {
     let clippedLevel;
     const succId = app.getSuccessorBlockId(props.item.id, true);
     const thisFoldAndHasChild = props.item.fold && props.item.childrenIds.length > 0;
-    if (succId == null) { // 最后一个块
-      clippedLevel = clip(
-          level,
-          thisFoldAndHasChild ? props.item.level : props.item.level + 1,
-          1
-      );
+    if (succId == null) {
+      // 最后一个块
+      clippedLevel = clip(level, thisFoldAndHasChild ? props.item.level : props.item.level + 1, 1);
     } else {
       // 计算有效的 level 区间：[当前 block 的 level + 1, 下一个 block 的 level]
       const succLevel = app.getBlockLevel(succId);
       if (succLevel == -1) return;
       clippedLevel = clip(
-          level,
-          thisFoldAndHasChild ? props.item.level : props.item.level + 1,
-          succLevel,
+        level,
+        thisFoldAndHasChild ? props.item.level : props.item.level + 1,
+        succLevel,
       );
     }
     app.dropAreaPos.value = {
       blockId: props.item.id,
       level: clippedLevel,
-    }
+    };
   }
 };
 </script>
@@ -239,9 +261,9 @@ const onDragOver = (e: DragEvent) => {
     }
 
     @at-root .block-item.hasChildren:hover > .fold-button,
-    .block-item.has-ilinks:hover > .fold-button,
-    .block-item.hasChildren.no > .fold-button,
-    .block-item.hasMetadata:hover > .fold-button {
+      .block-item.hasBacklink:hover > .fold-button,
+      .block-item.hasChildren.no > .fold-button,
+      .block-item.hasMetadata:hover > .fold-button {
       opacity: 1;
     }
 
@@ -280,8 +302,8 @@ const onDragOver = (e: DragEvent) => {
     }
 
     @at-root .block-item.fold.hasChildren .bullet svg,
-    .block-item.fold.has-ilinks .bullet svg,
-    .block-item.fold.hasMetadata .bullet svg {
+      .block-item.fold.hasBacklink .bullet svg,
+      .block-item.fold.hasMetadata .bullet svg {
       background-color: var(--bullet-background);
       border-radius: 8px;
     }

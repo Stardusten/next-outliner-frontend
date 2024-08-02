@@ -2,7 +2,12 @@
   <div class="refs-field">
     <div class="refs-container" @click="$cursorContainer?.focus()">
       <div class="ref-item" v-for="block in blocks" :key="block.id">
-        <TextContent class="ref-item-content" :block="block" :readonly="true"></TextContent>
+        <TextContent
+          class="ref-item-content"
+          :block="block"
+          :readonly="true"
+          @click="onClickRef(block.id)"
+        ></TextContent>
         <div class="ref-item-delete-button" @click="deleteRefItem(block.id)">
           <X></X>
         </div>
@@ -19,12 +24,12 @@
 </template>
 
 <script setup lang="ts">
-import type {ABlock, BlockId} from "@/state/block";
-import {computed, ref} from 'vue';
-import TextContent from "@/components/TextContent.vue";
-import {useAppState} from "@/state/state";
-import {generateKeydownHandlerSimple} from "@/util/keybinding";
-import {X} from "lucide-vue-next";
+import type { ABlock, BlockId } from "@/state/block";
+import { computed, ref } from "vue";
+import TextContent from "@/components/content/TextContent.vue";
+import { useAppState } from "@/state/state";
+import { generateKeydownHandlerSimple } from "@/util/keybinding";
+import { X } from "lucide-vue-next";
 
 const props = defineProps<{
   value: BlockId[];
@@ -39,7 +44,7 @@ const blocks = computed<ABlock[]>(() => {
   }
   return ret;
 });
-const $cursorContainer = ref<HTMLElement | null>(null)
+const $cursorContainer = ref<HTMLElement | null>(null);
 
 const emit = defineEmits<{
   (e: "update", value: BlockId[]): void;
@@ -50,26 +55,26 @@ const cursorContainerKeydownHandler = generateKeydownHandlerSimple({
   "@": {
     run: () => {
       if (!$cursorContainer.value) return false;
-      const {showPos, callback} = app.refSuggestions;
+      const { showPos, callback } = app.refSuggestions;
       const rect = $cursorContainer.value.getBoundingClientRect();
       showPos.value = {
         x: rect.left,
         y: rect.bottom,
       };
       callback.value = (blockId) => {
-        if (blockId)
-          emit("update", [...props.value, blockId]);
-      }
+        if (blockId) emit("update", [...props.value, blockId]);
+      };
       return true;
     },
     stopPropagation: true,
     preventDefault: true,
   },
-  "*": { // 禁止一切其他按键
+  "*": {
+    // 禁止一切其他按键
     run: () => true,
     stopPropagation: true,
     preventDefault: true,
-  }
+  },
 });
 
 const cursorContainerBeforeInputHandler = (e: any) => {
@@ -80,7 +85,7 @@ const cursorContainerBeforeInputHandler = (e: any) => {
       e.target.focus();
     }, 100);
   }
-}
+};
 
 const deleteRefItem = (blockId: BlockId) => {
   const index = props.value.indexOf(blockId);
@@ -89,7 +94,13 @@ const deleteRefItem = (blockId: BlockId) => {
     newValue.splice(index, 1);
     emit("update", newValue);
   }
-}
+};
+
+const onClickRef = (blockId: BlockId) => {
+  const tree = app.lastFocusedBlockTree.value;
+  if (!tree) return;
+  app.locateBlock(tree, blockId, true, true);
+};
 </script>
 
 <style lang="scss">
@@ -112,6 +123,7 @@ const deleteRefItem = (blockId: BlockId) => {
         color: var(--link-color);
         max-width: unset;
         padding: unset;
+        cursor: pointer;
 
         .ProseMirror {
           white-space: nowrap;

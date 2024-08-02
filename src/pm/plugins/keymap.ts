@@ -2,12 +2,12 @@ import { AllSelection, type EditorState, NodeSelection, TextSelection } from "pr
 import { pmSchema } from "@/pm/schema";
 import { toggleMark } from "prosemirror-commands";
 import { useAppState } from "@/state/state";
-import { textContentFromString } from "@/state/block";
+import { type QueryContent, textContentFromString } from "@/state/block";
 import { generateKeydownHandler, type KeyBinding } from "@/util/keybinding";
 import { EditorView } from "prosemirror-view";
 import { Plugin } from "prosemirror-state";
 import { getUUID } from "@/util/uuid";
-import {Node} from "prosemirror-model";
+import { Node } from "prosemirror-model";
 
 type PmBindingParamsType = [EditorState, EditorView["dispatch"]?, EditorView?];
 type PmHandlerParamsType = [EditorView, KeyboardEvent];
@@ -49,11 +49,7 @@ export const mkKeymap = () => {
           const block = app.lastFocusedBlock.value;
           const tree = app.lastFocusedBlockTree.value;
           const view = app.lastFocusedEditorView.value;
-          if (!rootBlockId
-            || !block
-            || !tree
-            || !(view instanceof EditorView)
-          ) return;
+          if (!rootBlockId || !block || !tree || !(view instanceof EditorView)) return;
 
           const sel = view.state.selection;
           const docEnd = AllSelection.atEnd(view.state.doc);
@@ -66,16 +62,16 @@ export const mkKeymap = () => {
           if (sel.eq(docEnd)) {
             const pos = onRoot
               ? app.normalizePos({
-                parentId: rootBlockId,
-                childIndex: "last-space",
-              })
+                  parentId: rootBlockId,
+                  childIndex: "last-space",
+                })
               : app.normalizePos({
-                baseBlockId: block.id,
-                offset: 1,
-              });
+                  baseBlockId: block.id,
+                  offset: 1,
+                });
             if (!pos) return;
             const { focusNext } =
-            app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
+              app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
             if (focusNext && tree) {
               await tree.nextUpdate();
               tree.focusBlockInView(focusNext);
@@ -91,7 +87,7 @@ export const mkKeymap = () => {
             });
             if (!pos) return;
             const { focusNext } =
-            app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
+              app.insertNormalBlock(pos, textContentFromString(""), inheritMetadata) ?? {};
             if (focusNext && tree) {
               await tree.nextUpdate();
               tree.focusBlockInView(focusNext);
@@ -160,10 +156,12 @@ export const mkKeymap = () => {
           } else if (sel.from == 0 && blockAbove) {
             // 3. 尝试将这个块与上一个块合并
             // 仅当上一个块也是文本块，与自己同级，并且没有孩子时允许合并
-            if (blockAbove.content.type != "text"
-              || blockAbove.childrenIds.length > 0
-              || block.parent != blockAbove.parent
-            ) return;
+            if (
+              blockAbove.content.type != "text" ||
+              blockAbove.childrenIds.length > 0 ||
+              block.parent != blockAbove.parent
+            )
+              return;
             if (blockAbove.content.type != "text") return;
             const aboveDoc = Node.fromJSON(pmSchema, blockAbove.content.docContent);
             const thisDoc = view.state.doc;
@@ -224,10 +222,12 @@ export const mkKeymap = () => {
         } else if (sel.eq(docEnd) && blockBelow) {
           // 3. 尝试将这个块与下一个块合并
           // 仅当下一个块也是文本块，与自己同级，并且自己没有孩子时允许合并
-          if (blockBelow.content.type != "text"
-            || block.childrenIds.length > 0
-            || block.parent != blockBelow.parent
-          ) return false;
+          if (
+            blockBelow.content.type != "text" ||
+            block.childrenIds.length > 0 ||
+            block.parent != blockBelow.parent
+          )
+            return false;
           app.taskQueue.addTask(async () => {
             if (blockBelow.content.type != "text") return;
             const belowDoc = Node.fromJSON(pmSchema, blockBelow.content.docContent);
@@ -467,6 +467,29 @@ export const mkKeymap = () => {
       stopPropagation: true,
       preventDefault: true,
     },
+    "Mod-q": {
+      run: () => {
+        app.taskQueue.addTask(() => {
+          const block = app.lastFocusedBlock.value;
+          if (!block) return;
+          const pos = app.normalizePos({
+            baseBlockId: block.id,
+            offset: 1,
+          });
+          if (!pos) return;
+          app.insertNormalBlock(pos, {
+            type: "query",
+            query: "",
+            fold: false,
+          } as QueryContent);
+          app.addUndoPoint({ message: "insert block" });
+          return;
+        });
+        return true;
+      },
+      stopPropagation: true,
+      preventDefault: true,
+    },
   });
 };
 
@@ -509,7 +532,7 @@ const deleteUfeffAfterCursor = (state: EditorState, dispatch: EditorView["dispat
   } catch (_) {
     /* empty */
   }
-}
+};
 
 const deleteUfeffBeforeCursor = (state: EditorState, dispatch: EditorView["dispatch"]) => {
   if (dispatch == null) return false;
@@ -519,4 +542,4 @@ const deleteUfeffBeforeCursor = (state: EditorState, dispatch: EditorView["dispa
     const tr = state.tr.delete(selection.from - 1, selection.from);
     dispatch(tr);
   }
-}
+};

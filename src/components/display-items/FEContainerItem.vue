@@ -5,7 +5,7 @@
       class="bg"
       :style="{
         marginLeft: `${item.level * 36}px`,
-        width: `calc(100% - ${item.level * 36}px)`
+        width: `calc(100% - ${item.level * 36}px)`,
       }"
     ></div>
     <div
@@ -21,19 +21,19 @@
     >
       <template v-for="itemData in item.blockItems" :key="itemData.id">
         <BlockItem
-            v-if="itemData.itemType == 'alblock'"
-            :block-tree="blockTree"
-            :item="itemData"
+          v-if="itemData.itemType == 'alblock'"
+          :block-tree="blockTree"
+          :item="itemData"
         ></BlockItem>
         <MultiColRow
-            v-else-if="itemData.itemType == 'multiColRow'"
-            :item="itemData"
-            :block-tree="blockTree"
+          v-else-if="itemData.itemType == 'multiCol'"
+          :item="itemData"
+          :block-tree="blockTree"
         ></MultiColRow>
         <MetadataItem
-            v-else-if="itemData.itemType == 'metadata'"
-            :block-tree="blockTree"
-            :item="itemData"
+          v-else-if="itemData.itemType == 'metadata'"
+          :block-tree="blockTree"
+          :item="itemData"
         ></MetadataItem>
       </template>
     </div>
@@ -41,15 +41,15 @@
 </template>
 
 <script setup lang="ts">
-import type {FoldingExpandingContainerItem} from "@/state/ui-misc";
-import MultiColRow from "@/components/MultiColRow.vue";
-import MetadataItem from "@/components/metadata/MetadataItem.vue";
-import type {BlockTree} from "@/state/block-tree";
-import BlockItem from "@/components/BlockItem.vue";
-import {onMounted, ref} from "vue";
+import type { FoldingExpandingDI } from "@/state/ui-misc";
+import MultiColRow from "@/components/display-items/MultiColRow.vue";
+import MetadataItem from "@/components/display-items/metadata/MetadataItem.vue";
+import type { BlockTree } from "@/state/block-tree";
+import BlockItem from "@/components/display-items/BlockItem.vue";
+import { onMounted, ref } from "vue";
 
 const props = defineProps<{
-  item: FoldingExpandingContainerItem;
+  item: FoldingExpandingDI;
   blockTree: BlockTree;
 }>();
 const $el = ref<HTMLElement | null>(null);
@@ -61,7 +61,8 @@ onMounted(() => {
       el.classList.remove("expand-from");
       el.classList.add("expand-to");
     });
-  } else { // folding
+  } else {
+    // folding
     requestAnimationFrame(() => {
       el.classList.remove("fold-from");
       el.classList.add("fold-to");
@@ -77,17 +78,20 @@ onMounted(() => {
   }
 
   .items {
-    &.expand-from, &.fold-to {
+    &.expand-from,
+    &.fold-to {
       transform: scale(0);
       opacity: 0;
     }
 
-    &.expand-to, &.fold-from {
+    &.expand-to,
+    &.fold-from {
       transform: scale(1, 1);
       opacity: 1;
     }
 
-    &.expand-active, &.fold-active {
+    &.expand-active,
+    &.fold-active {
       transition: all 150ms ease-in-out;
     }
   }

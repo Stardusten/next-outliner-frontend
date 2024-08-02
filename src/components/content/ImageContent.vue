@@ -67,11 +67,14 @@ watch(
     () => {
       if (props.block.content.type != "image") return;
 
-      const backendUrl = app.getTrackingProp("backendUrl");
       const { path, uploadStatus, caption } = props.block.content;
       if (uploadStatus == "uploaded") {
         // 图片没有上传完成, 不显示
-        src.value = `http://${backendUrl}/fs/download/${encodeURIComponent(path)}`;
+        app.getImageWithCache(path)
+            .then((url) => {
+              if (!url) return;
+              src.value = url;
+            });
       }
 
       // 保证 captionInput 中的内容和 caption 一致
@@ -194,6 +197,11 @@ const onWheel = (e: WheelEvent) => {
       display: block;
       max-width: 100%;
       border-radius: 4px;
+    }
+
+    @at-root .dark img {
+      filter: invert(1) hue-rotate(180deg);
+      mix-blend-mode: screen;
     }
   }
 

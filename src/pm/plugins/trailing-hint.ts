@@ -1,8 +1,8 @@
 import { Plugin } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
-import type {BlockId} from "@/state/block";
-import type {BlockTree} from "@/state/block-tree";
-import {useAppState} from "@/state/state";
+import type { BlockId } from "@/state/block";
+import type { BlockTree } from "@/state/block-tree";
+import { useAppState } from "@/state/state";
 
 declare module "prosemirror-view" {
   interface EditorView {
@@ -10,10 +10,7 @@ declare module "prosemirror-view" {
   }
 }
 
-export const mkTrailingHintPlugin = (
-  getBlockId: () => BlockId,
-  getBlockTree: () => BlockTree,
-) => {
+export const mkTrailingHintPlugin = (getBlockId: () => BlockId, getBlockTree: () => BlockTree) => {
   const plugin: Plugin = new Plugin({
     view: (_view) => {
       const updateTrailingHint = (content: string | HTMLElement) => {

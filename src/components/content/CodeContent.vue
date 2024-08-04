@@ -1,22 +1,30 @@
 <template>
-  <div class="code-content block-content" ref="$contentEl" v-if="block.content.type == 'code'">
+  <div class="code-content block-content" v-if="block.content.type == 'code'">
     <div class="lang-selector">
-      <select :value="block.content.lang" @change="onLangChange">
+      <select :value="block.content.lang" @change="onLangSelectorChange">
         <option v-for="(lang, index) of langNames" :key="index" :value="lang">
           {{ lang }}
         </option>
       </select>
     </div>
+    <CodeMirror
+      ref="cmWrapper"
+      v-model:src="src"
+      :theme="theme"
+      :readonly="readonly"
+      :lang="block.content.lang"
+      :extensions-generator="extensionsGenerator"
+      :highlight-terms="highlightTerms"
+      :on-src-changed="onSrcChanged"
+    ></CodeMirror>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { EditorView, keymap } from "@codemirror/view";
-import { Compartment, EditorState } from "@codemirror/state";
-import { bracketMatching, indentOnInput, LanguageDescription } from "@codemirror/language";
+import { keymap } from "@codemirror/view";
+import { bracketMatching, indentOnInput } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
-import { mkContentChangePlugin } from "@/cm/plugins/content-change";
 import { updateHighlightTerms } from "@/cm/plugins/highlight-matches";
 import {
   cursorCharLeft,
@@ -29,12 +37,11 @@ import {
   indentMore,
   insertNewlineAndIndent,
 } from "@codemirror/commands";
-import { autocompletion, closeBrackets, completionKeymap } from "@codemirror/autocomplete";
+import { closeBrackets } from "@codemirror/autocomplete";
 import type { BlockTree } from "@/state/block-tree";
 import type { ABlock, CodeContent } from "@/state/block";
 import { useAppState } from "@/state/state";
-import { basicLight } from "@/cm/themes/cm-basic-light";
-import { basicDark } from "@/cm/themes/cm-basic-dark";
+import CodeMirror from "@/components/CodeMirror.vue";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -43,50 +50,21 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 
+const langNames = languages.flatMap((l) => l.alias);
+langNames.sort();
+langNames.unshift("unknown");
+
 const app = useAppState();
-const $contentEl = ref<HTMLElement | null>(null);
-let editorView: EditorView | null = null;
-const languageCompartment = new Compartment();
-const themeCompartment = new Compartment();
-const langNames = ref<string[]>([]);
-const registeredThemes = {
-  light: basicLight,
-  dark: basicDark,
-};
-const extensions = props.readonly
-  ? [
-      // plugins for readonly content
-      languageCompartment.of([]),
-      themeCompartment.of([]),
-      EditorState.readOnly.of(true),
-    ]
-  : [
-      // plugins for editable content
-      languageCompartment.of([]),
-      themeCompartment.of([]),
-      // EditorView.lineWrapping,
+const { theme } = app;
+const src = ref("");
+const cmWrapper = ref<InstanceType<typeof CodeMirror> | null>(null);
+const extensionsGenerator = () => {
+  if (props.readonly) return [];
+  else
+    return [
       indentOnInput(),
       bracketMatching(),
       closeBrackets(),
-      mkContentChangePlugin(
-        (newSrc) => {
-          const blockId = props.block.id;
-          const newBlockContent = {
-            ...props.block.content,
-            code: newSrc,
-          } as CodeContent;
-          app.taskQueue.addTask(
-            () => {
-              app.changeContent(blockId, newBlockContent);
-              app.addUndoPoint({ message: "change code block content" });
-            },
-            "updateBlockContent" + blockId,
-            500,
-            true,
-          );
-        },
-        () => true,
-      ),
       keymap.of([
         {
           key: "ArrowLeft",
@@ -237,74 +215,35 @@ const extensions = props.readonly
         },
       ]),
     ];
-
-const configureLanguage = async (
-  editorView: EditorView,
-  compartment: Compartment,
-  lang: string,
-) => {
-  if (lang == "" || lang == "unknown") {
-    editorView.dispatch({
-      effects: compartment.reconfigure([]),
-    });
-    return;
-  }
-  const l = await (await LanguageDescription.matchLanguageName(languages, lang, true))?.load();
-  if (!l) return;
-  editorView.dispatch({
-    effects: compartment.reconfigure([l]),
-  });
 };
 
-const changeTheme = (editorView: EditorView, compartment: Compartment, theme: string) => {
-  const themePlugin = registeredThemes[theme];
-  if (themePlugin) {
-    editorView.dispatch({
-      effects: compartment.reconfigure([themePlugin]),
-    });
-  }
+const onSrcChanged = (newSrc: string) => {
+  const blockId = props.block.id;
+  const newBlockContent = {
+    ...props.block.content,
+    code: newSrc,
+  } as CodeContent;
+  app.taskQueue.addTask(
+    () => {
+      app.changeContent(blockId, newBlockContent);
+      app.addUndoPoint({ message: "change code block content" });
+    },
+    "updateBlockContent" + blockId,
+    500,
+    true,
+  );
 };
 
 watch(
   () => props.block.content,
   (value) => {
-    if (!editorView || value.type != "code") return; // IMPOSSIBLE
-
-    configureLanguage(editorView, languageCompartment, value.lang); // TODO 放在这里是否恰当？
-    // 如果放到下面，会导致更改代码块语言时，因为 value?.code 不更新而不更新 UI
-
-    if (editorView.hasFocus) return; // TODO may cause problem?
-
-    if (value?.code == editorView.state.doc.toString()) {
-      return;
-    }
-
-    editorView.setState(
-      EditorState.create({
-        doc: value.code,
-        extensions,
-      }),
-    );
-
-    updateHighlightTerms(props.highlightTerms ?? [], editorView);
+    if (value.type != "code") return; // IMPOSSIBLE
+    src.value = value.code;
   },
+  { immediate: true },
 );
 
-watch(
-  () => props.highlightTerms,
-  () => {
-    if (!editorView) return;
-    updateHighlightTerms(props.highlightTerms ?? [], editorView);
-  },
-);
-
-// 根据 app.theme 动态更新代码块样式
-watch(app.theme, (theme) => {
-  if (!editorView) return;
-  changeTheme(editorView, themeCompartment, theme);
-});
-
-const onLangChange = (e: any) => {
+const onLangSelectorChange = (e: any) => {
   const selected = (e.target as HTMLSelectElement).value;
   app.taskQueue.addTask(() => {
     app.changeContent(props.block.id, {
@@ -316,30 +255,17 @@ const onLangChange = (e: any) => {
 };
 
 onMounted(() => {
-  if (!$contentEl.value || props.block.content.type != "code") return;
-  editorView = new EditorView({
-    doc: props.block.content.code,
-    extensions,
-    parent: $contentEl.value,
-  });
+  // 将 editorView 附到 wrapperDom 上
+  const editorView = cmWrapper.value?.getEditorView();
+  const wrapperDom = cmWrapper.value?.getWrapperDom();
+  if (editorView && wrapperDom) Object.assign(wrapperDom, { cmView: wrapperDom });
 
-  // update langNames
-  langNames.value = languages.flatMap((l) => l.alias);
-  langNames.value.unshift("unknown");
-
-  configureLanguage(editorView, languageCompartment, props.block.content.lang);
-  changeTheme(editorView, themeCompartment, app.theme.value);
-  updateHighlightTerms(props.highlightTerms ?? [], editorView);
-  // attach editorView
-  Object.assign($contentEl.value, { cmView: editorView });
+  if (editorView) updateHighlightTerms(props.highlightTerms ?? [], editorView);
 });
 
 onBeforeUnmount(() => {
-  if (editorView) {
-    editorView.destroy();
-    delete $contentEl.value["cmView"];
-  }
-  editorView = null;
+  const wrapperDom = cmWrapper.value?.getWrapperDom();
+  if ("cmView" in wrapperDom) delete wrapperDom["cmView"];
 });
 </script>
 
@@ -366,33 +292,9 @@ onBeforeUnmount(() => {
   &:hover .lang-selector {
     display: block;
   }
-}
 
-// CodeMirror
-.ͼ1.cm-focused {
-  outline: none;
-}
-
-.ͼ1 .cm-content {
-  line-height: 1.3em;
-  font-size: var(--code-font-size);
-  font-family: var(--code-font);
-}
-
-.ͼ1 .cm-line {
-  padding-left: 0;
-}
-
-.cm-cursor {
-  // 光标稍向左移动，否则 tauri 中光标在开头是看不到
-  margin-left: 1px !important;
-  border-color: var(--text-primary-color);
-  border-left-width: 1px !important;
-}
-
-.cm-matchingBracket {
-  background-color: var(--bg-hover) !important;
-  color: var(--text-primary-color) !important;
-  outline: none;
+  .code-mirror-wrapper {
+    margin-top: 2px;
+  }
 }
 </style>

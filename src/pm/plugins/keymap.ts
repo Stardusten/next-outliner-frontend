@@ -479,8 +479,10 @@ export const mkKeymap = () => {
           if (!pos) return;
           app.insertNormalBlock(pos, {
             type: "query",
+            title: textContentFromString("").docContent,
             query: "",
-            fold: false,
+            showQuery: true,
+            showResults: true,
           } as QueryContent);
           app.addUndoPoint({ message: "insert block" });
           return;

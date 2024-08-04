@@ -1,14 +1,23 @@
 <template>
-  <div class="text-content block-content" ref="$contentEl"></div>
+  <ProseMirror
+    class="text-content block-content"
+    ref="pmWrapper"
+    v-model:doc="docJson"
+    :highlight-terms="highlightTerms"
+    :highlight-refs="highlightRefs"
+    :readonly="readonly"
+    :plugins-generator="customPluginsGenerator"
+    :disable-spellcheck-when-blur="true"
+    :node-views="nodeViews"
+    :on-doc-changed="onDocChanged"
+  ></ProseMirror>
 </template>
 
 <script setup lang="ts">
 import type { BlockTree } from "@/state/block-tree";
 import type { ABlock, BlockId, TextContent } from "@/state/block";
-import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from "vue";
 import { useAppState } from "@/state/state";
-import { EditorView } from "prosemirror-view";
-import { Node } from "prosemirror-model";
 import { inputRules } from "prosemirror-inputrules";
 import { mkHighlightMatchesPlugin } from "@/pm/plugins/highlight-matches";
 import { mkEventBusPlugin } from "@/pm/plugins/event-bus";
@@ -34,6 +43,8 @@ import { openRefSuggestions } from "@/pm/input-rules/open-ref-suggestions";
 import { MathInlineKatex } from "@/pm/node-views/inline-math-katex";
 import { mkLongTextPastePlugin } from "@/pm/plugins/long-text-paste";
 import { mkHighlightRefsPlugin } from "@/pm/plugins/highlight-refs";
+import ProseMirror from "@/components/ProseMirror.vue";
+import type { EditorView } from "prosemirror-view";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -43,21 +54,37 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 
-const $contentEl = ref<HTMLElement | null>(null);
-const corruptedContent = ref(false);
-let editorView: EditorView | null = null;
+const docJson = shallowRef<any | null>(null);
+const pmWrapper = ref<InstanceType<typeof ProseMirror> | null>(null);
 const app = useAppState();
+const nodeViews = {
+  mathInline(node, view, getPos) {
+    return new MathInlineKatex(node, view, getPos);
+  },
+};
+const onDocChanged = ({ newDoc }) => {
+  const blockId = props.block.id;
+  const newBlockContent = {
+    ...props.block.content,
+    docContent: newDoc,
+  };
+  app.taskQueue.addTask(
+    () => {
+      app.changeContent(blockId, newBlockContent as TextContent);
+      app.addUndoPoint({ message: "change text content" });
+    },
+    "updateBlockContent" + blockId,
+    500,
+    true,
+  );
+};
 
-const mkProseMirrorPlugins = () => {
-  const getEditorView = () => editorView;
+const customPluginsGenerator = (getEditorView: () => EditorView | null, readonly: boolean) => {
   const getBlockId = () => props.block.id;
   const getBlockTree = () => props.blockTree ?? null;
 
   if (props.readonly) {
-    return [
-      mkHighlightMatchesPlugin(() => props.highlightTerms ?? []),
-      mkHighlightRefsPlugin(() => props.highlightRefs ?? []),
-    ];
+    return [];
   } else {
     return [
       inputRules({
@@ -69,12 +96,9 @@ const mkProseMirrorPlugins = () => {
           turnToCodeBlock(getBlockId, getBlockTree),
         ],
       }),
-      mkEventBusPlugin(),
-      mkHighlightMatchesPlugin(() => props.highlightTerms ?? []),
       mkKeymap(),
       mkPasteLinkPlugin(),
       mkTrailingHintPlugin(getBlockId, getBlockTree),
-      mkDocChangedPlugin(),
       mkPasteBlockRefsPlugin(),
       mkPasteBlockMirrorsPlugin(getBlockId, getBlockTree),
       mkPasteBlockTagsPlugin(),
@@ -82,152 +106,41 @@ const mkProseMirrorPlugins = () => {
       mkPasteImagePlugin(),
       mkOpenFloatingToolBarPlugin(),
       mkLongTextPastePlugin(),
-      mkHighlightRefsPlugin(() => props.highlightRefs ?? []),
     ];
   }
 };
 
-const highlightBlockRefs = (editorView: EditorView) => {
-  // 更新所有 blockRef 的高亮
-  const blockRefs = editorView.dom.querySelectorAll(".block-ref-v2");
-  const terms = props.highlightTerms;
-  blockRefs.forEach((el) => {
-    const toBlockId = el.getAttribute("to-block-id");
-    if (!toBlockId) return;
-    const block = app.getBlock(toBlockId);
-    const ctext = block?.ctext ?? "";
-    if (terms == null) {
-      el.innerHTML = ctext;
-    } else {
-      el.innerHTML = highlight(ctext, terms, (str) => `<span class="highlight-keep">${str}</span>`);
-    }
-  });
-};
-
 watch(
   () => props.block.content,
-  (value) => {
-    console.log("content updated");
-    if (!editorView || editorView?.isDestroyed || value.type != "text") return; // IMPOSSIBLE
-
-    const content = value.docContent;
-
-    // TODO don't update when focus?
-    if (JSON.stringify(content) == JSON.stringify(editorView.state.doc)) {
-      return;
-    }
-
-    let doc;
-    try {
-      doc = Node.fromJSON(pmSchema, content);
-    } catch (e) {
-      corruptedContent.value = true;
-      console.warn("corrupted content");
-      return;
-    }
-    const newState = EditorState.create({
-      doc,
-      plugins: editorView.state.plugins,
-      selection: editorView.state.selection,
-    });
-    editorView.updateState(newState);
-    highlightBlockRefs(editorView);
-  },
-);
-
-// update highlight terms
-watch(
-  () => props.highlightTerms,
-  () => {
-    if (!editorView) return;
-    const tr = editorView.state.tr.setMeta("", {});
-    editorView.dispatch(tr);
-    highlightBlockRefs(editorView);
+  (content) => {
+    if (content.type != "text") return;
+    docJson.value = content.docContent;
   },
   { immediate: true },
 );
 
 onMounted(() => {
-  if (!$contentEl.value || props.block.content.type != "text") {
-    throw new Error("Failed to get $contentEl");
-  }
-
-  let doc;
-  const content = props.block.content.docContent;
-  try {
-    doc = Node.fromJSON(pmSchema, content);
-  } catch (e) {
-    // 解析失败, 则文档有问题
-    corruptedContent.value = true;
-    console.warn("corrupted content detected");
-    return;
-  }
-
-  const editorState = EditorState.create({
-    doc,
-    plugins: mkProseMirrorPlugins(),
-  });
-
-  if (editorView) editorView.destroy();
-  editorView = new EditorView($contentEl.value, {
-    state: editorState,
-    editable: () => !props.readonly,
-    nodeViews: {
-      mathInline(node, view, getPos) {
-        return new MathInlineKatex(node, view, getPos);
-      },
-    },
-  });
-
-  if (editorView.on) {
-    // 文档内容更改时, 触发更新
-    editorView.on("docChanged", ({ newDoc }) => {
-      const blockId = props.block.id;
-      const newBlockContent = {
-        ...props.block.content,
-        docContent: newDoc,
-      };
-      app.taskQueue.addTask(
-        () => {
-          app.changeContent(blockId, newBlockContent as TextContent);
-          app.addUndoPoint({ message: "change text content" });
-        },
-        "updateBlockContent" + blockId,
-        500,
-        true,
-      );
-    });
-  }
+  // 将 editorView 附到 wrapperDom 上
+  const editorView = pmWrapper.value?.getEditorView();
+  const wrapperDom = pmWrapper.value?.getWrapperDom();
+  if (editorView && wrapperDom) Object.assign(wrapperDom, { pmView: editorView });
 
   // mtext 改变时, 更新 inlay hint
-  if (editorView.updateTrailingHint) {
+  if (editorView?.updateTrailingHint) {
     watch(
       () => props.block.mtext,
       (value) => {
-        editorView!.updateTrailingHint!(value);
-      }, // 仅在有 metadata 时渲染
+        const editorView = pmWrapper.value?.getEditorView();
+        editorView?.updateTrailingHint!(value);
+      },
       { immediate: true },
     );
   }
-
-  // 将 editorView 附到 $contentEl 上
-  Object.assign($contentEl.value, { pmView: editorView });
-
-  // 块失焦时关闭其拼写检查
-  $contentEl.value.addEventListener("focusin", () => {
-    if ($contentEl.value) $contentEl.value.spellcheck = true;
-  });
-  $contentEl.value.addEventListener("focusout", () => {
-    if ($contentEl.value) $contentEl.value.spellcheck = false;
-  });
 });
 
 onBeforeUnmount(() => {
-  if (editorView && !editorView.isDestroyed) {
-    editorView.destroy();
-    delete $contentEl.value["pmView"];
-  }
-  editorView = null;
+  const wrapperDom = pmWrapper.value?.getWrapperDom();
+  if ("pmView" in wrapperDom) delete wrapperDom["pmView"];
 });
 </script>
 

@@ -22,7 +22,8 @@ const props = defineProps<{
   // 块失焦时关闭拼写检查
   disableSpellcheckWhenBlur?: boolean;
   nodeViews?: EditorProps["nodeViews"];
-  pluginsGenerator?: (editorView: EditorView, readonly: boolean) => Plugin[];
+  pluginsGenerator?: (getEditorView: () => EditorView | null, readonly: boolean) => Plugin[];
+  onDocChanged?: (event: { newDoc: any; oldDoc: any; view: EditorView }) => void;
 }>();
 
 const docJson = defineModel<any>("doc");
@@ -32,11 +33,18 @@ const corrupted = ref(false);
 let editorView: EditorView | null = null;
 const app = useAppState();
 
+defineExpose({
+  getEditorView: () => editorView,
+  isCorrupted: () => corrupted.value,
+  getWrapperDom: () => $wrapper.value,
+});
+
 const mkPlugins = () => {
+  const getEditorView = () => editorView;
   const getHighlightTerms = () => props.highlightTerms;
   const getHighlightRefs = () => props.highlightRefs;
 
-  const customPlugins = props.pluginsGenerator?.(editorView!, props.readonly) ?? [];
+  const customPlugins = props.pluginsGenerator?.(getEditorView, props.readonly) ?? [];
 
   if (props.readonly) {
     return [
@@ -101,11 +109,12 @@ onMounted(() => {
     nodeViews: props.nodeViews ?? {},
   });
 
-  // 文档更改时，同步更改到 docJson
-  if (editorView.on)
-    editorView.on("docChanged", ({ newDoc }) => {
-      docJson.value = newDoc;
-    });
+  // 文档更改时的行为
+  if (editorView.on) {
+    // 默认立即新文档同步到 docJson
+    const defaultDocChangedHandler = ({ newDoc }) => (docJson.value = newDoc);
+    editorView.on("docChanged", props.onDocChanged ?? defaultDocChangedHandler);
+  }
 
   // TODO reactive
   if (props.disableSpellcheckWhenBlur) {

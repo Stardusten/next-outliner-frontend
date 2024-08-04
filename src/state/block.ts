@@ -174,8 +174,10 @@ export type MathDisplayContent = {
 
 export type QueryContent = {
   type: "query";
+  title: any; // prosemirror doc
   query: string;
-  fold: boolean;
+  showResults: boolean;
+  showQuery: boolean;
 };
 
 ///////////////////
@@ -720,7 +722,7 @@ export const blockManagePlugin = (s: AppState) => {
     value: BlockMetadataTypes[S["type"]],
     spec: S,
   ) => {
-    const block = getBlock(blockId);
+    const block = getBlock(blockId, true);
     if (!block) return;
     const oldMetadata = block.metadata;
     const newMetadata = { ...oldMetadata };

@@ -4,10 +4,9 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { EditorView, type KeyBinding } from "@codemirror/view";
-import { Compartment, EditorSelection, EditorState } from "@codemirror/state";
-import { bracketMatching, indentOnInput, LanguageDescription } from "@codemirror/language";
-import { closeBrackets } from "@codemirror/autocomplete";
+import { EditorView } from "@codemirror/view";
+import { Compartment, EditorSelection, EditorState, type Extension } from "@codemirror/state";
+import { LanguageDescription } from "@codemirror/language";
 import { mkContentChangePlugin } from "@/cm/plugins/content-change";
 import { useAppState } from "@/state/state";
 import { languages } from "@codemirror/language-data";
@@ -19,10 +18,15 @@ const props = defineProps<{
   theme?: string;
   readonly?: boolean;
   lang?: string;
-  showLanguageSelector?: boolean;
-  keymap?: KeyBinding[];
+  extensionsGenerator?: () => Extension[];
   highlightTerms?: string[];
+  onSrcChanged?: (newSrc: string, oldSrc?: string) => void;
 }>();
+
+defineExpose({
+  getEditorView: () => editorView,
+  getWrapperDom: () => $wrapper.value,
+});
 
 const src = defineModel<string>("src");
 
@@ -31,10 +35,6 @@ let editorView: EditorView | null = null;
 const $wrapper = ref<HTMLElement | null>(null);
 const languageCompartment = new Compartment();
 const themeCompartment = new Compartment();
-
-const langNames = languages.flatMap((l) => l.alias);
-langNames.sort();
-langNames.unshift("unknown");
 
 const registeredThemes = {
   light: basicLight,
@@ -97,33 +97,36 @@ const configureTheme = (theme: string) => {
 // props.theme 改变时更新主题
 watch(() => props.theme, configureTheme);
 
-const extensions = props.readonly
-  ? [
-      // plugins for readonly content
+const mkExtensions = () => {
+  const customExtension = props.extensionsGenerator?.() ?? [];
+
+  if (props.readonly)
+    return [
       languageCompartment.of([]),
       themeCompartment.of([]),
       EditorState.readOnly.of(true),
-    ]
-  : [
-      // plugins for editable content
+      ...customExtension,
+    ];
+  else
+    return [
       languageCompartment.of([]),
       themeCompartment.of([]),
-      indentOnInput(),
-      bracketMatching(),
-      closeBrackets(),
       mkContentChangePlugin(
-        (newSrc) => {
-          src.value = newSrc;
+        (newSrc, oldSrc) => {
+          if (props.onSrcChanged) props.onSrcChanged(newSrc, oldSrc);
+          else src.value = newSrc;
         },
         () => true,
       ),
+      ...customExtension,
     ];
+};
 
 onMounted(() => {
   if (!$wrapper.value) return;
   editorView = new EditorView({
     doc: src.value ?? "",
-    extensions,
+    extensions: mkExtensions(),
     parent: $wrapper.value,
   });
 

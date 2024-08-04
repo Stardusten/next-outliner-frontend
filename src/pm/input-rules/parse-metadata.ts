@@ -1,8 +1,8 @@
 import { InputRule } from "prosemirror-inputrules";
 import { pmSchema } from "../schema";
 import { EditorView } from "prosemirror-view";
-import {useAppState} from "@/state/state";
-import type {BlockId} from "@/state/block";
+import { useAppState } from "@/state/state";
+import type { BlockId } from "@/state/block";
 
 export const parseMetadata = (getEditorView: () => EditorView | null) =>
   new InputRule(/ (\S+?)[;；]{2}(.+)[;；]{2}/, (state, match, start, end) => {
@@ -47,24 +47,19 @@ export const parseMetadata = (getEditorView: () => EditorView | null) =>
 
     const newMetadata = structuredClone(focusedBlock.metadata);
     newMetadata[key] = value;
-    if (typeof value == "string") {
-      app.taskQueue.addTask(() => {
-        app.setMetadataEntry(
-          focusedBlock.id,
-          key,
-          value,
-          {type: "text"}
-        );
-      });
-    } else if (Array.isArray(value)) {
-      app.taskQueue.addTask(() => {
-        app.setMetadataEntry(
-          focusedBlock.id,
-          key,
-          value,
-          {type: "blockRefs"}
-        );
-      });
-    }
+
+    // 让更新 content 的 task 先执行，下面更新 metadata 的 task 后执行
+    setTimeout(() => {
+      if (typeof value == "string") {
+        app.taskQueue.addTask(() => {
+          app.setMetadataEntry(focusedBlock.id, key, value, { type: "text" });
+          console.log("change metadata task finished");
+        });
+      } else if (Array.isArray(value)) {
+        app.taskQueue.addTask(() => {
+          app.setMetadataEntry(focusedBlock.id, key, value, { type: "blockRefs" });
+        });
+      }
+    });
     return view.state.tr.setMeta("", ""); // empty transaction
   });

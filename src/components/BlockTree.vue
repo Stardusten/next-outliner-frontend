@@ -509,7 +509,7 @@ const onMouseMove = throttle((e: MouseEvent) => {
   }
 }, 50);
 
-const onMouseUp = (e: MouseEvent) => {
+const onMouseUpOrLeave = (e: MouseEvent) => {
   const el = $blockTree.value;
   if (!el) return;
   el.removeEventListener("mousemove", onMouseMove);
@@ -520,7 +520,8 @@ onMounted(() => {
   if (el) {
     Object.assign(el, { controller });
     el.addEventListener("mousedown", onMouseDown);
-    el.addEventListener("mouseup", onMouseUp);
+    el.addEventListener("mouseup", onMouseUpOrLeave);
+    el.addEventListener("mouseleave", onMouseUpOrLeave);
   }
   app.registerBlockTree(props.id, controller);
 });
@@ -529,7 +530,8 @@ onUnmounted(() => {
   const el = $blockTree.value;
   if (el) {
     el.removeEventListener("mousedown", onMouseDown);
-    el.removeEventListener("mouseup", onMouseUp);
+    el.removeEventListener("mouseup", onMouseUpOrLeave);
+    el.removeEventListener("mouseleave", onMouseUpOrLeave);
   }
   app.unregisterBlockTree(props.id);
 });

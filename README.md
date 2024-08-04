@@ -17,3 +17,16 @@ Workflowy 的大部分特性已经实现了，包括：
 6. 镜像块，与原身保持同步
 7. 文档块（隐藏 bullet，增加块上下间距）
 8. 自带明暗两色主题
+
+## 使用截图
+
+- 查询语法
+  ![image](https://github.com/user-attachments/assets/66700a66-239d-46d7-b17b-642dc9d6f805)
+- 块属性
+  ![image](https://github.com/user-attachments/assets/b7161463-9437-42aa-91c6-e42ce95ab663)
+- 数学公式与反链面板
+  ![image](https://github.com/user-attachments/assets/9154cd46-b369-4986-92a7-41d2da7249dd)
+- 分栏与浮动编辑菜单
+  ![image](https://github.com/user-attachments/assets/85682bfe-6fb6-4425-b62f-f20a24139901)
+
+

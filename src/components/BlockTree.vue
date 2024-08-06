@@ -79,7 +79,7 @@ import {
 } from "@/state/display-items";
 import { useAppState } from "@/state/state";
 import type { ALBlock, BlockId, ForDescendantsOfOptions } from "@/state/block";
-import type { BlockTree } from "@/state/block-tree";
+import type { BlockTree, BlockTreeProps } from "@/state/block-tree";
 import { AllSelection } from "prosemirror-state";
 import { EditorView as PmEditorView } from "prosemirror-view";
 import { EditorView as CmEditorView } from "@codemirror/view";
@@ -94,20 +94,7 @@ import FEContainerItem from "@/components/display-items/FEContainerItem.vue";
 import BacklinksItem from "@/components/display-items/BacklinksItem.vue";
 import BlockPathItem from "@/components/display-items/BlockPathItem.vue";
 
-const props = defineProps<{
-  id: string;
-  virtual?: boolean;
-  rootBlockIds?: BlockId[];
-  rootBlockLevel?: number;
-  paddingBottom?: number;
-  // 要高亮的所有 terms
-  highlightTerms?: string[];
-  // 要高亮的所有块引用
-  highlightRefs?: BlockId[];
-  // 是否忽略块的 fold 属性，强制折叠显示所有块
-  forceFold?: boolean;
-  diGenerator?: DisplayItemGenerator;
-}>();
+const props = defineProps<BlockTreeProps>();
 const $blockTree = ref<HTMLElement | null>(null);
 const $vlist = ref<InstanceType<typeof VirtList> | null>(null);
 const displayItems = shallowRef<DisplayItem[]>();
@@ -478,6 +465,7 @@ const controller: BlockTree = {
   inTempExpanded,
   addToTempExpanded,
   removeFromTempExpanded,
+  getProps: () => props,
 };
 defineExpose(controller);
 

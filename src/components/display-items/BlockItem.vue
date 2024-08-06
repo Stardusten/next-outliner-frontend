@@ -119,29 +119,19 @@ const shouldFold = computed(() => {
 
 const onClickFoldButton = () => {
   const blockId = props.item.id;
-  if (props.forceFold) {
-    // 强制折叠模式，则点击折叠按钮时修改 tempExpanded
-    if (props.blockTree.inTempExpanded(blockId)) props.blockTree.removeFromTempExpanded(blockId);
-    else props.blockTree.addToTempExpanded(blockId);
-  } else {
-    app.taskQueue.addTask(async () => {
-      await app.toggleFoldWithAnimation(blockId, !props.item.fold);
-      app.addUndoPoint({ message: "toggle fold" });
-    });
-  }
+  app.taskQueue.addTask(async () => {
+    const fold = props.forceFold ? props.blockTree.inTempExpanded(blockId) : !props.item.fold;
+    await app.toggleFoldWithAnimation(blockId, fold, props.blockTree);
+    app.addUndoPoint({ message: "toggle fold" });
+  });
 };
 
 const onClickBullet = () => {
-  app.applyPatches([
-    {
-      op: "replace",
-      path: ["mainRootBlockId"],
-      value: props.item.id,
-    },
-  ]);
+  app.replaceTrackingProp("mainRootBlockId", props.item.id);
 };
 
-const onFocusin = () => {
+const onFocusin = (e: FocusEvent) => {
+  e.stopPropagation();
   app.lastFocusedBlockTreeId.value = props.blockTree?.getId() ?? null;
   // TODO only work for alblock?
   app.lastFocusedBlockId.value = props.item.id;
@@ -267,7 +257,7 @@ const onDragOver = (e: DragEvent) => {
       opacity: 1;
     }
 
-    @at-root .block-item.fold .fold-button svg {
+    @at-root .block-item.fold > .fold-button svg {
       transform: rotate(90deg);
     }
   }

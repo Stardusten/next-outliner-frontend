@@ -45,15 +45,13 @@ export const mkTrailingHintPlugin = (getBlockId: () => BlockId, getBlockTree: ()
               span.addEventListener("click", () => {
                 const app = useAppState();
                 const blockId = getBlockId();
-                const blockTree = getBlockTree();
+                const tree = getBlockTree();
                 const block = app.getBlock(blockId);
                 if (block == null) return;
                 app.taskQueue.addTask(async () => {
-                  if (block.fold) {
-                    await app.toggleFoldWithAnimation(blockId, false);
-                    await blockTree.nextUpdate();
-                  }
-                  blockTree.expandMetadataItemInView(blockId);
+                  if (await app.toggleFoldWithAnimation(blockId, false, tree))
+                    await tree.nextUpdate();
+                  tree.expandMetadataItemInView(blockId);
                 });
               });
               return span;

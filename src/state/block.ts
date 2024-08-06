@@ -125,7 +125,10 @@ export type AMirrorBlock = MirrorBlock & APart;
 export type AVirtualBlock = VirtualBlock & APart;
 
 export type ForDescendantsOfOptions = {
-  onEachBlock: (block: ALBlock) => void | Promise<void>;
+  onEachBlock: (
+    block: ALBlock,
+    ignore?: "keep" | "ignore-this" | "ignore-descendants" | "ignore-this-and-descendants",
+  ) => void | Promise<void>;
   rootBlockId: BlockId;
   afterLeavingChildrens?: (block: ALBlock) => void | Promise<void>;
   rootBlockLevel?: number;
@@ -230,8 +233,12 @@ declare module "@/state/state" {
     getClozeIds: (target: BlockId | BlockContent) => Cloze["id"][];
     getBoosting: (target: BlockId | BlockContent) => number;
     normalizePos: (pos: BlockPos) => BlockPosParentChild | null;
-    toggleFold: (blockId: BlockId, fold: boolean) => boolean;
-    toggleFoldWithAnimation: (blockId: BlockId, fold: boolean) => Promise<void>;
+    toggleFold: (blockId: BlockId, fold: boolean, tree?: BlockTree) => boolean;
+    toggleFoldWithAnimation: (
+      blockId: BlockId,
+      fold: boolean,
+      tree?: BlockTree,
+    ) => Promise<boolean>;
     changeMetadata: (blockId: BlockId, newMetadata: any) => void;
     changeContent: (blockId: BlockId, content: BlockContent) => void;
     setMetadataEntry: <S extends BlockMetadataSpec>(
@@ -459,7 +466,7 @@ export const blockManagePlugin = (s: AppState) => {
       const alBlock = { ...block, level: currLevel };
       if (includeSelf || blockId != rootBlockId) {
         if (ignoreResult != "ignore-this") {
-          onEachBlock(alBlock);
+          onEachBlock(alBlock, ignoreResult);
         }
       }
       // "keep" 可以覆盖 nonFoldOnly 的效果
@@ -661,41 +668,105 @@ export const blockManagePlugin = (s: AppState) => {
   };
   s.decorate("normalizePos", normalizePos);
 
-  const toggleFold = (blockId: BlockId, fold: boolean, animate: boolean = false) => {
+  const toggleFold = (blockId: BlockId, fold: boolean, tree?: BlockTree) => {
     const block = getBlock(blockId, true);
-    if (!block || fold == block.fold) return false; // 折叠状态没有改变
-    block.fold = fold;
-    _setBlock(block);
-    return true;
+    if (!block) return false;
+
+    // 如果指定了 blockTree，则只保证 block 在这个 blockTree 中展开，否则保证在所有 blockTree 中展开
+    let toggled = false;
+    const trees = tree ? [tree] : s.blockTrees.values();
+    for (const t of trees) {
+      const props = t.getProps();
+      if (props.forceFold) {
+        const expanded = t.inTempExpanded(blockId);
+        if (fold && expanded) {
+          t.removeFromTempExpanded(blockId);
+          toggled = true;
+        } else if (!fold && !expanded) {
+          t.addToTempExpanded(blockId);
+          toggled = true;
+        }
+      } else {
+        if (fold == block.fold) continue;
+        toggled = true;
+        block.fold = fold;
+        _setBlock(block);
+      }
+    }
+    return toggled;
   };
   s.decorate("toggleFold", toggleFold);
 
-  const toggleFoldWithAnimation = async (blockId: BlockId, fold: boolean) => {
+  const toggleFoldWithAnimation = async (blockId: BlockId, fold: boolean, tree?: BlockTree) => {
     const block = getBlock(blockId, true);
-    if (!block || fold == block.fold) return false; // 折叠状态没有改变
+    if (!block) return false;
 
-    const blockTree = s.lastFocusedBlockTree.value;
-    if (blockTree != null) blockTree.suppressScroll(true);
+    let toggled = false;
+    const trees = tree ? [tree] : s.blockTrees.values();
 
-    if (fold) {
-      s.foldingStatus.value = { op: "folding", blockId };
-      await timeout(150);
-      s.foldingStatus.value = { op: "none" };
-      block.fold = true; // 动画结束后才真的将 block 设为 fold
-      _setBlock(block);
-    } else {
-      block.fold = false; // 动画开始前就将 block 设为 expand
-      _setBlock(block);
-      s.foldingStatus.value = { op: "expanding", blockId };
-      await timeout(150);
-      s.foldingStatus.value = { op: "none" };
-    }
+    // 先处理所有设为了 forceFold 的树
+    const p1 = (async () => {
+      for (const t of trees) {
+        const props = t.getProps();
+        if (!props.forceFold) continue;
+        const expanded = t.inTempExpanded(blockId);
+        if (fold && expanded) {
+          s.foldingStatus.value = { op: "folding", blockId };
+          await timeout(150);
+          s.foldingStatus.value = { op: "none" };
+          t.removeFromTempExpanded(blockId);
+          toggled = true;
+        } else if (!fold && !expanded) {
+          t.addToTempExpanded(blockId);
+          s.foldingStatus.value = { op: "expanding", blockId };
+          await timeout(150);
+          s.foldingStatus.value = { op: "none" };
+          toggled = true;
+        }
+      }
+    })();
 
-    if (blockTree != null) {
-      blockTree.nextUpdate(() => {
-        blockTree.suppressScroll(false);
-      });
-    }
+    // 然后处理其他没设为 forceFold 的树
+    const p2 = (async () => {
+      // 固定滚动位置
+      let hasNonForceFoldTree = false; // 是否有要操作的没设为 forceFold 的树
+      for (const t of trees) {
+        const props = t.getProps();
+        if (props.forceFold) continue;
+        hasNonForceFoldTree = true;
+        t.suppressScroll(true);
+      }
+
+      if (hasNonForceFoldTree) {
+        toggled = true;
+        if (fold) {
+          s.foldingStatus.value = { op: "folding", blockId };
+          await timeout(150);
+          s.foldingStatus.value = { op: "none" };
+          block.fold = true; // 动画结束后才真的将 block 设为 fold
+          _setBlock(block);
+        } else {
+          block.fold = false; // 动画开始前就将 block 设为 expand
+          _setBlock(block);
+          s.foldingStatus.value = { op: "expanding", blockId };
+          await timeout(150);
+          s.foldingStatus.value = { op: "none" };
+        }
+      }
+
+      // 取消固定滚动位置
+      for (const t of trees) {
+        const props = t.getProps();
+        if (props.forceFold) continue;
+        t.nextUpdate(() => {
+          t.suppressScroll(false);
+        });
+      }
+    })();
+
+    await Promise.all([p1, p2]);
+
+    return toggled;
   };
   s.decorate("toggleFoldWithAnimation", toggleFoldWithAnimation);
 

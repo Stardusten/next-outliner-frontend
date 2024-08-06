@@ -1,5 +1,5 @@
 <template>
-  <div class="code-content block-content" v-if="block.content.type == 'code'">
+  <div class="code-content block-content" ref="$contentEl" v-if="block.content.type == 'code'">
     <div class="lang-selector">
       <select :value="block.content.lang" @change="onLangSelectorChange">
         <option v-for="(lang, index) of langNames" :key="index" :value="lang">
@@ -57,6 +57,7 @@ langNames.unshift("unknown");
 const app = useAppState();
 const { theme } = app;
 const src = ref("");
+const $contentEl = ref<HTMLElement | null>(null);
 const cmWrapper = ref<InstanceType<typeof CodeMirror> | null>(null);
 const extensionsGenerator = () => {
   if (props.readonly) return [];
@@ -258,7 +259,10 @@ onMounted(() => {
   // 将 editorView 附到 wrapperDom 上
   const editorView = cmWrapper.value?.getEditorView();
   const wrapperDom = cmWrapper.value?.getWrapperDom();
-  if (editorView && wrapperDom) Object.assign(wrapperDom, { cmView: wrapperDom });
+  if (editorView) {
+    if (wrapperDom) Object.assign(wrapperDom, { cmView: editorView });
+    if ($contentEl.value) Object.assign($contentEl.value, { cmView: editorView });
+  }
 
   if (editorView) updateHighlightTerms(props.highlightTerms ?? [], editorView);
 });
@@ -266,6 +270,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   const wrapperDom = cmWrapper.value?.getWrapperDom();
   if ("cmView" in wrapperDom) delete wrapperDom["cmView"];
+  if ($contentEl.value && "cmView" in $contentEl.value) delete $contentEl.value["cmView"];
 });
 </script>
 

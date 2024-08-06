@@ -3,7 +3,7 @@ import { type EditorView as PmEditorView } from "prosemirror-view";
 import { type EditorView as CmEditorView } from "@codemirror/view";
 import type { AppState } from "@/state/state";
 import { shallowReactive } from "vue";
-import type { DisplayItem } from "@/state/display-items";
+import type { DisplayItem, DisplayItemGenerator } from "@/state/display-items";
 import type { Cloze } from "@/state/repeatable";
 import { VirtList } from "vue-virt-list";
 
@@ -18,7 +18,23 @@ export type BlockTreeEventOptions = {
   once?: boolean;
 };
 
+export type BlockTreeProps = {
+  id: string;
+  virtual?: boolean;
+  rootBlockIds?: BlockId[];
+  rootBlockLevel?: number;
+  paddingBottom?: number;
+  // 要高亮的所有 terms
+  highlightTerms?: string[];
+  // 要高亮的所有块引用
+  highlightRefs?: BlockId[];
+  // 是否忽略块的 fold 属性，强制折叠显示所有块
+  forceFold?: boolean;
+  diGenerator?: DisplayItemGenerator;
+};
+
 export type BlockTree = {
+  getProps: () => BlockTreeProps;
   getId: () => BlockTreeId;
   getRootBlockIds: () => BlockId[];
   getDisplayItems: () => DisplayItem[];
@@ -57,6 +73,7 @@ declare module "@/state/state" {
     registerBlockTree: (id: BlockTreeId, blockTree: BlockTree) => void;
     unregisterBlockTree: (id: BlockTreeId) => void;
     getBlockTree: (id: BlockTreeId) => BlockTree | null;
+    blockTrees: Map<BlockTreeId, BlockTree>;
   }
 }
 

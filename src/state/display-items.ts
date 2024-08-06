@@ -69,13 +69,13 @@ const defaultDfsOptions = (result: DisplayItem[]): Partial<ForDescendantsOfOptio
   dfsOptions.nonFoldOnly = true;
   dfsOptions.includeSelf = true;
 
-  dfsOptions.onEachBlock = async (block: ALBlock) => {
+  dfsOptions.onEachBlock = async (block: ALBlock, ignore) => {
     result.push({
       itemType: "alblock",
       ...block,
     } as BlockDI);
     // 如果有任何非内置 metadata，并且这个块是展开的，则加一个 MetadataDisplayItem
-    if (!block.fold && block.mtext.trim().length > 0) {
+    if (ignore != "ignore-descendants" && !block.fold && block.mtext.trim().length > 0) {
       result.push({
         ...block,
         id: "metadata" + block.id,
@@ -201,6 +201,9 @@ export const flatBacklinksGenerator: DisplayItemGenerator = (params) => {
     if (!group) grouped.set(key, [blockId]);
     else group.push(blockId);
   }
+
+  // 每个组内都排序
+  for (const group of grouped.values()) group.sort();
 
   const dfsOptions = defaultDfsOptions(result);
   dfsOptions.rootBlockLevel = params.rootBlockLevel;

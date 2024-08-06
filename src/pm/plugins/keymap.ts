@@ -45,24 +45,25 @@ export const mkKeymap = () => {
     Enter: {
       run: () => {
         app.taskQueue.addTask(async () => {
-          const rootBlockId = app.getTrackingProp("mainRootBlockId");
           const block = app.lastFocusedBlock.value;
           const tree = app.lastFocusedBlockTree.value;
           const view = app.lastFocusedEditorView.value;
-          if (!rootBlockId || !block || !tree || !(view instanceof EditorView)) return;
+          if (!block || !tree || !(view instanceof EditorView)) return;
 
           const sel = view.state.selection;
           const docEnd = AllSelection.atEnd(view.state.doc);
-          const onRoot = rootBlockId == block.id;
+          const rootBlockIds = tree.getRootBlockIds();
+          const onRoot = rootBlockIds.includes(block.id);
 
           // 新创建的块要继承的元信息
           const inheritMetadata = block.metadata.paragraph ? { paragraph: true } : {};
 
           // 1. 在块末尾按 Enter，下面创建空块
           if (sel.eq(docEnd)) {
+            app.toggleFold(block.id, false, tree);
             const pos = onRoot
               ? app.normalizePos({
-                  parentId: rootBlockId,
+                  parentId: block.id,
                   childIndex: "last-space",
                 })
               : app.normalizePos({
@@ -416,13 +417,14 @@ export const mkKeymap = () => {
     "Mod-ArrowUp": {
       run: () => {
         const block = app.lastFocusedBlock.value;
-        if (!block || block.fold) return false;
-        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
+        if (!block) return false;
+        const tree = app.lastFocusedBlockTree.value;
+        if (!tree) return false;
+        // 是否不用折叠
+        const needFold = tree.getProps().forceFold ? tree.inTempExpanded(block.id) : !block.fold;
+        if (!needFold) return false;
         app.taskQueue.addTask(async () => {
-          await app.toggleFoldWithAnimation(block.id, true);
-          if (lastFocusedBlockTree) {
-            await lastFocusedBlockTree.nextUpdate();
-          }
+          await app.toggleFoldWithAnimation(block.id, true, tree);
           app.addUndoPoint({ message: "fold block" });
         });
         return true;
@@ -432,13 +434,14 @@ export const mkKeymap = () => {
     "Mod-ArrowDown": {
       run: () => {
         const block = app.lastFocusedBlock.value;
-        if (!block || !block.fold) return false;
-        const lastFocusedBlockTree = app.lastFocusedBlockTree.value;
+        if (!block) return false;
+        const tree = app.lastFocusedBlockTree.value;
+        if (!tree) return false;
+        // 是否不用展开
+        const needExpand = tree.getProps().forceFold ? !tree.inTempExpanded(block.id) : block.fold;
+        if (!needExpand) return false;
         app.taskQueue.addTask(async () => {
-          await app.toggleFoldWithAnimation(block.id, false);
-          if (lastFocusedBlockTree) {
-            await lastFocusedBlockTree.nextUpdate();
-          }
+          await app.toggleFoldWithAnimation(block.id, false, tree);
           app.addUndoPoint({ message: "expand block" });
         });
         return true;

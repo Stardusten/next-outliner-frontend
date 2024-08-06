@@ -196,8 +196,9 @@ const focusBlockInView = (blockId: BlockId, scrollIntoView: boolean = true) => {
   const $parent = $blockTree.value;
   if (!$parent) return;
 
+  // 这里还要筛选 block-tree-id，防止聚焦到反链面板或者 queryResults 里面去
   const $content = $blockTree.value?.querySelector(
-    `.block-item[block-id="${blockId}"] .block-content`,
+    `.block-item[block-id="${blockId}"][block-tree-id="${props.id}"] .block-content`,
   ) as any;
   const editorView = $content?.pmView || $content?.cmView;
   if (editorView) {

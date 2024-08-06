@@ -60,7 +60,7 @@ import { Search } from "lucide-vue-next";
 import type { EditorView } from "prosemirror-view";
 import { inputRules } from "prosemirror-inputrules";
 import { openRefSuggestions } from "@/pm/input-rules/open-ref-suggestions";
-import { mkKeymap } from "@/pm/plugins/keymap";
+import { mkKeymapPlugin } from "@/pm/plugins/keymap";
 import { mkPasteLinkPlugin } from "@/pm/plugins/paste-link";
 import { mkPasteBlockRefsPlugin } from "@/pm/plugins/paste-block-refs";
 import { mkPasteBlockTagsPlugin } from "@/pm/plugins/paste-block-tags";
@@ -145,7 +145,7 @@ const customPluginsGenerator = (getEditorView: () => EditorView | null) => {
         rules: [openRefSuggestions(getEditorView)],
       }),
       mkPlaceholderPlugin("Untitled query", "query-title-placeholder"),
-      mkKeymap(),
+      mkKeymapPlugin(),
       mkPasteLinkPlugin(),
       mkPasteBlockRefsPlugin(),
       mkPasteBlockTagsPlugin(),

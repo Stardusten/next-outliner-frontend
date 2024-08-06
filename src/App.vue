@@ -101,78 +101,7 @@ onMounted(async () => {
 });
 
 /// Event handlers
-const bindings: { [key: string]: SimpleKeyBinding } = {
-  "Alt-ArrowUp": {
-    run: app.swapUpSelectedOrFocusedBlock,
-    stopPropagation: true,
-    preventDefault: true,
-  },
-  "Alt-ArrowDown": {
-    run: app.swapDownSelectedOrFocusedBlock,
-    stopPropagation: true,
-    preventDefault: true,
-  },
-  Tab: {
-    run: app.promoteSelectedOrFocusedBlock,
-    stopPropagation: true,
-    preventDefault: true,
-  },
-  "Shift-Tab": {
-    run: app.demoteSelectedOrFocusedBlock,
-    stopPropagation: true,
-    preventDefault: true,
-  },
-  Escape: {
-    // Note: MathContent 处理 Escape 的逻辑在 MathContent.vue 里
-    run: (e) => {
-      // 如果选择了某些块，则按 Escape 取消选择
-      if (app.selectSomething() && e.key == "Escape") {
-        app.clearSelected();
-        return true;
-      }
-      // 如果当前正在编辑某个块，则失焦并选择这个块
-      const focused = app.lastFocusedBlockId.value;
-      if (focused == null) return true;
-      const tree = app.lastFocusedBlockTree.value;
-      const view = tree?.getEditorViewOfBlock(focused);
-      if (focused && view) {
-        if (view instanceof PmEditorView) view.dom.blur();
-        /*if (view instanceof CmEditorView)*/ else view.contentDOM.blur();
-        app.selectBlock(focused);
-      }
-      return true;
-    },
-    stopPropagation: true,
-    preventDefault: true,
-  },
-  "Mod-z": {
-    run: () => {
-      app.undo();
-      return true;
-    },
-    stopPropagation: true,
-    preventDefault: true,
-  },
-  "Mod-Shift-z": {
-    run: () => {
-      app.redo();
-      return true;
-    },
-    stopPropagation: true,
-    preventDefault: true,
-  },
-  Delete: {
-    run: app.deleteSelectedBlocks,
-    stopPropagation: true,
-    preventDefault: true,
-  },
-  Backspace: {
-    run: app.deleteSelectedBlocks,
-    stopPropagation: true,
-    preventDefault: true,
-  },
-};
-const keydownHandler = generateKeydownHandlerSimple(bindings);
+const keydownHandler = generateKeydownHandlerSimple(app.keymaps.global);
 document.body.addEventListener("keydown", keydownHandler);
 </script>
 

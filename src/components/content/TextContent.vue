@@ -21,7 +21,7 @@ import { useAppState } from "@/state/state";
 import { inputRules } from "prosemirror-inputrules";
 import { mkHighlightMatchesPlugin } from "@/pm/plugins/highlight-matches";
 import { mkEventBusPlugin } from "@/pm/plugins/event-bus";
-import { mkKeymap } from "@/pm/plugins/keymap";
+import { mkKeymapPlugin } from "@/pm/plugins/keymap";
 import { mkTrailingHintPlugin } from "@/pm/plugins/trailing-hint";
 import { mkDocChangedPlugin } from "@/pm/plugins/doc-changed";
 import { turnToInlineCode } from "@/pm/input-rules/turn-to-inline-code";
@@ -96,7 +96,7 @@ const customPluginsGenerator = (getEditorView: () => EditorView | null, readonly
           turnToCodeBlock(getBlockId, getBlockTree),
         ],
       }),
-      mkKeymap(),
+      mkKeymapPlugin(),
       mkPasteLinkPlugin(),
       mkTrailingHintPlugin(getBlockId, getBlockTree),
       mkPasteBlockRefsPlugin(),

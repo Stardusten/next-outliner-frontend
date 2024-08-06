@@ -11,12 +11,12 @@ import { blockSelectDragPlugin } from "@/state/block-select-drag";
 import { backendApiPlugin } from "@/state/backend-apis";
 import { searchPanelPlugin } from "@/state/search-panel";
 import { repeatablePlugin } from "@/state/repeatable";
-import {floatingToolbarPlugin} from "@/state/floating-toolbar";
-import {toastPlugin} from "@/state/toast";
-import {refSuggestionsPlugin} from "@/state/ref-suggestions";
-import {imageCachePlugin} from "@/state/image-cache";
-import {leftSidebarPlugin} from "@/state/left-sidebar";
-
+import { floatingToolbarPlugin } from "@/state/floating-toolbar";
+import { toastPlugin } from "@/state/toast";
+import { refSuggestionsPlugin } from "@/state/ref-suggestions";
+import { imageCachePlugin } from "@/state/image-cache";
+import { leftSidebarPlugin } from "@/state/left-sidebar";
+import { keymapsPlugin } from "@/state/keymaps";
 
 /// Types
 export type StatePath = string | (string | number)[];
@@ -66,6 +66,7 @@ export const mkState = async () => {
   refSuggestionsPlugin(_state);
   imageCachePlugin(_state);
   leftSidebarPlugin(_state);
+  keymapsPlugin(_state);
 
   INSTANCE = _state;
 };

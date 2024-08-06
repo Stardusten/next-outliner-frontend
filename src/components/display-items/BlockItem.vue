@@ -15,6 +15,7 @@
     :style="{ paddingLeft: `${item.level * 36}px` }"
     :level="item.level"
     :block-id="item.id"
+    :block-tree-id="blockTree.getId()"
     ref="$blockItem"
     @focusin="onFocusin"
     @dragover="onDragOver"

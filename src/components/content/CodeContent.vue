@@ -149,4 +149,9 @@ onBeforeUnmount(() => {
     margin-top: 2px;
   }
 }
+
+// 拖拽时光标样式
+.block-tree.dragging .cm-editor {
+  cursor: grabbing;
+}
 </style>

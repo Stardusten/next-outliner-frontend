@@ -61,7 +61,7 @@ export const keymapsPlugin = (app: AppState) => {
 
           // 1. 在块末尾按 Enter，下面创建空块
           if (sel.eq(docEnd)) {
-            app.toggleFold(block.id, false, tree);
+            onRoot && app.toggleFold(block.id, false, tree);
             const pos = onRoot
               ? app.normalizePos({
                   parentId: block.id,
@@ -100,12 +100,13 @@ export const keymapsPlugin = (app: AppState) => {
             // 3. 中间按 Enter，上面创建一个新块，将光标左边的内容挪到新块中
             if (onRoot) return; // 不处理根块的情况
             const curSel = view.state.selection;
-            const content1 = view.state.doc.cut(0, curSel.anchor);
-            const content2 = view.state.doc.cut(curSel.anchor);
-            // 删去折到第二行的内容
-            const tr = view.state.tr.replaceWith(0, view.state.doc.content.size, content2);
-            tr.setSelection(AllSelection.atStart(tr.doc));
-            view.dispatch(tr);
+            const docAbove = view.state.doc.cut(0, curSel.anchor);
+            const newThisDoc = view.state.doc.cut(curSel.anchor);
+            // 删去挪移到新块中的内容
+            app.changeContent(block.id, {
+              type: "text",
+              docContent: newThisDoc.toJSON(),
+            });
             // 上方插入块
             const pos = app.normalizePos({
               baseBlockId: block.id,
@@ -116,10 +117,20 @@ export const keymapsPlugin = (app: AppState) => {
               pos,
               {
                 type: "text",
-                docContent: content1.toJSON(),
+                docContent: docAbove.toJSON(),
               },
               inheritMetadata,
             );
+            // 将光标移至开头
+            if (tree) {
+              await tree.nextUpdate();
+              const view = tree.getEditorViewOfBlock(block.id);
+              if (view instanceof EditorView) {
+                const sel = AllSelection.atStart(view.state.doc);
+                const tr = view.state.tr.setSelection(sel);
+                view.dispatch(tr);
+              }
+            }
             app.addUndoPoint({ message: "split block" });
             return;
           }
@@ -738,7 +749,7 @@ export const keymapsPlugin = (app: AppState) => {
     },
     "Mod-p": {
       run: () => {
-        app.searchPanel.show = true;
+        app.searchPanel.show.value = true;
         return true;
       },
       stopPropagation: true,

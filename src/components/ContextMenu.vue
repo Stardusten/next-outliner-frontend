@@ -1,18 +1,11 @@
 <template>
-  <div
-      class="contextmenu"
-      ref="el"
-      v-if="availableItems.length > 0 && app.contextmenu.context"
-  >
+  <div class="contextmenu" ref="el" v-if="availableItems.length > 0 && app.contextmenu.context">
+    <div class="overlay" @click="app.contextmenu.context = null"></div>
     <div
-        class="overlay"
-        @click="app.contextmenu.context = null"
-    ></div>
-    <div
-        class="contextmenu-item"
-        v-for="item in availableItems"
-        :key="item.id"
-        @click="onClickItem(item, $event)"
+      class="contextmenu-item"
+      v-for="item in availableItems"
+      :key="item.id"
+      @click="onClickItem(item, $event)"
     >
       <component :is="item.icon"></component>
       {{ item.displayText }}
@@ -21,27 +14,30 @@
 </template>
 
 <script setup lang="ts">
-import {useAppState} from "@/state/state";
-import {computed, nextTick, onMounted, ref} from "vue";
-import type {ContextmenuItem} from "@/state/contextmenu";
-import {toggleTwoColumns} from "@/contextmenu/toggle-two-columns";
-import {copyBlockRef} from "@/contextmenu/copy-block-ref";
-import {copyBlockTag} from "@/contextmenu/copy-block-tag";
-import {copyBlockMirror} from "@/contextmenu/copy-block-mirror";
-import {toggleParagraph} from "@/contextmenu/toggle-paragraph";
-import {addCaption} from "@/contextmenu/add-caption";
-import {deleteBlock} from "@/contextmenu/delete-block";
-import {calcPopoutPos} from "@/util/popout";
-import {addMetadata} from "@/contextmenu/add-metadata";
-import {changeTypeBlockRefs, changeTypeNumber, changeTypeText} from "@/contextmenu/metadata-entry-type";
+import { useAppState } from "@/state/state";
+import { computed, nextTick, onMounted, ref } from "vue";
+import type { ContextmenuItem } from "@/state/contextmenu";
+import { toggleTwoColumns } from "@/contextmenu/toggle-two-columns";
+import { copyBlockRef } from "@/contextmenu/copy-block-ref";
+import { copyBlockTag } from "@/contextmenu/copy-block-tag";
+import { copyBlockMirror } from "@/contextmenu/copy-block-mirror";
+import { toggleParagraph } from "@/contextmenu/toggle-paragraph";
+import { addCaption } from "@/contextmenu/add-caption";
+import { deleteBlock } from "@/contextmenu/delete-block";
+import { calcPopoutPos } from "@/util/popout";
+import { addMetadata } from "@/contextmenu/add-metadata";
+import {
+  changeTypeBlockRefs,
+  changeTypeNumber,
+  changeTypeText,
+} from "@/contextmenu/metadata-entry-type";
+import { addToRightSidePane } from "@/contextmenu/add-to-right-side-pane";
 
 const app = useAppState();
 const availableItems = computed(() => {
   const ctx = app.contextmenu.context;
   if (ctx == null || ctx.openMenuEvent == null) return [];
-  return Object.values(app.contextmenu.items).filter((item) =>
-      item.available(ctx),
-  );
+  return Object.values(app.contextmenu.items).filter((item) => item.available(ctx));
 });
 const el = ref<HTMLElement | null>(null);
 
@@ -86,6 +82,7 @@ onMounted(() => {
   registerContextMenuItem(changeTypeNumber);
   registerContextMenuItem(changeTypeText);
   registerContextMenuItem(changeTypeBlockRefs);
+  registerContextMenuItem(addToRightSidePane);
 });
 </script>
 

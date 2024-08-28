@@ -137,7 +137,7 @@ const updateSuggestions = debounce(() => {
       const block = app.getBlock(item.id);
       // TODO support more block content?
       if (block == null || block.content.type != "text") return null;
-      const path = app.getBlockPath(item.id);
+      const path = app.getBlockIdPath(item.id);
       if (path == null) return null;
       const ancestors = path.map((id) => app.getBlock(id)).filter((b) => b != null) as ABlock[];
       ancestors.reverse();

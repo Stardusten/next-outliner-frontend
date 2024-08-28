@@ -1,4 +1,6 @@
 body {
+  // fill the whole screen
+  width: 100vw;
   height: 100vh;
   margin: 0;
 
@@ -76,19 +78,19 @@ body {
 }
 
 .light {
-  --bg-color-primary: hsl(0, 100%, 100%);
-  --bg-color-darker: rgb(248, 249, 250);
-  --bg-color-darker-darker: #a4a4a4;
-  --bg-color-lighter: #eceef0;
-  --bg-color-lighter2: #797979;
+  --bg-color-primary: #fff;
+  --bg-color-secondary: hsl(0 , 0% , 96%);
+  --bg-hover: hsla(0 ,0% , 55%, 0.12);
+  --text-primary-color: hsl(0 , 0% , calc(96% - 90%));
+  --text-secondary-color: hsl(0 , 0%, calc(96% - 50%));
+  --link-color: hsl(201, 17%, 50%);
+  --selection-bg-color: #e6f7ff;
+  --highlight-block-bg: var(--selected-block-item-bg);
+  --selected-block-item-bg: #e6f7ff;
+  --code-color: unset;
+  --bold-color: unset;
 
-  --link-color: #868c90;
-  --tag-color: #868c90;
-  --text-primary-color: rgb(42, 49, 53);
-  --text-secondary-color: rgb(134, 140, 144);
-  --code-background: var(--bg-color-primary);
-  --code-color: rgb(42, 49, 53);
-  --highlight-block-bg: #d5f1ff;
+  // Highlights
   --highlight-1: rgb(186, 230, 253);
   --highlight-2: rgb(188, 240, 218);
   --highlight-3: rgb(251, 213, 213);
@@ -96,33 +98,101 @@ body {
   --highlight-5: #E2E8F0;
   --highlight-6: #FCD9BD;
   --highlight-7: #DCD7FE;
-  --selection-bg-color: #dbf3ff;
-  --border-indent: 1px solid #eceef0;
-  --bullet-color: #66666D;
-  --bullet-background: #EBEBEC;
-  --dangerous: #e24e4e;
-  --dangerous-bg: #a65b65;
-  --sticky-toolbar-bg: #343434;
-  --todo-color: #9581a9;
-  --now-color: #3399ff;
-  --later-color: #daa520;
-  --block-color: #f08080;
-  --completed-color: #5f9ea0;
-  --abort-color: #808080;
-  // rating buttons
-  --again-color: #e24e4e;
-  --hard-color: #eb9a00;
-  --good-color: #4f93f5;
-  --easy-color: #1eb954;
-  // cloze
-  --cloze-underline-color: #cea7ec;
-  --cloze-bg-color: #f6edff;
-  --cloze-highlight-color: #ecdcff;
 
-  --selected-block-item-bg: #e8e8e8;
-  --drop-area-bg: rgb(98, 167, 201);
+  --content-padding: 0px;
+
+  // icon
+  --icon-color: hsl(0 , 0%, calc(96% - 50%));
+  --icon-active-color: hsl(0 , 0%, calc(96% - 90%));
+  --icon-opacity: 0.85;
+  --icon-opacity-hover: 1;
+
+  // button
+  --button-bg: #fff;
+  --button-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12), 0 2px 3px 0 rgba(0,0,0,.05), 0 1px 1.5px 0 rgba(0,0,0,.03), 0 1px 2px 0 rgba(0,0,0,.04), 0 0 0 0 transparent;
+  --button-hover-bg: hsl(0 , 0% , calc(96% - 6%));
+  --button-hover-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.17), 0 2px 3px 0 rgba(0,0,0,.1), 0 1px 1.5px 0 rgba(0,0,0,.03), 0 1px 2px 0 rgba(0,0,0,.04), 0 0 0 0 transparent;
+
+  /// border
+  --border-primary: hsl(0 , 0% , calc(96% - 12%));
+
+  /// shadow
+  --shadow-s: 0px 1px 2px rgba(0, 0, 0, 0.028),
+    0px 3.4px 6.7px rgba(0, 0, 0, .042),
+    0px 15px 30px rgba(0, 0, 0, .07);
+  --shadow-l: 0px 1.8px 7.3px rgba(0, 0, 0, 0.071),
+    0px 6.3px 24.7px rgba(0, 0, 0, 0.112),
+    0px 30px 90px rgba(0, 0, 0, 0.2);
+
+  // input
+  --input-placeholder-color: ;
+  --input-radius: 5px;
+  --input-height: 32px;
+  --input-bg: var(--bg-color-primary);
+  --input-border: 1px solid hsl(0 ,0% , 21%);
+  --input-active-shadow: 0 0 2px hsl(0 ,0% , 35%);
+  --input-text-indent: .5em;
+
+  --border-indent: 1px solid #c5c5c5;
+  --bullet-color: #bababa;
+  --bullet-background: #f0f0f0;
+
+  --drop-area-bg: hsl(201 , 17% , 60%);
+
+  // toast
   --toast-bg: rgba(0, 0, 0, 0.9);
   --toast-font-color: #FAFAFA;
+
+  // search panel
+  --text-highlight: rgba(255, 225, 0, 0.5);
+
+  // left sidebar
+  --bg-left-sidebar: var(--bg-color-primary);
+  --border-left-sidebar: 1px solid var(--border-primary);
+
+  --errmsg-color: red;
+
+  //--bg-color-primary: hsl(0, 100%, 100%);
+  //--bg-color-darker: rgb(248, 249, 250);
+  //--bg-color-darker-darker: #a4a4a4;
+  //--bg-color-lighter: #eceef0;
+  //--bg-color-lighter2: #797979;
+  //
+  //--link-color: #868c90;
+  //--tag-color: #868c90;
+  //--text-primary-color: rgb(42, 49, 53);
+  //--text-secondary-color: rgb(134, 140, 144);
+  //--code-background: var(--bg-color-primary);
+  //--code-color: rgb(42, 49, 53);
+  //--highlight-block-bg: #d5f1ff;
+
+  //--selection-bg-color: #dbf3ff;
+  //--border-indent: 1px solid #eceef0;
+  //--bullet-color: #66666D;
+  //--bullet-background: #EBEBEC;
+  //--dangerous: #e24e4e;
+  //--dangerous-bg: #a65b65;
+  //--sticky-toolbar-bg: #343434;
+  //--todo-color: #9581a9;
+  //--now-color: #3399ff;
+  //--later-color: #daa520;
+  //--block-color: #f08080;
+  //--completed-color: #5f9ea0;
+  //--abort-color: #808080;
+  //// rating buttons
+  //--again-color: #e24e4e;
+  //--hard-color: #eb9a00;
+  //--good-color: #4f93f5;
+  //--easy-color: #1eb954;
+  //// cloze
+  //--cloze-underline-color: #cea7ec;
+  //--cloze-bg-color: #f6edff;
+  //--cloze-highlight-color: #ecdcff;
+  //
+  //--selected-block-item-bg: #e8e8e8;
+  //--drop-area-bg: rgb(98, 167, 201);
+  //--toast-bg: rgba(0, 0, 0, 0.9);
+  //--toast-font-color: #FAFAFA;
 }
 
 .dark {
@@ -136,7 +206,9 @@ body {
   --highlight-block-bg: var(--selected-block-item-bg);
   --selected-block-item-bg: #363636;
   --code-color: #acacac;
+  --bold-color: hsl(0 , 0%, 80%);
 
+  // Highlights
   --highlight-1: #385570;
   --highlight-2: #294436;
   --highlight-3: #5e3838;
@@ -144,6 +216,8 @@ body {
   --highlight-5: #444444;
   --highlight-6: #704523;
   --highlight-7: #503466;
+
+  --content-padding: 0px;
 
   // icon
   --icon-color: hsl(0, 0%, 60%);
@@ -178,6 +252,7 @@ body {
   --bullet-background: #414141;
 
   --drop-area-bg: hsl(201 , 17% , 60%);
+  --resize-handler-bg: hsl(201 , 17% , 60%);
 
   // toast
   --toast-bg: rgba(0, 0, 0, 0.9);
@@ -193,6 +268,10 @@ body {
   --errmsg-color: red;
 }
 
+strong {
+  color: var(--bold-color);
+}
+
 u {
   text-underline-offset: .2em;
   text-decoration-thickness: 1px;
@@ -202,48 +281,8 @@ s {
   text-decoration-thickness: 1px;
 }
 
-/** Mathlive */
-/* Hide the virtual keyboard toggle */
+// Katex
 .ProseMirror {
-  math-field::part(virtual-keyboard-toggle) {
-    display: none;
-  }
-
-  /* Hide the menu toggle */
-  math-field::part(menu-toggle) {
-    display: none;
-  }
-
-  math-field {
-    background-color: unset !important;
-    color: var(--text-primary-color);
-    border: 0;
-    padding: 0;
-    min-width: 0.5em;
-    --selection-background-color: var(--selection-bg-color);
-    --selection-color: var(--text-primary-color);
-    --contains-highlight-background-color: var(--bg-hover);
-  }
-
-  math-field::selection {
-    background-color: transparent !important;
-  }
-
-  math-field:focus {
-    border: 0;
-    padding: 0;
-    outline: 1px dotted var(--ui-color1);
-    /** may be a bad idea?*/
-    position: relative;
-    z-index: 99;
-  }
-
-  math-field::part(content) {
-    padding-top: 0;
-    padding-bottom: 0;
-    padding-right: 0;
-  }
-
   .katex {
     font-size: var(--math-font-size);
   }

@@ -26,7 +26,7 @@ declare module "@/state/state" {
 
 /// Helper: YjsPersister
 const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) => {
-  const token = app.getTrackingProp("token");
+  const token = app.token.value;
   if (!token) return;
 
   const yDoc = new Y.Doc();
@@ -56,12 +56,11 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) =>
       return;
     }
 
-    if (patches[0]?.meta?.from != "remote")
-      console.log("local -> binding"); // TODO
+    if (patches[0]?.meta?.from != "remote") console.log("local -> binding"); // TODO
 
     yDoc.transact(() => {
       for (const patch of patches) {
-        const {from} = patch.meta ?? {};
+        const { from } = patch.meta ?? {};
         // 忽略所有来自 server 的 command
         if (from == "remote") continue;
         if (patch.path[0] == "blocks") {
@@ -87,20 +86,20 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) =>
         }
       }
     }, "local");
-  }
+  };
   app.on("afterPatches", localToBinding);
 
   // 暂缓同步
   const suppressSync = () => {
     isSyncSuppressed = true;
-  }
+  };
 
   // 重启同步
   const enableSync = () => {
     isSyncSuppressed = false;
     localToBinding([backlogPatches]);
     backlogPatches.length = 0;
-  }
+  };
 
   // binding -> local model
   yBlocks.observe((event) => {
@@ -150,7 +149,7 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) =>
             op: "add",
             path: ["blocks", key],
             value: augmentBlock(block, app.getBlock),
-            meta: {from: "remote"},
+            meta: { from: "remote" },
           });
         } else nonNormalBlocksToAdd.push(block);
       }
@@ -163,7 +162,7 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) =>
         op: "add",
         path: ["blocks", block.id],
         value: augmentBlock(block, app.getBlock),
-        meta: {from: "remote"},
+        meta: { from: "remote" },
       });
     }
     app.applyPatches(patches);
@@ -253,14 +252,10 @@ export const yjsPersisterPlugin = (s: AppState) => {
 
   /// Actions
   const connectYjsPersister = () => {
-    const backendUrl = s.getTrackingProp("backendUrl");
+    const backendUrl = s.backendUrl.value;
     const database = s.openedDatabase.value;
     if (backendUrl && database) {
-      yjsPersister.value = mkYjsPersister(
-        s,
-        `ws://${backendUrl}`,
-        database.location,
-      );
+      yjsPersister.value = mkYjsPersister(s, `ws://${backendUrl}`, database.location);
     } else throw new Error("backendUrl or dbLocation is not set");
   };
   s.decorate("connectYjsPersister", connectYjsPersister);

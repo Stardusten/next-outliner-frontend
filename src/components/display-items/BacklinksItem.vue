@@ -85,7 +85,7 @@ const onExpand = () => {
     }
 
     .fold-button {
-      height: 28px;
+      height: calc(26px + var(--content-padding));
       width: 18px;
       display: flex;
       justify-content: center;
@@ -111,7 +111,8 @@ const onExpand = () => {
     }
 
     .bullet {
-      height: 30px;
+      // TODO hard coded
+      height: calc(26px + var(--content-padding));
       min-width: 18px;
       display: flex;
       justify-content: center;

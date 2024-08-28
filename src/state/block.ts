@@ -1,6 +1,6 @@
 import type { AppState } from "@/state/state";
 import { type Disposable, disposableComputed, type TrackPatch } from "@/state/tracking";
-import { Node } from "prosemirror-model";
+import { DOMSerializer, Node } from "prosemirror-model";
 import { pmSchema } from "@/pm/schema";
 import { getUUID } from "@/util/uuid";
 import { timeout } from "@/util/timeout";
@@ -216,13 +216,15 @@ declare module "@/state/state" {
     setMainRootBlock: (blockId: BlockId) => void;
     getBlock: (blockId: BlockId, clone?: boolean) => ABlock | null;
     getBlockReactive: (blockId: BlockId) => Disposable<ABlock | null>;
+    createVirtualChildren: (blockId: BlockId) => void;
     _setBlock: (block: ABlock, meta?: TrackPatch["meta"]) => void;
     _deleteBlock: (blockId: BlockId, meta?: TrackPatch["meta"]) => void;
     // [当前块...根块]
-    getBlockPath: (blockId: BlockId) => BlockId[] | null;
+    getBlockIdPath: (blockId: BlockId) => BlockId[] | null;
+    getBlockPath: (blockId: BlockId, fromRoot?: boolean, includeSelf?: boolean) => ABlock[] | null;
     getBlockLevel: (blockId: BlockId) => number;
     // [当前块...根块]
-    getBlockPathReactive: (blockId: BlockId) => Disposable<BlockId[] | null>;
+    getBlockIdPathReactive: (blockId: BlockId) => Disposable<BlockId[] | null>;
     getPredecessorBlockId: (blockId: BlockId, considerFold?: boolean) => BlockId | null;
     getSuccessorBlockId: (blockId: BlockId, considerFold?: boolean) => BlockId | null;
     // 判断 a 是不是 b 的后代。注意：如果 a == b，不认为 a 是 b 的后代。
@@ -267,6 +269,7 @@ declare module "@/state/state" {
       highlight?: boolean,
       focus?: boolean,
     ) => Promise<void>;
+    block2html: (...blockIds: BlockId[]) => HTMLUListElement;
     ///
     swapUpSelectedOrFocusedBlock: () => boolean;
     swapDownSelectedOrFocusedBlock: () => boolean;
@@ -301,6 +304,34 @@ export const blockManagePlugin = (s: AppState) => {
     return clone ? structuredClone(block) : block;
   };
   s.decorate("getBlock", getBlock);
+
+  const createVirtualChildren = (blockId: BlockId) => {
+    const block = getBlock(blockId, true);
+    if (!block) return;
+    if (!isVirtualBlock(block)) return;
+    const actualSrcBlock = getBlock(block.actualSrc);
+    if (!actualSrcBlock) return;
+    const vChildBlockIds: BlockId[] = [];
+    for (const childId of actualSrcBlock.childrenIds) {
+      const childBlock = getBlock(childId, true);
+      if (!childBlock) continue;
+      const vChildBlock: AVirtualBlock = {
+        ...childBlock,
+        id: getUUID(),
+        parent: block.id,
+        type: "virtualBlock",
+        childrenIds: "null",
+        fold: true,
+        src: childId,
+        actualSrc: "src" in childBlock ? childBlock.src : childBlock.id,
+      };
+      s._setBlock(vChildBlock);
+      vChildBlockIds.push(vChildBlock.id);
+    }
+    block.childrenIds = vChildBlockIds;
+    s._setBlock(block);
+  };
+  s.decorate("createVirtualChildren", createVirtualChildren);
 
   const getBlockReactive = (blockId: BlockId): Disposable<ABlock | null> => {
     return s.getTrackingPropByPathReactive(`blocks.${blockId}`);
@@ -361,7 +392,7 @@ export const blockManagePlugin = (s: AppState) => {
   s.decorate("getSuccessorBlockId", getSuccessorBlockId);
 
   const isDescendantOf = (a: BlockId, b: BlockId, allowSame: boolean = true) => {
-    const pathA = getBlockPath(a);
+    const pathA = getBlockIdPath(a);
     if (pathA == null) return false;
     return allowSame ? pathA.includes(b) : pathA.slice(1).includes(b);
   };
@@ -391,7 +422,11 @@ export const blockManagePlugin = (s: AppState) => {
   };
   s.decorate("_deleteBlock", _deleteBlock);
 
-  const getBlockPath = (blockId: BlockId): BlockId[] | null => {
+  const getBlockIdPath = (
+    blockId: BlockId,
+    fromRoot: boolean = false,
+    includeSelf: boolean = true,
+  ): BlockId[] | null => {
     const path = [];
     let currBlock: any = getBlock(blockId);
     if (!currBlock) return null;
@@ -403,17 +438,45 @@ export const blockManagePlugin = (s: AppState) => {
       currBlock =
         currBlock.parent && currBlock.parent != "null" ? getBlock(currBlock.parent) : null;
     }
+    // 是否包含自己
+    if (!includeSelf) path.shift();
+    // 顺序是否为从根到这个块
+    if (fromRoot) path.reverse();
+    return path;
+  };
+  s.decorate("getBlockIdPath", getBlockIdPath);
+
+  const getBlockPath = (
+    blockId: BlockId,
+    fromRoot: boolean = false,
+    includeSelf: boolean = true,
+  ): ABlock[] | null => {
+    const path: ABlock[] = [];
+    let currBlock: any = getBlock(blockId);
+    if (!currBlock) return null;
+    while (currBlock) {
+      path.push(currBlock);
+      if (currBlock.parent == currBlock.id) {
+        throw new Error("loop detected!!");
+      }
+      currBlock =
+        currBlock.parent && currBlock.parent != "null" ? getBlock(currBlock.parent) : null;
+    }
+    // 是否包含自己
+    if (!includeSelf) path.shift();
+    // 顺序是否为从根到这个块
+    if (fromRoot) path.reverse();
     return path;
   };
   s.decorate("getBlockPath", getBlockPath);
 
   const getBlockLevel = (blockId: BlockId) => {
-    const path = getBlockPath(blockId);
+    const path = getBlockIdPath(blockId);
     return path ? path.length - 1 : -1;
   };
   s.decorate("getBlockLevel", getBlockLevel);
 
-  const getBlockPathReactive = (blockId: BlockId) => {
+  const getBlockIdPathReactive = (blockId: BlockId) => {
     return disposableComputed((scope) => {
       const path = [];
       const _ref: any = getBlockReactive(blockId);
@@ -436,7 +499,7 @@ export const blockManagePlugin = (s: AppState) => {
       return path;
     });
   };
-  s.decorate("getBlockPathReactive", getBlockPathReactive);
+  s.decorate("getBlockIdPathReactive", getBlockIdPathReactive);
 
   const forDescendantsOf = ({
     onEachBlock,
@@ -450,7 +513,7 @@ export const blockManagePlugin = (s: AppState) => {
     nonFoldOnly ??= true;
     includeSelf ??= true;
     if (rootBlockLevel == null) {
-      const path = getBlockPath(rootBlockId);
+      const path = getBlockIdPath(rootBlockId);
       if (!path) {
         console.error("cannot get path of ", rootBlockId);
         return;
@@ -1403,7 +1466,7 @@ export const blockManagePlugin = (s: AppState) => {
   ) => {
     return await s.transact(async () => {
       const rootBlockIds = blockTree.getRootBlockIds();
-      const targetPath = getBlockPath(targetBlockId);
+      const targetPath = getBlockIdPath(targetBlockId);
       if (targetPath == null) return;
 
       // 找到合适的 rootBlockId
@@ -1436,7 +1499,7 @@ export const blockManagePlugin = (s: AppState) => {
         // 但是 blockTree 是 main，则直接调用 mainRootBlockId 更换 rootBlockId
         if (blockTree.getId() == "main") {
           // 计算合适的 mainRootBlockId
-          const rootPath = getBlockPath(rootBlockIds[0]);
+          const rootPath = getBlockIdPath(rootBlockIds[0]);
           if (rootPath == null) return;
           // targetPath 和 rootPath 的最近公共祖先就是最合适的 mainRootBlockId
           let i = rootPath.length - 1,
@@ -1467,6 +1530,30 @@ export const blockManagePlugin = (s: AppState) => {
     });
   };
   s.decorate("locateBlock", locateBlock);
+
+  const block2html = (...blockIds: BlockId[]) => {
+    const serializer = DOMSerializer.fromSchema(pmSchema);
+    const dfs = (currId: BlockId, containerEl: HTMLUListElement) => {
+      const currBlock = s.getBlock(currId);
+      if (!currBlock) return;
+      if (currBlock.content.type != "text") return; // TODO
+      const liEl = document.createElement("li");
+      const docNode = pmSchema.nodeFromJSON(currBlock.content.docContent);
+      const content = serializer.serializeFragment(docNode.content);
+      liEl.append(content);
+      containerEl.append(liEl);
+      if (currBlock.childrenIds && currBlock.childrenIds.length > 0) {
+        const childrenContainer = document.createElement("ul");
+        for (const childId of currBlock.childrenIds) dfs(childId, childrenContainer);
+        containerEl.append(childrenContainer);
+      }
+    };
+
+    const containerEl = document.createElement("ul");
+    for (const blockId of blockIds) dfs(blockId, containerEl);
+    return containerEl;
+  };
+  s.decorate("block2html", block2html);
 
   /// Useful commands
   const swapUpSelectedOrFocusedBlock = () => {
@@ -1661,7 +1748,7 @@ export const augmentBlock = (
   }
 };
 
-export const shrinkBlock = (aBlock: ABlock) => {
+export const shrinkBlock = (aBlock: ABlock): Block => {
   if (isNormalBlock(aBlock)) {
     return {
       id: aBlock.id,
@@ -1685,7 +1772,7 @@ export const shrinkBlock = (aBlock: ABlock) => {
       childrenIds: aBlock.childrenIds,
       fold: aBlock.fold,
       src: aBlock.src,
-    };
+    } as MirrorBlock | VirtualBlock;
   }
 };
 

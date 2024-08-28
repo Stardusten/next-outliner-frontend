@@ -148,10 +148,15 @@ onBeforeUnmount(() => {
 .text-content {
   cursor: text;
   max-width: calc(100% - 48px);
-  padding: 2px 0;
+  padding: var(--content-padding) 0;
   font-family: var(--text-font);
   font-size: var(--text-font-size);
   line-height: var(--line-height-normal);
+}
+
+// 拖拽时光标样式
+.block-tree.dragging .ProseMirror {
+  cursor: grabbing;
 }
 
 // 高亮样式

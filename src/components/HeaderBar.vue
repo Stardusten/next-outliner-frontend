@@ -4,10 +4,23 @@
       <div class="button settings" @click="showLeftSidebar = !showLeftSidebar">
         <PanelLeft></PanelLeft>
       </div>
+      <div class="button go-prev">
+        <ArrowLeft></ArrowLeft>
+      </div>
+      <div class="button go-next">
+        <ArrowRight></ArrowRight>
+      </div>
     </div>
     <div class="root-block-path" v-if="path">
       <template v-for="(block, index) in path" :key="block.id">
-        <span @click="app.setMainRootBlock(block.id)">{{ block.ctext }}</span>
+        <TextContent
+          class="path-part"
+          @click="onClickPathPart(block.id)"
+          v-if="block.content.type == 'text'"
+          :block="block"
+          :readonly="true"
+        ></TextContent>
+        <div v-else class="path-part">[{{ block.content.type }} block]</div>
         <ChevronRight v-if="index != path.length - 1"></ChevronRight>
       </template>
     </div>
@@ -22,7 +35,7 @@
           {{ repeatablesToReview.length }}
         </div>
       </div>
-      <div class="button search" @click="app.searchPanel.show = true">
+      <div class="button search" @click="app.searchPanel.show.value = true">
         <Search></Search>
       </div>
       <div class="button toggle-theme" @click="toggleTheme">
@@ -32,25 +45,43 @@
       <div class="logout-button button" @click="onLogout">
         <LogOut></LogOut>
       </div>
+      <div
+        class="show-right-side-pane-button button"
+        @click="app.showRightSidePane.value = !app.showRightSidePane.value"
+      >
+        <PanelRight></PanelRight>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ChevronRight, LogOut, Menu, Search, Moon, Sun, PanelLeft } from "lucide-vue-next";
+import {
+  ArrowRight,
+  ChevronRight,
+  ArrowLeft,
+  PanelRight,
+  LogOut,
+  Menu,
+  Search,
+  Moon,
+  Sun,
+  PanelLeft,
+} from "lucide-vue-next";
 import { useAppState } from "@/state/state";
 import { computed, onUnmounted, ref } from "vue";
-import type { ABlock } from "@/state/block";
+import type { ABlock, BlockId } from "@/state/block";
 import { disposableComputed } from "@/state/tracking";
 import Flashcards from "@/components/icons/Flashcards.vue";
+import TextContent from "@/components/content/TextContent.vue";
 
 const app = useAppState();
 const mainRootBlockId = app.getTrackingPropReactive("mainRootBlockId");
-const {repeatablesToReview, showLeftSidebar} = app;
+const { repeatablesToReview, showLeftSidebar } = app;
 
 const path = disposableComputed<ABlock[]>((scope) => {
   if (mainRootBlockId.value == null) return [];
-  const path = app.getBlockPathReactive(mainRootBlockId.value);
+  const path = app.getBlockIdPathReactive(mainRootBlockId.value);
   scope.addDisposable(path);
   if (path.value == null || path.value.length == 0) return [];
   const ret = [];
@@ -62,6 +93,10 @@ const path = disposableComputed<ABlock[]>((scope) => {
   ret.reverse();
   return ret;
 });
+
+const onClickPathPart = (blockId: BlockId) => {
+  app.setMainRootBlock(blockId);
+};
 
 const toggleTheme = () => {
   if (app.theme.value == "light") app.theme.value = "dark";
@@ -79,7 +114,7 @@ const onExport = (checking: boolean) => {
 const onLogout = () => {
   app.disconnectBackend();
   location.reload();
-}
+};
 
 onUnmounted(() => {
   mainRootBlockId.dispose();
@@ -108,14 +143,18 @@ onUnmounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-grow: 1;
     margin: 0 8px;
-    color: var(--text-secondary-color);
-    font-family: var(--text-font);
 
-    span {
+    .path-part {
       cursor: pointer;
-
       transition: all 100ms ease-in-out;
+      color: var(--text-secondary-color);
+      font-size: var(--ui-font-size-m);
+
+      &.text-content .ProseMirror {
+        white-space: nowrap;
+      }
 
       &:hover {
         color: var(--text-primary-color);

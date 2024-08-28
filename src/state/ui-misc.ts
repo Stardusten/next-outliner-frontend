@@ -83,7 +83,7 @@ export const uiMiscPlugin = (s: AppState) => {
     const mainRootBlockId = s.getTrackingPropReactive("mainRootBlockId");
     scope.addDisposable(mainRootBlockId);
     if (mainRootBlockId.value == null) return [];
-    return s.getBlockPath(mainRootBlockId.value);
+    return s.getBlockIdPath(mainRootBlockId.value);
   });
   s.decorate("mainRootBlockPath", mainRootBlockPath);
 

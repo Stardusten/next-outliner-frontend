@@ -1,32 +1,32 @@
-import { shallowReactive, type ShallowReactive } from "vue";
+import { ref, type Ref, shallowReactive, type ShallowReactive } from "vue";
 import type { AppState } from "@/state/state";
 
 /// Types
 declare module "@/state/state" {
   interface AppState {
-    searchPanel: ShallowReactive<{
-      show: boolean;
-      query: string;
-      types: ShallowReactive<{
+    searchPanel: {
+      show: Ref<boolean>;
+      query: Ref<string>;
+      types: Ref<{
         text: boolean;
         code: boolean;
         image: boolean;
         math: boolean;
       }>;
-    }>;
+    };
   }
 }
 
 export const searchPanelPlugin = (s: AppState) => {
-  const searchPanel = shallowReactive({
-    show: false,
-    query: "",
-    types: shallowReactive({
+  const searchPanel = {
+    show: ref(false),
+    query: ref(""),
+    types: ref({
       text: true,
       code: false,
       image: false,
       math: false,
     }),
-  });
+  };
   s.decorate("searchPanel", searchPanel);
 };

@@ -52,7 +52,7 @@ type UndoPointRelatedProps = {
 
 declare module "@/state/state" {
   interface AppState extends TrackingSystem {
-    [tracking]: true,
+    [tracking]: true;
   }
 }
 
@@ -210,7 +210,7 @@ const mkUndoManager = () => {
     const currUndoPointInfo = undoPointInfos[currPoint];
     if (currUndoPointInfo?.message)
       app.addToast({
-        message: "Undo: " + currUndoPointInfo.message
+        message: "Undo: " + currUndoPointInfo.message,
       });
 
     // 应用 patchesToApply 以撤销
@@ -218,8 +218,7 @@ const mkUndoManager = () => {
 
     // 恢复选区
     const undoPointInfo = undoPointInfos[targetUndoPoint];
-    if (undoPointInfo)
-      app.restoreSelection(undoPointInfo);
+    if (undoPointInfo) app.restoreSelection(undoPointInfo);
 
     // 更新 currPoint
     currPoint = targetUndoPoint;
@@ -248,7 +247,7 @@ const mkUndoManager = () => {
       app.restoreSelection(targetUndoPointInfo);
       // 显示恢复详细信息
       app.addToast({
-        message: "Redo: " + targetUndoPointInfo.message
+        message: "Redo: " + targetUndoPointInfo.message,
       });
     }
 
@@ -297,7 +296,9 @@ const mkUndoManager = () => {
     _invPatches: invPatches,
     _undoPoints: undoPoints,
     _selectionInfos: undoPointInfos,
-    get _currPoint() { return currPoint }
+    get _currPoint() {
+      return currPoint;
+    },
   };
 };
 
@@ -526,7 +527,7 @@ const mkTrackingSystem = () => {
         value: value,
       },
     ]);
-  }
+  };
 
   const replaceTrackingProp = (path: StatePath, value: any) => {
     if (typeof path == "string") path = path.split(".");
@@ -537,7 +538,7 @@ const mkTrackingSystem = () => {
         value: value,
       },
     ]);
-  }
+  };
 
   const removeTrackingProp = (path: StatePath) => {
     if (typeof path == "string") path = path.split(".");
@@ -547,7 +548,7 @@ const mkTrackingSystem = () => {
         path: path,
       },
     ]);
-  }
+  };
 
   return {
     registerTrackingProp,
@@ -567,6 +568,7 @@ const mkTrackingSystem = () => {
     off: emitter.off,
     _emit: emitter.emit,
     _undoManager: undoManager,
+    _trackingProps: trackingPropsStore,
   };
 };
 

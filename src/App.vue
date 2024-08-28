@@ -5,7 +5,17 @@
   </template>
   <template v-else>
     <HeaderBar></HeaderBar>
-    <div class="main-pane">
+    <div
+      class="main-pane"
+      :class="{
+        showLeftSidebar,
+        showRightSidePane,
+      }"
+      :style="{
+        // dynamic css variables
+        '--right-side-pane-width': `${rightSidePaneWidth}px`,
+      }"
+    >
       <LeftSidebar></LeftSidebar>
       <BlockTree
         id="main"
@@ -16,6 +26,7 @@
         :root-block-level="0"
         :padding-bottom="200"
       ></BlockTree>
+      <RightSidePane></RightSidePane>
     </div>
     <ContextMenu></ContextMenu>
     <!--    <FileExplorer></FileExplorer>-->
@@ -38,9 +49,7 @@ import { useAppState } from "@/state/state";
 import ConnectBackend from "@/components/ConnectBackend.vue";
 import HeaderBar from "@/components/HeaderBar.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
-import { generateKeydownHandlerSimple, type SimpleKeyBinding } from "@/util/keybinding";
-import { EditorView as PmEditorView } from "prosemirror-view";
-import { EditorView as CmEditorView } from "@codemirror/view";
+import { generateKeydownHandlerSimple } from "@/util/keybinding";
 import SearchPanel from "@/components/SearchPanel.vue";
 import ReviewerController from "@/components/ReviewerController.vue";
 import FloatingToolbar from "@/components/FloatingToolbar.vue";
@@ -49,9 +58,10 @@ import RefSuggestions from "@/components/RefSuggestions.vue";
 import FloatingInfoPanel from "@/components/FloatingInfoPanel.vue";
 import DatabaseManager from "@/components/DatabaseManager.vue";
 import LeftSidebar from "@/components/LeftSidebar.vue";
-import CodeMirror from "@/components/CodeMirror.vue";
+import RightSidePane from "@/components/RightSidePane.vue";
 
 const app = useAppState();
+const { showLeftSidebar, showRightSidePane, rightSidePaneWidth } = app;
 const firstSyncFinished = ref(false);
 const mainRootBlockId = app.getTrackingPropReactive("mainRootBlockId");
 
@@ -105,32 +115,58 @@ const keydownHandler = generateKeydownHandlerSimple(app.keymaps.global);
 document.body.addEventListener("keydown", keydownHandler);
 </script>
 
-<style>
+<style lang="scss">
 #app {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: clip;
 
   .header-bar {
-    height: 50px;
+    height: calc(50px - 1px); // - border bottom
     border-bottom: 1px solid var(--border-primary);
   }
 
   .main-pane {
     position: relative;
-    max-height: calc(100% - 50px);
+    height: calc(100% - 50px); // - header height
+    overflow: clip;
+
+    .left-sidebar {
+      position: absolute;
+      padding: 16px;
+      width: calc(300px - 2 * 16px); // - 2 padding
+      height: calc(100% - 2 * 16px); // - 2 padding
+      z-index: 99;
+    }
+
+    .right-side-pane {
+      position: absolute;
+      right: 0;
+      top: 0;
+      padding: 16px;
+      width: calc(var(--right-side-pane-width) - 2 * 16px); // - 2 padding
+      height: calc(100% - 2 * 16px); // - 2 padding
+      z-index: 99;
+    }
 
     .main-block-tree {
-      margin-top: 10px;
-      height: 100%;
+      padding-top: 10px;
+      height: calc(100% - 10px); // - padding top
       max-width: 1000px;
       margin-left: auto;
       margin-right: auto;
+      transition: padding 0.3s;
+    }
+
+    &.showLeftSidebar {
+      .main-block-tree {
+        padding-left: 300px; // width of left side bar
+      }
+    }
+
+    &.showRightSidePane {
+      .main-block-tree {
+        padding-right: var(--right-side-pane-width); // width of right side pane
+      }
     }
   }
 }

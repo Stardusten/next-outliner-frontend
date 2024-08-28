@@ -1,16 +1,17 @@
 <template>
-  <div class="block-tree" ref="$blockTree" :block-tree-id="id">
+  <div
+    class="block-tree"
+    :class="{ [selectDragState]: selectDragState }"
+    ref="$blockTree"
+    :block-tree-id="id"
+  >
     <div class="bg">
-      <div
-        class="indent-line"
-        v-for="i in 20"
-        :key="i"
-        :style="{ left: `${26 + (i - 1) * 36}px` }"
-      ></div>
+      <div class="indent-line" v-for="i in 10" :key="i"></div>
     </div>
     <virt-list
       v-if="virtual"
       itemKey="id"
+      class="vlist"
       :list="displayItems"
       :buffer="10"
       :minSize="30"
@@ -99,6 +100,7 @@ const $blockTree = ref<HTMLElement | null>(null);
 const $vlist = ref<InstanceType<typeof VirtList> | null>(null);
 const displayItems = shallowRef<DisplayItem[]>();
 const app = useAppState();
+const { selectDragState } = app;
 const eventListeners: any = {
   displayItemsUpdated: new Set<any>(),
 };
@@ -444,6 +446,7 @@ const removeFromTempExpanded = (...blockIds: BlockId[]) => {
 
 const controller: BlockTree = {
   getId: () => props.id,
+  getDom: () => $blockTree.value!,
   getRootBlockIds: () => props.rootBlockIds,
   getDisplayItems: () => displayItems.value!,
   addEventListener,
@@ -470,59 +473,16 @@ const controller: BlockTree = {
 };
 defineExpose(controller);
 
-/// 拖拽以多选块
-const onMouseDown = (e: MouseEvent) => {
-  if (e.buttons != 1) return; // left key only
-
-  const el = $blockTree.value;
-  if (!el) return;
-  el.addEventListener("mousemove", onMouseMove);
-
-  const ctx = app.dragSelectContext;
-  const blockItem = getHoveredElementWithClass(e.target, "block-item");
-  const hoveredBlockId = blockItem?.getAttribute("block-id");
-  if (hoveredBlockId) {
-    ctx.value = {
-      fromBlockId: hoveredBlockId,
-      toBlockId: hoveredBlockId,
-    };
-  } else ctx.value = null;
-};
-
-const onMouseMove = throttle((e: MouseEvent) => {
-  const blockItem = getHoveredElementWithClass(e.target, "block-item");
-  const hoveredBlockId = blockItem?.getAttribute("block-id");
-  const ctx = app.dragSelectContext;
-  if (hoveredBlockId && ctx.value) {
-    ctx.value.toBlockId = hoveredBlockId;
-  }
-}, 50);
-
-const onMouseUpOrLeave = (e: MouseEvent) => {
-  const el = $blockTree.value;
-  if (!el) return;
-  el.removeEventListener("mousemove", onMouseMove);
-};
-
 onMounted(() => {
   const el = $blockTree.value;
-  if (el) {
-    Object.assign(el, { controller });
-    el.addEventListener("mousedown", onMouseDown);
-    el.addEventListener("mouseup", onMouseUpOrLeave);
-    el.addEventListener("mouseleave", onMouseUpOrLeave);
-  }
+  if (el) Object.assign(el, { controller });
   app.registerBlockTree(props.id, controller);
+  app.addSelectDragEventListeners?.(controller);
 });
 
 onUnmounted(() => {
-  const el = $blockTree.value;
-  if (el) {
-    el.removeEventListener("mousedown", onMouseDown);
-    el.removeEventListener("mouseup", onMouseUpOrLeave);
-    el.removeEventListener("mouseleave", onMouseUpOrLeave);
-  }
   app.unregisterBlockTree(props.id);
+  app.removeSelectDragEventListeners?.(controller);
 });
 </script>
 
@@ -549,15 +509,16 @@ onUnmounted(() => {
   .bg {
     position: absolute;
     height: 100%;
-    width: calc(100% - 20px); // 防止滚动条点不了
+    box-sizing: border-box;
+    display: flex;
     top: 0;
+    padding: inherit;
+    padding-left: 26px;
 
     .indent-line {
-      position: absolute;
-      top: 0;
       height: 100%;
-      width: 0;
-      border-right: var(--border-indent);
+      padding-right: calc(36px - 1px); // - border-right
+      border-left: var(--border-indent);
     }
   }
 }

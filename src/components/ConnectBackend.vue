@@ -1,19 +1,19 @@
 <template>
   <div class="connect-backend">
     <h1><i>next</i>-Outliner</h1>
-    <input v-model="backendUrl" placeholder="Backend URL"/>
-    <input v-model="password" placeholder="Password" type="password"/>
+    <input v-model="backendUrl" placeholder="Backend URL" />
+    <input v-model="password" placeholder="Password" type="password" />
     <button class="connect-button" @click="onConnectBackend">Connect</button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import {useAppState} from "@/state/state";
-import {Dot} from "lucide-vue-next";
+import { useAppState } from "@/state/state";
+import { Dot } from "lucide-vue-next";
 
 const app = useAppState();
-const backendUrl = ref(app.getTrackingProp("backendUrl"));
+const { backendUrl } = app;
 const password = ref("");
 
 const onConnectBackend = () => {

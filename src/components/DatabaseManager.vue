@@ -29,60 +29,62 @@
 </template>
 
 <script setup lang="ts">
-import {useAppState} from "@/state/state";
-import {Settings, X} from "lucide-vue-next";
+import { useAppState } from "@/state/state";
+import { Settings, X } from "lucide-vue-next";
 
 const app = useAppState();
 const { showDatabaseManager, databases } = app;
 
 const onOpenDatabase = (i) => {
-  app.replaceTrackingProp("openedDatabaseIndex", i);
+  app.openedDatabaseIndex.value = i;
   app.connectYjsPersister();
-}
+};
 
 const newBackup = async (index: number, name: string) => {
   const success = await app.backupDatabase(index, name);
   if (success) app.addToast({ message: `successfully backup database "${name}"` });
   else app.addToast({ message: `failed to backup database "${name}"` });
-}
+};
 
-const onClose = () => app.showDatabaseManager.value = false;
+const onClose = () => (app.showDatabaseManager.value = false);
 </script>
 
 <style lang="scss">
-.database-infos {
-  border-radius: 5px;
+.database-manager {
+  .database-infos {
+    border-radius: 5px;
 
-  .database-info {
-    display: flex;
-    min-width: 400px;
-    width: 500px;
-    max-width: 100%;
-    padding: 0.75em 0;
-
-    .database-info-header {
+    .database-info {
       display: flex;
-      width: 100%;
+      min-width: 400px;
+      width: 500px;
+      max-width: 100%;
+      padding: 0.75em 0;
 
-      .left-part {
-        margin-right: 10px;
-        flex-grow: 1;
-
-        .database-name {
-          color: var(--text-primary-color);
-          font-size: var(--ui-font-size-m);
-        }
-
-        .database-location {
-          color: var(--text-secondary-color);
-          font-size: var(--ui-font-size-s);
-        }
-      }
-
-      .right-part {
+      .database-info-header {
         display: flex;
-        align-items: center;
-        gap: 8px;
+        width: 100%;
+
+        .left-part {
+          margin-right: 10px;
+          flex-grow: 1;
+
+          .database-name {
+            color: var(--text-primary-color);
+            font-size: var(--ui-font-size-m);
+          }
+
+          .database-location {
+            color: var(--text-secondary-color);
+            font-size: var(--ui-font-size-s);
+          }
+        }
+
+        .right-part {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
       }
     }
   }

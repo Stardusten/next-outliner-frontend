@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import type { FoldingExpandingDI } from "@/state/ui-misc";
+import type { FoldingExpandingDI } from "@/state/display-items";
 import MultiColRow from "@/components/display-items/MultiColRow.vue";
 import MetadataItem from "@/components/display-items/metadata/MetadataItem.vue";
 import type { BlockTree } from "@/state/block-tree";

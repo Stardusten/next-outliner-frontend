@@ -1,31 +1,62 @@
 /// Types
 
-import type {AppState} from "@/state/state";
-import {watch} from "vue";
-import type {TrackingProps} from "@/state/tracking";
+import type { AppState } from "@/state/state";
+import { watch } from "vue";
+import type { TrackingProps } from "@/state/tracking";
 
-export const clientStorePlugin = (s: AppState) => {
-  const keys: (keyof TrackingProps)[] = ["backendUrl", "dbLocation"];
-  const reactiveValues = keys.map((key) => s.getTrackingPropReactive(key));
-
-  // persist when value changed
-  for (let i = 0; i < keys.length; i ++) {
-    const key = keys[i];
-    const _ref = reactiveValues[i];
-    watch(_ref, (newValue) => {
-      localStorage[key] = _ref.value;
-    });
-  }
-
-  // load when init
-  for (const key of keys) {
-    if (key in localStorage) {
-      s.applyPatches([{
-        op: "replace",
-        path: [key],
-        value: localStorage[key],
-        meta: { from: "clientStore", suppressUndo: true }
-      }]);
-    }
+declare module "@/state/state" {
+  interface AppState {
+    registerWatchersForPersistToClientStores: () => Promise<void>;
+    resumeFromClientStorage: () => Promise<void>;
   }
 }
+
+export const clientStorePlugin = (app: AppState) => {
+  // 注册用于在数据更改时，将更新持久话到 client storage 的监听器
+  const registerWatchersForPersistToClientStores = async () => {
+    const values = {
+      // 持久化 tracking props 中的相关数据
+      pinnedItems: app.getTrackingPropReactive("pinnedItems"),
+      rightPaneItems: app.getTrackingPropReactive("rightPaneItems"),
+      // 持久化相关普通的 non tracking 数据
+      backendUrl: app.backendUrl,
+      showLeftSidebar: app.showLeftSidebar,
+      showRightSidePane: app.showRightSidePane,
+      rightSidePaneWidth: app.rightSidePaneWidth,
+    };
+    for (const [key, refValue] of Object.entries(values)) {
+      watch(refValue, () => {
+        localStorage[key] = JSON.stringify(refValue.value);
+      });
+    }
+  };
+  app.decorate(
+    "registerWatchersForPersistToClientStores",
+    registerWatchersForPersistToClientStores,
+  );
+
+  // 从 client storage 中恢复相关数据
+  const resumeFromClientStorage = async () => {
+    // 恢复 tracking props 中的相关数据
+    const trackingKeys = ["pinnedItems", "rightPaneItems"];
+    for (const key of trackingKeys) {
+      if (key in localStorage) {
+        app.replaceTrackingProp(key, JSON.parse(localStorage[key]));
+      }
+    }
+    // 恢复普通的 non tracking 数据
+    const nonTrackingKeys = [
+      "backendUrl",
+      "showLeftSidebar",
+      "showRightSidePane",
+      "rightSidePaneWidth",
+    ];
+    for (const key of nonTrackingKeys) {
+      if (key in app && key in localStorage) {
+        (app as any)[key].value = JSON.parse(localStorage[key]);
+      }
+    }
+    // TODO 聚焦到上一次浏览的块
+  };
+  app.decorate("resumeFromClientStorage", resumeFromClientStorage);
+};

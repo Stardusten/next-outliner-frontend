@@ -36,6 +36,7 @@ export type BlockTreeProps = {
 export type BlockTree = {
   getProps: () => BlockTreeProps;
   getId: () => BlockTreeId;
+  getDom: () => HTMLElement;
   getRootBlockIds: () => BlockId[];
   getDisplayItems: () => DisplayItem[];
   addEventListener: <T extends keyof BlockTreeEventMap>(
@@ -50,7 +51,7 @@ export type BlockTree = {
   ) => void;
   nextUpdate: (cb?: () => void | Promise<void>) => Promise<void>;
   scrollBlockIntoView: (blockId: BlockId) => void;
-  focusBlockInView: (blockId: BlockId) => void;
+  focusBlockInView: (blockId: BlockId, scrollIntoView?: boolean) => void;
   highlightBlockInViewAndFade: (blockId: BlockId) => void;
   highlightClozeInViewAndFade: (clozeId: Cloze["id"]) => void;
   getEditorViewOfBlock: (blockId: BlockId) => PmEditorView | CmEditorView | null;

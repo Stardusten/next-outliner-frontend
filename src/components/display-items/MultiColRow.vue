@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import BlockItem from "./BlockItem.vue";
 import type { BlockTree } from "@/state/block-tree";
-import type { MultiColDI } from "@/state/ui-misc";
+import type { MultiColDI } from "@/state/display-items";
 
 const props = defineProps<{
   blockTree: BlockTree;

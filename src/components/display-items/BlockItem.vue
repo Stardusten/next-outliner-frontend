@@ -18,19 +18,12 @@
     :block-tree-id="blockTree.getId()"
     ref="$blockItem"
     @focusin="onFocusin"
-    @dragover="onDragOver"
     tabindex="-1"
   >
     <div class="fold-button" v-if="!hideFoldButton" @click="onClickFoldButton">
       <Triangle></Triangle>
     </div>
-    <div
-      class="bullet"
-      v-if="!hideBullet"
-      @click="onClickBullet"
-      draggable="true"
-      @dragstart="onDragStart"
-    >
+    <div class="bullet" v-if="!hideBullet" @click="onClickBullet" draggable="true">
       <div class="no" v-if="item.metadata.no">{{ item.metadata.no }}.</div>
       <SharpDiamond class="diamond" v-else-if="hasMirror"></SharpDiamond>
       <Circle class="circle" v-else></Circle>
@@ -76,7 +69,7 @@
 
 <script setup lang="ts">
 import type { BlockTree } from "@/state/block-tree";
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useAppState } from "@/state/state";
 import CodeContent from "@/components/content/CodeContent.vue";
 import TextContent from "@/components/content/TextContent.vue";
@@ -128,7 +121,11 @@ const onClickFoldButton = () => {
 };
 
 const onClickBullet = () => {
-  app.replaceTrackingProp("mainRootBlockId", props.item.id);
+  if (app.keyboard.shiftPressed.value) {
+    app.addToRightSidePane(props.item.actualSrc);
+  } else {
+    app.setMainRootBlock(props.item.id);
+  }
 };
 
 const onFocusin = (e: FocusEvent) => {
@@ -138,87 +135,11 @@ const onFocusin = (e: FocusEvent) => {
   app.lastFocusedBlockId.value = props.item.id;
 };
 
-const onDragStart = (e: DragEvent) => {
-  if (!e.dataTransfer) return;
-  e.dataTransfer.dropEffect = "move";
-  // 如果之前什么都没有选中，则选中这个块
-  if (!app.selectSomething()) {
-    app.selectBlock(props.item.id);
+onMounted(() => {
+  if (props.item.type == "virtualBlock") {
+    if (props.item.childrenIds == "null") app.createVirtualChildren(props.item.id);
   }
-};
-
-const onDragOver = (e: DragEvent) => {
-  const selected = app.selectedBlockIds.value;
-  if (selected.length == 0 || !$blockItem.value) return;
-  e.preventDefault();
-  e.stopPropagation();
-
-  // 禁止将自己拖动到自己上
-  const thisPath = app.getBlockPath(props.item.id);
-  if (!thisPath) return;
-  for (const id of selected) {
-    if (thisPath.includes(id)) {
-      app.dropAreaPos.value = null;
-      return;
-    }
-  }
-
-  const rect = $blockItem.value.getBoundingClientRect();
-  // 悬停在块的上半部分还是下半部分
-  const upperHalf = e.y < rect.y + rect.height / 2;
-  // 悬停处的缩进层级
-  const level = Math.floor((e.x - rect.x) / 36) - 1;
-  // 根据 upperHalf 和 level 计算拖放目标位置
-  if (upperHalf) {
-    const predId = app.getPredecessorBlockId(props.item.id, true);
-    if (predId == null) return;
-    // 禁止将自己拖动到自己上
-    const predPath = app.getBlockPath(predId);
-    if (!predPath) return;
-    for (const id of selected) {
-      if (predPath.includes(id)) {
-        app.dropAreaPos.value = null;
-        return;
-      }
-    }
-    // 计算有效的 level 区间：[上一个 bock 的 level + 1, 当前 block 的 level]
-    const predBlock = app.getBlock(predId);
-    const predLevel = app.getBlockLevel(predId);
-    if (predBlock == null || predLevel == -1) return;
-    const predFoldAndHasChild = predBlock.fold && predBlock.childrenIds.length > 0;
-    const clippedLevel = clip(
-      level,
-      // 如果 pred 折叠了，并且有孩子，则不允许拖成 pred 的子级
-      predFoldAndHasChild ? predLevel : predLevel + 1,
-      props.item.level,
-    );
-    app.dropAreaPos.value = {
-      blockId: predId,
-      level: clippedLevel,
-    };
-  } else {
-    let clippedLevel;
-    const succId = app.getSuccessorBlockId(props.item.id, true);
-    const thisFoldAndHasChild = props.item.fold && props.item.childrenIds.length > 0;
-    if (succId == null) {
-      // 最后一个块
-      clippedLevel = clip(level, thisFoldAndHasChild ? props.item.level : props.item.level + 1, 1);
-    } else {
-      // 计算有效的 level 区间：[当前 block 的 level + 1, 下一个 block 的 level]
-      const succLevel = app.getBlockLevel(succId);
-      if (succLevel == -1) return;
-      clippedLevel = clip(
-        level,
-        thisFoldAndHasChild ? props.item.level : props.item.level + 1,
-        succLevel,
-      );
-    }
-    app.dropAreaPos.value = {
-      blockId: props.item.id,
-      level: clippedLevel,
-    };
-  }
-};
+});
 </script>
 
 <style lang="scss">
@@ -234,7 +155,7 @@ const onDragOver = (e: DragEvent) => {
   }
 
   .fold-button {
-    height: 28px;
+    height: calc(26px + var(--content-padding));
     width: 18px;
     display: flex;
     justify-content: center;
@@ -264,13 +185,14 @@ const onDragOver = (e: DragEvent) => {
   }
 
   .bullet {
-    height: 30px;
+    // TODO hard coded
+    height: calc(26px + var(--content-padding));
     min-width: 18px;
     display: flex;
     justify-content: center;
     align-items: center;
     padding-right: 6px;
-    cursor: pointer;
+    cursor: grab;
     background-color: var(--bg-color-primary);
 
     .no {

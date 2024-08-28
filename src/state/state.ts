@@ -17,6 +17,8 @@ import { refSuggestionsPlugin } from "@/state/ref-suggestions";
 import { imageCachePlugin } from "@/state/image-cache";
 import { leftSidebarPlugin } from "@/state/left-sidebar";
 import { keymapsPlugin } from "@/state/keymaps";
+import { rightSidePanePlugin } from "@/state/right-side-pane";
+import { keyboardHelperPlugin } from "@/state/keyboard-helper";
 
 /// Types
 export type StatePath = string | (string | number)[];
@@ -67,6 +69,12 @@ export const mkState = async () => {
   imageCachePlugin(_state);
   leftSidebarPlugin(_state);
   keymapsPlugin(_state);
+  rightSidePanePlugin(_state);
+  keyboardHelperPlugin(_state);
+
+  //
+  await _state.resumeFromClientStorage();
+  await _state.registerWatchersForPersistToClientStores();
 
   INSTANCE = _state;
 };

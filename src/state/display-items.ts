@@ -164,7 +164,7 @@ export const normalGenerator: DisplayItemGenerator = (params) => {
     if (params.rootBlockLevel != null) {
       dfsOptions.rootBlockLevel = params.rootBlockLevel;
     } else {
-      const path = app.getBlockPath(blockId);
+      const path = app.getBlockIdPath(blockId);
       if (path == null) {
         console.error("cannot get path of ", blockId);
         continue;
@@ -192,7 +192,7 @@ export const flatBacklinksGenerator: DisplayItemGenerator = (params) => {
   const result: DisplayItem[] = [];
 
   for (const blockId of params.rootBlockIds) {
-    const path = app.getBlockPath(blockId);
+    const path = app.getBlockIdPath(blockId);
     if (!path) continue;
     path.shift();
     const key = path.join("/");

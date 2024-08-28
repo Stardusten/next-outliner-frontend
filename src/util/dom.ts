@@ -17,15 +17,15 @@ export function scrollIntoViewIfNotVisible(target: HTMLElement, parentElement?: 
   }
 }
 
-export const getHoveredElementWithClass = (el: any, className: string): HTMLElement | null => {
+export const getHoveredElementWithClass = (el: any, className: string): Element | null => {
   let curr: any = el;
   let hoverBlockItem;
-  while (curr instanceof HTMLElement) {
-    if (curr.classList.contains(className)) {
+  while (curr instanceof Node) {
+    if (curr instanceof Element && curr.classList.contains(className)) {
       hoverBlockItem = curr;
       break;
     }
-    curr = curr.parentElement;
+    curr = curr.parentNode;
   }
-  return hoverBlockItem ?? null;
-}
+  return hoverBlockItem instanceof Element ? hoverBlockItem : null;
+};

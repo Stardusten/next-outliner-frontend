@@ -2,6 +2,7 @@
   <template v-if="!firstSyncFinished">
     <ConnectBackend></ConnectBackend>
     <DatabaseManager></DatabaseManager>
+    <SettingModal></SettingModal>
   </template>
   <template v-else>
     <HeaderBar></HeaderBar>
@@ -24,7 +25,6 @@
         :virtual="true"
         :root-block-ids="[mainRootBlockId]"
         :root-block-level="0"
-        :padding-bottom="200"
       ></BlockTree>
       <RightSidePane></RightSidePane>
     </div>
@@ -59,6 +59,7 @@ import FloatingInfoPanel from "@/components/FloatingInfoPanel.vue";
 import DatabaseManager from "@/components/DatabaseManager.vue";
 import LeftSidebar from "@/components/LeftSidebar.vue";
 import RightSidePane from "@/components/RightSidePane.vue";
+import SettingModal from "@/components/SettingsPanel.vue";
 
 const app = useAppState();
 const { showLeftSidebar, showRightSidePane, rightSidePaneWidth } = app;

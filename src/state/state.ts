@@ -19,6 +19,8 @@ import { leftSidebarPlugin } from "@/state/left-sidebar";
 import { keymapsPlugin } from "@/state/keymaps";
 import { rightSidePanePlugin } from "@/state/right-side-pane";
 import { keyboardHelperPlugin } from "@/state/keyboard-helper";
+import { settingsPlugin } from "@/state/settings";
+import { backupController } from "@/state/backup-controller";
 
 /// Types
 export type StatePath = string | (string | number)[];
@@ -71,6 +73,8 @@ export const mkState = async () => {
   keymapsPlugin(_state);
   rightSidePanePlugin(_state);
   keyboardHelperPlugin(_state);
+  settingsPlugin(_state);
+  backupController(_state);
 
   //
   await _state.resumeFromClientStorage();

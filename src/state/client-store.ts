@@ -18,6 +18,7 @@ export const clientStorePlugin = (app: AppState) => {
       // 持久化 tracking props 中的相关数据
       pinnedItems: app.getTrackingPropReactive("pinnedItems"),
       rightPaneItems: app.getTrackingPropReactive("rightPaneItems"),
+      mainRootBlockId: app.getTrackingPropReactive("mainRootBlockId"),
       // 持久化相关普通的 non tracking 数据
       backendUrl: app.backendUrl,
       showLeftSidebar: app.showLeftSidebar,
@@ -38,7 +39,7 @@ export const clientStorePlugin = (app: AppState) => {
   // 从 client storage 中恢复相关数据
   const resumeFromClientStorage = async () => {
     // 恢复 tracking props 中的相关数据
-    const trackingKeys = ["pinnedItems", "rightPaneItems"];
+    const trackingKeys = ["pinnedItems", "rightPaneItems", "mainRootBlockId"];
     for (const key of trackingKeys) {
       if (key in localStorage) {
         app.replaceTrackingProp(key, JSON.parse(localStorage[key]));

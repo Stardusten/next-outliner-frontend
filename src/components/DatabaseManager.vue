@@ -1,36 +1,31 @@
 <template>
-  <div class="database-manager modal-container" v-if="showDatabaseManager && databases.length > 0">
-    <div class="modal-bg"></div>
-    <div class="modal-body">
-      <div class="modal-close-button icon-16" @click="onClose"><X></X></div>
-      <div class="modal-title">Database Manager</div>
-      <div class="modal-content">
-        <div class="database-infos">
-          <div class="database-info" v-for="(d, i) in app.databases.value" :key="i">
-            <div class="database-info-header">
-              <div class="left-part">
-                <div class="database-name">{{ d.name }}</div>
-                <div class="database-location">{{ d.location }}</div>
-              </div>
-              <div class="right-part">
-                <button class="open-database" @click="onOpenDatabase(i)">Open</button>
-                <button class="new-backup" @click="newBackup(i, d.name)">New backup</button>
-                <div class="settings icon-16">
-                  <Settings></Settings>
-                </div>
+  <Modal class="database-manager" title="Database Manager" v-model:show="showDatabaseManager">
+    <template #content>
+      <div class="database-infos">
+        <div class="database-info" v-for="(d, i) in app.databases.value" :key="i">
+          <div class="database-info-header">
+            <div class="left-part">
+              <div class="database-name">{{ d.name }}</div>
+              <div class="database-location">{{ d.location }}</div>
+            </div>
+            <div class="right-part">
+              <button class="open-database" @click="onOpenDatabase(i)">Open</button>
+              <button class="new-backup" @click="newBackup(i, d.name)">New backup</button>
+              <div class="settings-panel icon-16">
+                <Settings></Settings>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="modal-button-container"></div>
-    </div>
-  </div>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { useAppState } from "@/state/state";
 import { Settings, X } from "lucide-vue-next";
+import Modal from "@/components/Modal.vue";
 
 const app = useAppState();
 const { showDatabaseManager, databases } = app;
@@ -45,8 +40,6 @@ const newBackup = async (index: number, name: string) => {
   if (success) app.addToast({ message: `successfully backup database "${name}"` });
   else app.addToast({ message: `failed to backup database "${name}"` });
 };
-
-const onClose = () => (app.showDatabaseManager.value = false);
 </script>
 
 <style lang="scss">

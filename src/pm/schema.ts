@@ -83,9 +83,15 @@ export const pmSchema = new Schema({
         watch(
           _ref,
           (toBlock) => {
-            const ctext = toBlock?.ctext ?? "";
-            span.innerHTML = ctext.trim();
-            span.setAttribute("ctext", ctext);
+            if (toBlock) {
+              const ctext = toBlock.ctext ?? "";
+              span.innerHTML = ctext.trim();
+              span.setAttribute("ctext", ctext);
+              span.classList.remove("invalid");
+            } else {
+              span.innerHTML = "INVALID REF";
+              span.classList.add("invalid");
+            }
           },
           { immediate: true },
         );

@@ -215,6 +215,10 @@ span.block-ref,
 span.block-ref-v2 {
   color: var(--link-color);
   cursor: pointer;
+
+  &.invalid {
+    color: var(--errmsg-color);
+  }
 }
 
 span.cloze {

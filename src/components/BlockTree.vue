@@ -4,6 +4,7 @@
     :class="{ [selectDragState]: selectDragState }"
     ref="$blockTree"
     :block-tree-id="id"
+    :style="{ '--padding-bottom': `${paddingBottom ?? 200}px` }"
   >
     <div class="bg">
       <div class="indent-line" v-for="i in 10" :key="i"></div>
@@ -53,14 +54,7 @@
           :item="itemData"
         ></FEContainerItem>
       </template>
-      <template #footer>
-        <div
-          class="pad-bottom"
-          :style="{
-            height: `${props.paddingBottom ?? 0}px`,
-          }"
-        ></div>
-      </template>
+      <template #footer> </template>
     </virt-list>
   </div>
 </template>
@@ -490,10 +484,19 @@ onUnmounted(() => {
 .block-tree {
   position: relative;
 
-  .pad-bottom {
-    background-color: var(--bg-color-primary);
-    position: relative;
-    z-index: 99;
+  // 用 footer 遮挡掉不想看到的缩进线
+  .vlist {
+    display: flex;
+    flex-direction: column;
+
+    [data-id="footer"] {
+      flex-grow: 1;
+      flex-shrink: 0;
+      min-height: var(--padding-bottom);
+      background-color: var(--bg-color-primary);
+      position: relative;
+      z-index: 99;
+    }
   }
 
   .block-item.fold-disappear {

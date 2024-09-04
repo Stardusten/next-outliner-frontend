@@ -475,6 +475,7 @@ export const keymapsPlugin = (app: AppState) => {
       stopPropagation: true,
     },
     "Alt-c": {
+      // TODO not work
       run: (state, dispatch, view) => {
         const clozeId = getUUID();
         return toggleMark(pmSchema.marks.cloze, { clozeId })(state, dispatch, view);

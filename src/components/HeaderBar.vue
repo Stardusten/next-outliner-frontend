@@ -1,7 +1,7 @@
 <template>
   <div class="header-bar">
     <div class="left-part">
-      <div class="button settings" @click="showLeftSidebar = !showLeftSidebar">
+      <div class="button settings-panel" @click="showLeftSidebar = !showLeftSidebar">
         <PanelLeft></PanelLeft>
       </div>
       <div class="button go-prev">
@@ -25,6 +25,9 @@
       </template>
     </div>
     <div class="right-part">
+      <div class="history-button button">
+        <History></History>
+      </div>
       <div
         class="review-button button"
         v-if="repeatablesToReview.length > 0"
@@ -66,6 +69,7 @@ import {
   Search,
   Moon,
   Sun,
+  History,
   PanelLeft,
 } from "lucide-vue-next";
 import { useAppState } from "@/state/state";

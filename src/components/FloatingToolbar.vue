@@ -1,14 +1,10 @@
 <template>
-  <div
-      v-show="show"
-      ref="$floatingToolbar"
-      class="floating-toolbar"
-  >
+  <div v-show="show" ref="$floatingToolbar" class="floating-toolbar">
     <div
-        v-for="buttonSpec in buttonSpecs"
-        :class="'floating-toolbar-item ' + buttonSpec.classname"
-        :key="buttonSpec.classname"
-        @click="buttonSpec.onClick"
+      v-for="buttonSpec in buttonSpecs"
+      :class="'floating-toolbar-item ' + buttonSpec.classname"
+      :key="buttonSpec.classname"
+      @click="buttonSpec.onClick"
     >
       <component :is="buttonSpec.icon"></component>
     </div>
@@ -16,18 +12,19 @@
 </template>
 
 <script setup lang="ts">
-import {ref, watch} from "vue";
-import {Bold, Code, Italic, Strikethrough, Underline} from "lucide-vue-next";
-import type {MarkType} from "prosemirror-model";
-import {useAppState} from "@/state/state";
-import {pmSchema} from "@/pm/schema";
+import { ref, watch } from "vue";
+import { Bold, Code, Italic, Strikethrough, Underline } from "lucide-vue-next";
+import type { MarkType } from "prosemirror-model";
+import { useAppState } from "@/state/state";
+import { pmSchema } from "@/pm/schema";
 import AFont from "@/components/icons/AFont.vue";
-import {calcPopoutPos} from "@/util/popout";
-import {debounce} from "lodash";
-import type {Selection} from "prosemirror-state";
-import {EditorView as PmEditorView} from "prosemirror-view";
-import {toggleMark} from "prosemirror-commands";
+import { calcPopoutPos } from "@/util/popout";
+import { debounce } from "lodash";
+import type { Selection } from "prosemirror-state";
+import { EditorView as PmEditorView } from "prosemirror-view";
+import { toggleMark } from "prosemirror-commands";
 import Cloze from "@/components/icons/Cloze.vue";
+import { getUUID } from "@/util/uuid";
 
 const app = useAppState();
 const show = ref(false);
@@ -51,31 +48,32 @@ const toggleMarkOnCurrent = (mark: MarkType, attrs?: any) => {
     view.dispatch(view.state.tr.setSelection(selectionBackup));
     toggleMark(mark, attrs)(view.state, view.dispatch, view);
   }
-}
+};
 
-watch(app.floatingToolbar.showPos, debounce((pos) => {
-  if (!$floatingToolbar.value) return;
-  if (!pos) {
-    show.value = false;
-    return;
-  }
-  show.value = true;
-  // 暂存 selection
-  selectionBackup = app.lastFocusedEditorView.value?.state.selection ?? null;
-  const { width, height } = $floatingToolbar.value.getBoundingClientRect();
-  const popoutPos = calcPopoutPos(width, height, pos.x, pos.y, 20, {
-    left: 0,
-    right: 0,
-    top: 5,
-    bottom: 30,
-  });
-  $floatingToolbar.value.style.left = popoutPos.left ? `${popoutPos.left}px` : "unset";
-  $floatingToolbar.value.style.right = popoutPos.right ? `${popoutPos.right}px` : "unset";
-  $floatingToolbar.value.style.top = popoutPos.top ? `${popoutPos.top}px` : "unset";
-  $floatingToolbar.value.style.bottom = popoutPos.bottom
-      ? `${popoutPos.bottom}px`
-      : "unset";
-}, 200));
+watch(
+  app.floatingToolbar.showPos,
+  debounce((pos) => {
+    if (!$floatingToolbar.value) return;
+    if (!pos) {
+      show.value = false;
+      return;
+    }
+    show.value = true;
+    // 暂存 selection
+    selectionBackup = app.lastFocusedEditorView.value?.state.selection ?? null;
+    const { width, height } = $floatingToolbar.value.getBoundingClientRect();
+    const popoutPos = calcPopoutPos(width, height, pos.x, pos.y, 20, {
+      left: 0,
+      right: 0,
+      top: 5,
+      bottom: 30,
+    });
+    $floatingToolbar.value.style.left = popoutPos.left ? `${popoutPos.left}px` : "unset";
+    $floatingToolbar.value.style.right = popoutPos.right ? `${popoutPos.right}px` : "unset";
+    $floatingToolbar.value.style.top = popoutPos.top ? `${popoutPos.top}px` : "unset";
+    $floatingToolbar.value.style.bottom = popoutPos.bottom ? `${popoutPos.bottom}px` : "unset";
+  }, 200),
+);
 
 const buttonSpecs: ButtonSpec[] = [
   {
@@ -96,7 +94,10 @@ const buttonSpecs: ButtonSpec[] = [
   {
     icon: Cloze,
     classname: "toggle-cloze",
-    onClick: () => toggleMarkOnCurrent(pmSchema.marks.cloze),
+    onClick: () => {
+      const clozeId = getUUID();
+      return toggleMarkOnCurrent(pmSchema.marks.cloze, { clozeId });
+    },
   },
   {
     icon: Underline,
@@ -143,7 +144,7 @@ const buttonSpecs: ButtonSpec[] = [
     classname: "toggle-highlight7",
     onClick: () => toggleMarkOnCurrent(pmSchema.marks.highlight, { bg: "bg7" }),
   },
-]
+];
 </script>
 
 <style lang="scss">

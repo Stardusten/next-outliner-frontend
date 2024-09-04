@@ -1,47 +1,37 @@
 <template>
   <div
-      class="image-content block-content"
-      ref="$contentEl"
-      draggable="false"
-      v-if="block.content.type == 'image'"
+    class="image-content block-content"
+    ref="$contentEl"
+    draggable="false"
+    v-if="block.content.type == 'image'"
   >
     <div class="image-container">
       <img
-          v-if="src"
-          :src="src"
-          :alt="block.content.caption ?? block.content.path"
-          :style="{ width: `${block.content.width}px` }"
-          @wheel="onWheel"
-          draggable="false"
+        v-if="src"
+        :src="src"
+        :alt="block.content.caption ?? block.content.path"
+        :style="{ width: `${block.content.width}px` }"
+        @wheel="onWheel"
+        draggable="false"
       />
-      <div
-          class="uploading-hint"
-          v-if="block.content.uploadStatus == 'uploading'"
-      >
+      <div class="uploading-hint" v-if="block.content.uploadStatus == 'uploading'">
         Uploading image...
       </div>
-      <div
-          class="broken-image"
-          v-if="block.content.uploadStatus == 'notUploaded'"
-      >
+      <div class="broken-image" v-if="block.content.uploadStatus == 'notUploaded'">
         Broken image!!!
       </div>
       <div
-          class="cursor-container"
-          contenteditable="true"
-          @cut.prevent
-          @paste.prevent
-          @beforeinput="onBeforeInput"
-          @keydown="onKeydown"
+        class="cursor-container"
+        contenteditable="true"
+        @cut.prevent
+        @paste.prevent
+        @beforeinput="onBeforeInput"
+        @keydown="onKeydown"
       ></div>
     </div>
     <div class="caption-container" v-if="block.content.caption != null">
       <div class="caption-hint">Caption:</div>
-      <input
-          class="caption-input"
-          v-model="captionInput"
-          @input="onCaptionInput"
-      />
+      <input class="caption-input" v-model="captionInput" @input="onCaptionInput" />
     </div>
   </div>
 </template>
@@ -49,9 +39,9 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { debounce } from "lodash";
-import {useAppState} from "@/state/state";
-import type {BlockTree} from "@/state/block-tree";
-import {type ALBlock, textContentFromString} from "@/state/block";
+import { useAppState } from "@/state/state";
+import type { BlockTree } from "@/state/block-tree";
+import { type ALBlock, textContentFromString } from "@/state/block";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -63,26 +53,25 @@ const app = useAppState();
 const captionInput = ref("");
 
 watch(
-    () => props.block,
-    () => {
-      if (props.block.content.type != "image") return;
+  () => props.block,
+  () => {
+    if (props.block.content.type != "image") return;
 
-      const { path, uploadStatus, caption } = props.block.content;
-      if (uploadStatus == "uploaded") {
-        // 图片没有上传完成, 不显示
-        app.getImageWithCache(path)
-            .then((url) => {
-              if (!url) return;
-              src.value = url;
-            });
-      }
+    const { path, uploadStatus, caption } = props.block.content;
+    if (uploadStatus == "uploaded") {
+      // 图片没有上传完成, 不显示
+      app.getImageWithCache(path).then((url) => {
+        if (!url) return;
+        src.value = url;
+      });
+    }
 
-      // 保证 captionInput 中的内容和 caption 一致
-      if (caption && caption != captionInput.value) {
-        captionInput.value = caption;
-      }
-    },
-    { immediate: true },
+    // 保证 captionInput 中的内容和 caption 一致
+    if (caption && caption != captionInput.value) {
+      captionInput.value = caption;
+    }
+  },
+  { immediate: true },
 );
 
 const onCaptionInput = debounce(() => {
@@ -115,8 +104,8 @@ const onKeydown = (e: any) => {
   if (!props.blockTree) return;
   if (e.key === "Backspace") {
     const focusNext =
-        props.blockTree.getBlockBelow(props.block.id)?.id ??
-        props.blockTree.getBlockAbove(props.block.id)?.id;
+      props.blockTree.getBlockBelow(props.block.id)?.id ??
+      props.blockTree.getBlockAbove(props.block.id)?.id;
     app.taskQueue.addTask(async () => {
       app.deleteBlock(props.block.id);
       if (focusNext && props.blockTree) {
@@ -141,8 +130,7 @@ const onKeydown = (e: any) => {
     });
     if (!pos) return;
     app.taskQueue.addTask(async () => {
-      const { focusNext } =
-      app.insertNormalBlock(pos, textContentFromString("")) ?? {};
+      const { focusNext } = app.insertNormalBlock(pos, textContentFromString("")) ?? {};
       if (focusNext && props.blockTree) {
         await props.blockTree.nextUpdate();
         await app.locateBlock(props.blockTree, focusNext, false, true);
@@ -173,8 +161,8 @@ const onWheel = (e: WheelEvent) => {
   const width = imgEl.clientWidth;
   const scaleFactor = 0.1; // 缩放比例因子
   const newWidth = Math.max(
-      width + (e.deltaY > 0 ? -width * scaleFactor : width * scaleFactor),
-      100,
+    width + (e.deltaY > 0 ? -width * scaleFactor : width * scaleFactor),
+    100,
   );
   app.taskQueue.addTask(() => {
     if (props.block.content.type != "image") return;

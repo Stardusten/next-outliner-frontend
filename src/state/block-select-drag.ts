@@ -43,6 +43,7 @@ export type BlockSelection = {
 
 export type DropAreaPos = {
   blockId: BlockId;
+  absLevel: number;
   level: number;
 };
 
@@ -228,6 +229,12 @@ export const blockSelectDragPlugin = (app: AppState) => {
       // 悬停处的缩进层级
       const hoveredLevel = Math.floor((e.x - rect.x) / 36) - 1;
       // 根据 upperHalf 和 hoveredLevel 计算拖放目标位置
+      const tree = app.getBlockTree(blockTreeId);
+      if (!tree) return;
+      const rootBlockId = tree
+        .getRootBlockIds()
+        .filter((id) => app.isDescendantOf(blockId, id, true))[0];
+      const rootBlockLevel = rootBlockId ? app.getBlockLevel(rootBlockId) : 0;
       if (upperHalf) {
         const predId = app.getPredecessorBlockId(blockId, true);
         if (predId == null) return;
@@ -242,7 +249,7 @@ export const blockSelectDragPlugin = (app: AppState) => {
         }
         // 计算有效的 hoveredLevel 区间：[上一个 bock 的 hoveredLevel + 1, 当前 block 的 hoveredLevel]
         const predBlock = app.getBlock(predId);
-        const predLevel = app.getBlockLevel(predId);
+        const predLevel = app.getBlockLevel(predId) - rootBlockLevel;
         if (predBlock == null || predLevel == -1) return;
         const predFoldAndHasChild = predBlock.fold && predBlock.childrenIds.length > 0;
         const clippedLevel = clip(
@@ -254,6 +261,7 @@ export const blockSelectDragPlugin = (app: AppState) => {
         app.dropAreaPos.value = {
           blockId: predId,
           level: clippedLevel,
+          absLevel: clippedLevel + rootBlockLevel,
         };
       } else {
         let clippedLevel;
@@ -265,7 +273,7 @@ export const blockSelectDragPlugin = (app: AppState) => {
           clippedLevel = clip(hoveredLevel, thisFoldAndHasChild ? blockLevel : blockLevel + 1, 1);
         } else {
           // 计算有效的 level 区间：[当前 block 的 level + 1, 下一个 block 的 level]
-          const succLevel = app.getBlockLevel(succId);
+          const succLevel = app.getBlockLevel(succId) - rootBlockLevel;
           if (succLevel == -1) return;
           clippedLevel = clip(
             hoveredLevel,
@@ -276,6 +284,7 @@ export const blockSelectDragPlugin = (app: AppState) => {
         app.dropAreaPos.value = {
           blockId,
           level: clippedLevel,
+          absLevel: clippedLevel + rootBlockLevel,
         };
       }
 
@@ -297,9 +306,9 @@ export const blockSelectDragPlugin = (app: AppState) => {
       const selected = selectedBlockIds.value;
       if (!tooCloseToMouseDownPos(e) && selected.length > 0 && dropAreaPos.value) {
         // 根据 dropAreaPos 计算出应该将 draggingBlockId 移动到的位置
-        const { blockId, level } = dropAreaPos.value;
+        const { blockId, absLevel } = dropAreaPos.value;
         const blockLevel = app.getBlockLevel(blockId);
-        if (level > blockLevel) {
+        if (absLevel > blockLevel) {
           // 将 draggingBlockId 移动到 block 子级别
           app.taskQueue.addTask(() => {
             if (!blockSelection.value) return;
@@ -321,7 +330,7 @@ export const blockSelectDragPlugin = (app: AppState) => {
           });
         } else {
           let baseBlockId = blockId;
-          for (let i = 0; i < blockLevel - level; i++) {
+          for (let i = 0; i < blockLevel - absLevel; i++) {
             const baseBlock = app.getBlock(baseBlockId);
             if (!baseBlock) return;
             baseBlockId = baseBlock.parent;

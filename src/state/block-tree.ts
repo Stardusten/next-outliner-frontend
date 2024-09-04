@@ -23,7 +23,6 @@ export type BlockTreeProps = {
   virtual?: boolean;
   rootBlockIds?: BlockId[];
   rootBlockLevel?: number;
-  paddingBottom?: number;
   // 要高亮的所有 terms
   highlightTerms?: string[];
   // 要高亮的所有块引用
@@ -31,6 +30,7 @@ export type BlockTreeProps = {
   // 是否忽略块的 fold 属性，强制折叠显示所有块
   forceFold?: boolean;
   diGenerator?: DisplayItemGenerator;
+  paddingBottom?: number;
 };
 
 export type BlockTree = {

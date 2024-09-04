@@ -8,6 +8,8 @@ import { ref, type Ref } from "vue";
 import axios, { type AxiosInstance } from "axios";
 import { normalizeBlock } from "@/util/migration";
 import type { Repeatable } from "@/state/repeatable";
+import { SyncBlocksConfig } from "@/state/sync/sync-blocks-config";
+import { SyncRepeatablesConfig } from "@/state/sync/sync-repeatables-config";
 
 /// Types
 declare module "@/state/state" {
@@ -23,6 +25,57 @@ declare module "@/state/state" {
     enableSync: () => void;
   }
 }
+
+type Context<YjsValue, CustomContext> = {
+  ymap: Y.Map<YjsValue>;
+} & CustomContext;
+
+export type SyncMapConfig<RawValue, YjsValue, ExtraPushCtx = {}, ExtraPullCtx = {}> = {
+  name: string;
+  getKey: (patch: TrackPatch) => string | null;
+  readPatch: (patch: TrackPatch) => {
+    oldValue: RawValue | null;
+    newValue: RawValue | null;
+  };
+  toYjsValue: (rawValue: RawValue) => YjsValue;
+  toRawValue: (yjsValue: YjsValue) => RawValue;
+  push: {
+    mkPushCtx: () => ExtraPushCtx;
+    onLocalRemove: (
+      key: string,
+      oldValue: RawValue,
+      context: Context<YjsValue, ExtraPushCtx>,
+    ) => void;
+    onLocalReplace: (
+      key: string,
+      oleValue: RawValue,
+      newValue: RawValue,
+      context: Context<YjsValue, ExtraPushCtx>,
+    ) => void;
+    onLocalAdd: (key: string, newValue: RawValue, context: Context<YjsValue, ExtraPushCtx>) => void;
+    afterAll?: (context: Context<YjsValue, ExtraPushCtx>) => void;
+  };
+  pull: {
+    mkPullCtx: () => ExtraPullCtx;
+    onRemoteRemove: (
+      key: string,
+      oldValue: RawValue,
+      context: Context<YjsValue, ExtraPullCtx>,
+    ) => void;
+    onRemoteReplace: (
+      key: string,
+      oldValue: RawValue,
+      newValue: RawValue,
+      context: Context<YjsValue, ExtraPullCtx>,
+    ) => void;
+    onRemoteAdd: (
+      key: string,
+      newValue: RawValue,
+      context: Context<YjsValue, ExtraPullCtx>,
+    ) => void;
+    afterAll?: (context: Context<YjsValue, ExtraPullCtx>) => void;
+  };
+};
 
 /// Helper: YjsPersister
 const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) => {
@@ -40,8 +93,17 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) =>
     // disableBc: true,
   });
 
-  const yRepeatables = yDoc.getMap("repeatables");
-  const yBlocks = yDoc.getMap("blocks");
+  const syncMaps: Record<string, { config: SyncMapConfig<any, any, any, any>; ymap: Y.Map<any> }> =
+    {
+      blocks: {
+        config: SyncBlocksConfig,
+        ymap: yDoc.getMap("blocks"),
+      },
+      repeatables: {
+        config: SyncRepeatablesConfig,
+        ymap: yDoc.getMap("repeatables"),
+      },
+    };
 
   // 如果 isSyncSuppressed 为 true，则暂缓同步，并将之后所有 patches 全部放入 backlogPatches
   // 在下次变为 false 时，一次性同步所有 patches
@@ -56,37 +118,35 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) =>
       return;
     }
 
-    if (patches[0]?.meta?.from != "remote") console.log("local -> binding"); // TODO
-
     yDoc.transact(() => {
-      for (const patch of patches) {
-        const { from } = patch.meta ?? {};
-        // 忽略所有来自 server 的 command
-        if (from == "remote") continue;
-        if (patch.path[0] == "blocks") {
-          const blockId = patch.path[1] as string;
-          if (patch.op == "remove") {
-            yBlocks.delete(blockId);
-          } else {
-            // add or replace
-            const block = normalizeBlock(patch.value! as ABlock);
-            const yBlock = pojoToYjs(block, ["content"]);
-            yBlocks.set(blockId, yBlock);
-          }
-        } else if (patch.path[0] == "repeatables") {
-          const repeatableId = patch.path[1] as string;
-          if (patch.op == "remove") {
-            yRepeatables.delete(repeatableId);
-          } else {
-            // add or replace
-            const repeatable = patch.value! as Repeatable;
-            const yRepeatable = repeatableToYjs(repeatable);
-            yRepeatables.set(repeatableId, yRepeatable);
+      for (const { config, ymap } of Object.values(syncMaps)) {
+        const context = { ymap, ...config.push.mkPushCtx() };
+        for (const patch of patches) {
+          // 忽略所有来自 server 的 command
+          const { from } = patch.meta ?? {};
+          if (from == "remote") continue;
+          // 只自己能处理的 patches
+          const key = config.getKey(patch);
+          if (!key) continue;
+          // 根据 op 做相应的操作
+          const { oldValue, newValue } = config.readPatch(patch);
+          if (patch.op == "remove" && oldValue) {
+            const yjsOldValue = config.toYjsValue(oldValue);
+            config.push.onLocalRemove(key, yjsOldValue, context);
+          } else if (patch.op == "add" && newValue) {
+            const yjsNewValue = config.toYjsValue(newValue);
+            config.push.onLocalAdd(key, yjsNewValue, context);
+          } else if (patch.op == "replace" && oldValue && newValue) {
+            const yjsOldValue = config.toYjsValue(oldValue);
+            const yjsNewValue = config.toYjsValue(newValue);
+            config.push.onLocalReplace(key, yjsOldValue, yjsNewValue, context);
           }
         }
+        config.push.afterAll?.(context);
       }
-    }, "local");
+    });
   };
+
   app.on("afterPatches", localToBinding);
 
   // 暂缓同步
@@ -102,120 +162,32 @@ const mkYjsPersister = (app: AppState, wsServerUrl: string, location: string) =>
   };
 
   // binding -> local model
-  yBlocks.observe((event) => {
-    if (event.transaction.origin == "local") return; // 不处理自己触发的更改
-    console.log("binding -> local (blocks)");
-    const patches: TrackPatch[] = [];
-    const changes = event.changes.keys.entries();
-    const nonNormalBlocksToAdd: Block[] = [];
-    for (const [key, { action, oldValue }] of changes) {
-      if (action == "delete") {
-        if (oldValue == null) {
-          console.log("delete a object, but original object is unknown, ignore");
-          continue;
+  for (const { config, ymap } of Object.values(syncMaps)) {
+    ymap.observe((event) => {
+      if (event.transaction.origin == "local") return; // 不处理自己触发的更改
+      const context = { ymap, ...config.pull.mkPullCtx() };
+      const changes = event.changes.keys.entries();
+      for (const [key, { action, oldValue }] of changes) {
+        if (action == "delete") {
+          if (!oldValue) continue;
+          const oldRawValue = config.toRawValue(oldValue);
+          config.pull.onRemoteRemove(key, oldRawValue, context);
+        } else if (action == "add") {
+          const newYjsValue = ymap.get(key);
+          if (!newYjsValue) continue;
+          const newRawValue = config.toRawValue(newYjsValue);
+          config.pull.onRemoteAdd(key, newRawValue, context);
+        } else if (action == "update") {
+          const newYjsValue = ymap.get(key);
+          if (!newYjsValue || !oldValue) continue;
+          const oldRawValue = config.toRawValue(oldValue);
+          const newRawValue = config.toRawValue(newYjsValue);
+          config.pull.onRemoteReplace(key, oldRawValue, newRawValue, context);
         }
-        patches.push({
-          op: "remove",
-          path: ["blocks", key],
-          meta: { from: "remote" },
-        });
-      } else if (action == "update") {
-        const yBlock = yBlocks.get(key);
-        if (yBlock == null) {
-          console.warn("try add a empty block, ignore.");
-          continue;
-        }
-        const block = normalizeBlock(yjsToPojo(yBlock) as Block);
-        patches.push({
-          op: "replace",
-          path: ["blocks", key],
-          value: augmentBlock(block, app.getBlock),
-          meta: { from: "remote" },
-        });
-      } else {
-        // add
-        // 先 normalize，保证在修改或添加一些字段后不出问题
-        const yBlock = yBlocks.get(key);
-        if (yBlock == null) {
-          console.warn("try add a empty block, ignore.");
-          continue;
-        }
-        const block = normalizeBlock(yjsToPojo(yBlock) as Block);
-        // 如果是 addBlock，先只 add normalBlock
-        // 因为如果 add 一个 mirrorBlock，而这个 block 的 srcBlock 还没被 add
-        // 就会出问题
-        if (block.type == "normalBlock") {
-          patches.push({
-            op: "add",
-            path: ["blocks", key],
-            value: augmentBlock(block, app.getBlock),
-            meta: { from: "remote" },
-          });
-        } else nonNormalBlocksToAdd.push(block);
       }
-    }
-    app.applyPatches(patches);
-    // add 之前没有 add 的 nonNormalBlocks
-    patches.length = 0;
-    for (const block of nonNormalBlocksToAdd) {
-      patches.push({
-        op: "add",
-        path: ["blocks", block.id],
-        value: augmentBlock(block, app.getBlock),
-        meta: { from: "remote" },
-      });
-    }
-    app.applyPatches(patches);
-  });
-
-  yRepeatables.observe((event) => {
-    if (event.transaction.origin == "local") return; // 不处理自己触发的更改
-    console.log("binding -> local (repeatables)");
-    const patches: TrackPatch[] = [];
-    const changes = event.changes.keys.entries();
-    for (const [key, { action, oldValue }] of changes) {
-      if (action == "delete") {
-        if (oldValue == null) {
-          console.log("delete a object, but original object is unknown, ignore");
-          continue;
-        }
-        patches.push({
-          op: "remove",
-          path: ["repeatables", key],
-          meta: { from: "remote" },
-        });
-      } else if (action == "update") {
-        const yRepeatable = yRepeatables.get(key);
-        if (yRepeatable == null) {
-          console.warn("try add a empty object, ignore.");
-          continue;
-        }
-        const repeatable = repeatableFromYjs(yRepeatable);
-        patches.push({
-          op: "replace",
-          path: ["repeatables", key],
-          value: repeatable,
-          meta: { from: "remote" },
-        });
-      } else {
-        // add
-        // 先 normalize，保证在修改或添加一些字段后不出问题
-        const yRepeatable = yRepeatables.get(key);
-        if (yRepeatable == null) {
-          console.warn("try add a empty object, ignore.");
-          continue;
-        }
-        const repeatable = repeatableFromYjs(yRepeatable);
-        patches.push({
-          op: "add",
-          path: ["repeatables", key],
-          value: repeatable,
-          meta: { from: "remote" },
-        });
-      }
-    }
-    app.applyPatches(patches);
-  });
+      config.pull.afterAll?.(context);
+    });
+  }
 
   const getWebSocketProvider = () => websocketProvider;
   const isConnected = () => websocketProvider.wsconnected;

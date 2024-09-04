@@ -25,10 +25,10 @@
         :virtual="true"
         :root-block-ids="[...item.backlinks]"
         :root-block-level="1"
-        :padding-bottom="0"
         :force-fold="true"
         :highlight-refs="[item.actualSrc]"
         :di-generator="flatBacklinksGenerator"
+        :padding-bottom="0"
       ></BlockTree>
     </Transition>
   </div>

@@ -150,7 +150,7 @@ export const backendApiPlugin = (s: AppState) => {
   const download = async (filePath: string): Promise<Blob | null> => {
     if (!_axios.value) return null;
     if (backendUrl.value) {
-      const url = `http://${backendUrl}/fs/download/${encodeURIComponent(filePath)}`;
+      const url = `http://${backendUrl.value}/fs/download/${encodeURIComponent(filePath)}`;
       try {
         const resp = await _axios.value.get(url, { responseType: "blob" });
         return resp.data;

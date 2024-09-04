@@ -35,7 +35,6 @@
           :virtual="true"
           :root-block-ids="queryResults.result"
           :root-block-level="0"
-          :padding-bottom="0"
           :force-fold="true"
           :di-generator="flatBacklinksGenerator"
         ></BlockTree>

@@ -63,11 +63,29 @@ const showMathEditor = () => {
   );
 };
 
-const skipLeft = () => {};
+const skipLeft = () => {
+  const tree = props.blockTree;
+  if (!tree) return;
+  const blockAbove = tree.getBlockAbove(props.block.id);
+  if (blockAbove) {
+    tree.focusBlockInView(blockAbove.id);
+  }
+};
 
-const skipRight = () => {};
+const skipRight = () => {
+  const tree = props.blockTree;
+  if (!tree) return;
+  const blockBelow = tree.getBlockBelow(props.block.id);
+  if (blockBelow) {
+    tree.focusBlockInView(blockBelow.id);
+  }
+};
 
-const deleteThis = () => {};
+const deleteThis = () => {
+  app.taskQueue.addTask(() => {
+    app.deleteBlock(props.block.id);
+  });
+};
 
 // 将当前的 src 同步到 state 中
 const syncToState = () => {
@@ -98,25 +116,22 @@ watch(
 
 <style lang="scss">
 .math-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.5em 1em;
   overflow-x: overlay;
 
-  .katex-src-input {
-    width: fit-content;
-    margin: 0 auto;
-    font-family: var(--code-font);
-    font-size: var(--code-font-size);
-    margin-bottom: 1em;
+  &.empty {
+    font-style: italic;
+    background-color: var(--bg-hover);
+    color: var(--text-secondary-color);
+    padding: 0 6px 0 4px;
+    border-radius: 4px;
   }
 
-  .katex-display-container {
-    .katex {
-      font-size: var(--math-font-size);
-    }
-
-    .katex-display {
-      margin: 0;
-    }
+  .katex-display {
+    margin: 0;
   }
 }
 </style>

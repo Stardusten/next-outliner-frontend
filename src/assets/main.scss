@@ -276,20 +276,16 @@ s {
 }
 
 // Katex
-.ProseMirror {
-  .katex {
-    font-size: var(--math-font-size);
-  }
+.katex {
+  font-size: var(--math-font-size);
+}
 
-  .math-inline--katex {
-    &.empty {
-      font-style: italic;
-      background-color: var(--bg-hover);
-      color: var(--text-secondary-color);
-      padding: 0 6px 0 4px;
-      border-radius: 4px;
-    }
-  }
+.math-inline--katex.empty {
+    font-style: italic;
+    background-color: var(--bg-hover);
+    color: var(--text-secondary-color);
+    padding: 0 6px 0 4px;
+    border-radius: 4px;
 }
 
 .fireworks-container {

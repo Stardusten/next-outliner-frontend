@@ -224,11 +224,10 @@ const focusBlockInView = (blockId: BlockId, scrollIntoView: boolean = true) => {
     scrollIntoView && scrollIntoViewIfNotVisible($cursorContainer, $parent);
     $cursorContainer.focus();
   }
-  // 聚焦公式
-  const $mathField = $content?.querySelector("math-field");
-  if ($mathField) {
-    scrollIntoView && scrollIntoViewIfNotVisible($mathField, $parent);
-    $mathField.focus();
+  // 聚焦行间公式
+  if ($content?.classList.contains("math-content")) {
+    scrollIntoView && scrollIntoViewIfNotVisible($content, $parent);
+    $content.click(); // 点击打开悬浮公式编辑器
   }
 };
 

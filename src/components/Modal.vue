@@ -3,12 +3,12 @@
     <div class="modal-container" v-if="show" :class="props.class" :style="style">
       <div class="modal-bg"></div>
       <div class="modal-body">
-        <div class="modal-close-button icon-16" @click="show = false"><X></X></div>
+        <div class="modal-close-button mixin--clickable-icon-16" @click="show = false"><X></X></div>
         <div class="modal-title" v-if="title && title.trim().length > 0">{{ title }}</div>
         <div class="modal-content">
           <slot name="content"></slot>
         </div>
-        <div class="modal-buttons">
+        <div class="modal-buttons" v-if="slots.buttons">
           <slot name="buttons"></slot>
         </div>
       </div>
@@ -24,7 +24,7 @@ const props = defineProps<{
   class?: any;
   style?: any;
 }>();
-
+const slots = defineSlots();
 const show = defineModel<boolean>("show");
 </script>
 
@@ -52,7 +52,7 @@ const show = defineModel<boolean>("show");
     background-color: var(--modal-bg);
     border-radius: var(--modal-radius);
     padding: var(--modal-padding);
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--border-color-primary);
     box-shadow: var(--shadow-l);
     min-height: var(--modal-min-height);
     max-height: var(--modal-max-height);
@@ -75,6 +75,14 @@ const show = defineModel<boolean>("show");
       text-align: start;
       line-height: var(--line-height-tight);
     }
+  }
+
+  .modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: 24px;
   }
 }
 </style>

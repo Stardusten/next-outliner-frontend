@@ -1,7 +1,6 @@
 import { trackingPlugin } from "@/state/tracking";
 import { blockManagePlugin } from "@/state/block";
 import { blockTreePlugin } from "@/state/block-tree";
-import { indexPlugin } from "@/state/index";
 import { uiMiscPlugin } from "@/state/ui-misc";
 import { taskQueuePlugin } from "@/state/task-queue";
 import { yjsPersisterPlugin } from "@/state/yjs-persister";
@@ -21,6 +20,14 @@ import { rightSidePanePlugin } from "@/state/right-side-pane";
 import { keyboardHelperPlugin } from "@/state/keyboard-helper";
 import { settingsPlugin } from "@/state/settings";
 import { backupController } from "@/state/backup-controller";
+import { appearancePlugin } from "@/state/apperance";
+import { fontSelectorPlugin } from "@/state/font-selector";
+import { floatingMathInputPlugin } from "./floating-math-input";
+import { cssVariablesPlugin } from "./css-variables";
+import { fulltextIndexPlugin } from "./index/full-text";
+import { mirrorsAndVirtualsPlugin } from "./index/mirrors-and-virtuals";
+import { backlinksPlugin } from "./index/backlinks";
+import { tldrPlugin } from "./index/tldr";
 
 /// Types
 export type StatePath = string | (string | number)[];
@@ -55,7 +62,9 @@ export const mkState = async () => {
   trackingPlugin(_state);
   blockManagePlugin(_state);
   blockTreePlugin(_state);
-  indexPlugin(_state);
+  fulltextIndexPlugin(_state);
+  mirrorsAndVirtualsPlugin(_state);
+  backlinksPlugin(_state);
   uiMiscPlugin(_state);
   taskQueuePlugin(_state);
   contextmenuPlugin(_state);
@@ -75,7 +84,12 @@ export const mkState = async () => {
   keyboardHelperPlugin(_state);
   settingsPlugin(_state);
   backupController(_state);
-
+  appearancePlugin(_state);
+  fontSelectorPlugin(_state);
+  floatingMathInputPlugin(_state);
+  cssVariablesPlugin(_state);
+  tldrPlugin(_state);
+  
   //
   await _state.resumeFromClientStorage();
   await _state.registerWatchersForPersistToClientStores();

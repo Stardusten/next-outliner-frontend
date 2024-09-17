@@ -41,12 +41,8 @@
       <div class="button search" @click="app.searchPanel.show.value = true">
         <Search></Search>
       </div>
-      <div class="button toggle-theme" @click="toggleTheme">
-        <Sun v-if="app.theme.value == 'light'"></Sun>
-        <Moon v-if="app.theme.value == 'dark'"></Moon>
-      </div>
-      <div class="logout-button button" @click="onLogout">
-        <LogOut></LogOut>
+      <div class="button open-settings" @click="showSettingsModal = true">
+        <Settings2></Settings2>
       </div>
       <div
         class="show-right-side-pane-button button"
@@ -64,6 +60,7 @@ import {
   ChevronRight,
   ArrowLeft,
   PanelRight,
+  Settings2,
   LogOut,
   Menu,
   Search,
@@ -81,7 +78,7 @@ import TextContent from "@/components/content/TextContent.vue";
 
 const app = useAppState();
 const mainRootBlockId = app.getTrackingPropReactive("mainRootBlockId");
-const { repeatablesToReview, showLeftSidebar } = app;
+const { repeatablesToReview, showLeftSidebar, showSettingsModal } = app;
 
 const path = disposableComputed<ABlock[]>((scope) => {
   if (mainRootBlockId.value == null) return [];
@@ -113,11 +110,6 @@ const onImport = (checking: boolean) => {
 
 const onExport = (checking: boolean) => {
   if (checking) return true;
-};
-
-const onLogout = () => {
-  app.disconnectBackend();
-  location.reload();
 };
 
 onUnmounted(() => {

@@ -6,9 +6,6 @@
     :block-tree-id="id"
     :style="{ '--padding-bottom': `${paddingBottom ?? 200}px` }"
   >
-    <div class="bg">
-      <div class="indent-line" v-for="i in 10" :key="i"></div>
-    </div>
     <virt-list
       v-if="virtual"
       itemKey="id"
@@ -60,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import { VirtList } from "vue-virt-list";
 import {
   type BacklinksDI,
@@ -108,14 +105,15 @@ const updateDisplayItems = () => {
   const diGenerator = props.diGenerator ?? normalGenerator;
 
   // 计算 displayItems
-  console.time("calc displayItems");
+  const blockTreeId = props.id;
+  console.time(`calc displayItems ${blockTreeId}`);
   displayItems.value = diGenerator({
     rootBlockIds: props.rootBlockIds,
     rootBlockLevel: props.rootBlockLevel,
     forceFold: props.forceFold,
     tempExpanded: tempExpanded.value,
   });
-  console.timeEnd("calc displayItems");
+  console.timeEnd(`calc displayItems ${blockTreeId}`);
 
   // 更新 $vlist
   $vlist.value?.forceUpdate?.();
@@ -135,9 +133,27 @@ const updateDisplayItems = () => {
   });
 };
 
-watch([() => props.rootBlockIds, blocks], updateDisplayItems, { immediate: true });
+watch([
+  () => props.rootBlockIds,
+  blocks,
+  app.foldingStatus,
+  tempExpanded
+], updateDisplayItems, {
+  immediate: true,
+});
 
-watch([app.foldingStatus, tempExpanded], updateDisplayItems, { immediate: true, deep: true });
+const visbleMinLevel = computed(() => {
+  if (!$vlist.value || !displayItems.value) return 0;
+  const vlist = $vlist.value;
+  let minLevel = Number.MAX_SAFE_INTEGER;
+  for (let i = vlist.reactiveData.inViewBegin; i <= vlist.reactiveData.inViewEnd; i++) {
+    const item = displayItems.value[i];
+    if (item.itemType == "alblock") {
+      minLevel = Math.min(minLevel, item.level);
+    }
+  }
+  return minLevel;
+});
 
 const addEventListener: BlockTree["addEventListener"] = (event, listener, options) => {
   if (event in eventListeners) {
@@ -395,7 +411,7 @@ const moveCursorToBegin = (blockId: BlockId) => {
 };
 
 const getBelongingDisplayItem = (blockId: BlockId): DisplayItem | null => {
-  for (const item of displayItems.value) {
+  for (const item of displayItems.value ?? []) {
     if (item.itemType == "alblock") {
       if (item.id == blockId) return item;
     } else if (item.itemType == "multiCol") {
@@ -441,7 +457,7 @@ const removeFromTempExpanded = (...blockIds: BlockId[]) => {
 const controller: BlockTree = {
   getId: () => props.id,
   getDom: () => $blockTree.value!,
-  getRootBlockIds: () => props.rootBlockIds,
+  getRootBlockIds: () => props.rootBlockIds ?? [],
   getDisplayItems: () => displayItems.value!,
   addEventListener,
   removeEventListener,
@@ -486,9 +502,6 @@ onUnmounted(() => {
 
   // 用 footer 遮挡掉不想看到的缩进线
   .vlist {
-    display: flex;
-    flex-direction: column;
-
     [data-id="footer"] {
       flex-grow: 1;
       flex-shrink: 0;

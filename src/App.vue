@@ -2,7 +2,6 @@
   <template v-if="!firstSyncFinished">
     <ConnectBackend></ConnectBackend>
     <DatabaseManager></DatabaseManager>
-    <SettingModal></SettingModal>
   </template>
   <template v-else>
     <HeaderBar></HeaderBar>
@@ -29,12 +28,14 @@
       <RightSidePane></RightSidePane>
     </div>
     <ContextMenu></ContextMenu>
-    <!--    <FileExplorer></FileExplorer>-->
     <SearchPanel></SearchPanel>
     <RefSuggestions></RefSuggestions>
     <FloatingToolbar></FloatingToolbar>
     <ReviewerController></ReviewerController>
     <FloatingInfoPanel></FloatingInfoPanel>
+    <SettingModal></SettingModal>
+    <FontSelector></FontSelector>
+    <FloatingMathInput></FloatingMathInput>
   </template>
   <ToastPanel></ToastPanel>
 </template>
@@ -60,6 +61,8 @@ import DatabaseManager from "@/components/DatabaseManager.vue";
 import LeftSidebar from "@/components/LeftSidebar.vue";
 import RightSidePane from "@/components/RightSidePane.vue";
 import SettingModal from "@/components/SettingsPanel.vue";
+import FontSelector from "@/components/FontSelector.vue";
+import FloatingMathInput from "./components/FloatingMathInput.vue";
 
 const app = useAppState();
 const { showLeftSidebar, showRightSidePane, rightSidePaneWidth } = app;
@@ -123,9 +126,13 @@ document.body.addEventListener("keydown", keydownHandler);
 
   .header-bar {
     height: calc(50px - 1px); // - border bottom
-    border-bottom: 1px solid var(--border-primary);
+    border-bottom: 1px solid var(--border-color-primary);
   }
 
+  .css-variables-provider {
+    height: 100%;
+  }
+  
   .main-pane {
     position: relative;
     height: calc(100% - 50px); // - header height

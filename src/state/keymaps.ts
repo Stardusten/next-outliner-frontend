@@ -61,7 +61,7 @@ export const keymapsPlugin = (app: AppState) => {
 
           // 1. 在块末尾按 Enter，下面创建空块
           if (sel.eq(docEnd)) {
-            onRoot && app.toggleFold(block.id, false, tree);
+            onRoot && await app.toggleFold(block.id, false, tree);
             const pos = onRoot
               ? app.normalizePos({
                   parentId: block.id,
@@ -436,7 +436,7 @@ export const keymapsPlugin = (app: AppState) => {
         const needFold = tree.getProps().forceFold ? tree.inTempExpanded(block.id) : !block.fold;
         if (!needFold) return false;
         app.taskQueue.addTask(async () => {
-          await app.toggleFoldWithAnimation(block.id, true, tree);
+          await app.toggleFold(block.id, true, tree);
           app.addUndoPoint({ message: "fold block" });
         });
         return true;
@@ -453,7 +453,7 @@ export const keymapsPlugin = (app: AppState) => {
         const needExpand = tree.getProps().forceFold ? !tree.inTempExpanded(block.id) : block.fold;
         if (!needExpand) return false;
         app.taskQueue.addTask(async () => {
-          await app.toggleFoldWithAnimation(block.id, false, tree);
+          await app.toggleFold(block.id, false, tree);
           app.addUndoPoint({ message: "expand block" });
         });
         return true;

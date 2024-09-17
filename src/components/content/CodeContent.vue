@@ -116,8 +116,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   const wrapperDom = cmWrapper.value?.getWrapperDom();
-  if ("cmView" in wrapperDom) delete wrapperDom["cmView"];
-  if ($contentEl.value && "cmView" in $contentEl.value) delete $contentEl.value["cmView"];
+  if (wrapperDom) {
+    if ("cmView" in wrapperDom) delete wrapperDom["cmView"];
+    if ($contentEl.value && "cmView" in $contentEl.value) delete $contentEl.value["cmView"];
+  }
 });
 </script>
 
@@ -135,7 +137,7 @@ onBeforeUnmount(() => {
     select {
       color: var(--text-primary-color);
       background-color: var(--bg-color-primary);
-      border: 1px solid var(--border-primary);
+      border: 1px solid var(--border-color-primary);
       border-radius: 4px;
       padding: 2px 4px;
     }

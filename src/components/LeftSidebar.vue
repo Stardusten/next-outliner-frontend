@@ -4,7 +4,7 @@
       <div class="sidebar-entry pinned">
         <div class="sidebar-entry-header">
           <div class="sidebar-entry-title">
-            <span class="icon-14"><Pin></Pin></span>
+            <span class="mixin--clickable-icon-14"><Pin></Pin></span>
             PINNED
           </div>
         </div>

@@ -30,18 +30,35 @@
 
 <script setup lang="ts">
 import { useAppState } from "@/state/state";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { simpleTokenize } from "@/util/tokenizer";
 import type { ABlock, BlockId } from "@/state/block";
 import { debounce } from "lodash";
-import { Search } from "lucide-vue-next";
 import { calcPopoutPos } from "@/util/popout";
 import TextContent from "@/components/content/TextContent.vue";
 import CodeContent from "@/components/content/CodeContent.vue";
 
 const app = useAppState();
-const { query, showPos, selected, queryTerms, callback, suggestions, focusItemIndex, hide } =
-  app.refSuggestions;
+const query = ref<string | null>(null);
+const showPos = ref<{ x: number, y: number } | null>(null);
+const suggestions = ref<(ABlock & { ancestors: ABlock[] })[]>([]);
+const callback = ref<((blockId: BlockId | null) => void) | null>(null);
+const focusItemIndex = ref(0);
+
+const queryTerms = computed(() => {
+    if (query.value == null || query.value.length == 0) return [];
+    return simpleTokenize(query.value, false, 1) ?? [];
+  });
+const selected = computed(() => suggestions.value[focusItemIndex.value] ?? null);
+
+// 隐藏块引用补全窗口
+const hide = () => {
+  query.value = null;
+  showPos.value = null;
+  callback.value = null;
+  suggestions.value.length = 0;
+  focusItemIndex.value = 0;
+};
 
 watch(showPos, async () => {
   if (!showPos.value) return;
@@ -81,6 +98,7 @@ const onKeydown = async (e: KeyboardEvent) => {
   const el = document.body.querySelector(".ref-suggestions");
   if (!(el instanceof HTMLElement)) return;
 
+  // 关闭补全窗口
   if (e.key == "Escape") {
     e.preventDefault();
     e.stopPropagation();
@@ -89,6 +107,7 @@ const onKeydown = async (e: KeyboardEvent) => {
     return;
   }
 
+  // 选择补全项
   if (e.key == "Enter") {
     e.preventDefault();
     e.stopPropagation();
@@ -125,6 +144,7 @@ const onKeydown = async (e: KeyboardEvent) => {
   }
 };
 
+// 更新补全窗口内容，使用 debounce 避免频繁更新
 const updateSuggestions = debounce(() => {
   if (!query.value || query.value.trim().length == 0) {
     suggestions.value = [];
@@ -151,6 +171,19 @@ const updateSuggestions = debounce(() => {
     .filter((o) => o != null) as any;
   focusItemIndex.value = 0;
 }, 100);
+
+// 组件挂载时注册 refSuggestions 到 app
+onMounted(() => {
+  app._registerRefSuggestions({
+    openRefSuggestions: (_showPos, _cb, _initQuery) => {
+      showPos.value = _showPos;
+      callback.value = _cb;
+      query.value = _initQuery ?? null;
+      updateSuggestions();
+      focusItemIndex.value = 0;
+    }
+  });
+})
 </script>
 
 <style lang="scss">
@@ -162,12 +195,12 @@ const updateSuggestions = debounce(() => {
   max-height: 300px;
 
   background-color: var(--bg-color-primary);
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--border-color-primary);
   border-radius: 8px;
   padding: 6px;
   box-shadow: var(--shadow-s);
 
-  z-index: 99;
+  z-index: 999;
   overflow: clip;
 
   input {
@@ -205,6 +238,7 @@ const updateSuggestions = debounce(() => {
         max-width: unset;
         font-size: var(--ui-font-size-s);
         line-height: var(--line-height-tight);
+        cursor: pointer;
       }
 
       &.focus {

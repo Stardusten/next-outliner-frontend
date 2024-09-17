@@ -51,12 +51,13 @@ import type { ABlock, BlockId, QueryContent } from "@/state/block";
 import { computed, onMounted, ref, shallowRef, watch } from "vue";
 import { useAppState } from "@/state/state";
 import BlockTree from "@/components/BlockTree.vue";
+import { type BlockTree as BlockTreeType } from "@/state/block-tree";
 import CodeMirror from "@/components/CodeMirror.vue";
 import { debounce } from "lodash";
 import { flatBacklinksGenerator } from "@/state/display-items";
 import ProseMirror from "@/components/ProseMirror.vue";
 import { Search } from "lucide-vue-next";
-import type { EditorView } from "prosemirror-view";
+import type { EditorProps, EditorView } from "prosemirror-view";
 import { inputRules } from "prosemirror-inputrules";
 import { openRefSuggestions } from "@/pm/input-rules/open-ref-suggestions";
 import { mkKeymapPlugin } from "@/pm/plugins/keymap";
@@ -69,7 +70,7 @@ import { MathInlineKatex } from "@/pm/node-views/inline-math-katex";
 import { mkPlaceholderPlugin } from "@/pm/plugins/placeholder";
 
 const props = defineProps<{
-  blockTree?: BlockTree;
+  blockTree?: BlockTreeType;
   block: ABlock;
   highlightTerms?: string[];
   highlightRefs?: BlockId[];
@@ -108,17 +109,17 @@ const queryResults = computed<QueryResult>(() => {
     }
     return { type: "failed", errMsg: "invalid output, " + output };
   } catch (err) {
-    return { type: "failed", errMsg: err.toString() };
+    return { type: "failed", errMsg: (err as Error).message };
   }
 });
 
-const nodeViews = {
+const nodeViews: EditorProps["nodeViews"] = {
   mathInline(node, view, getPos) {
     return new MathInlineKatex(node, view, getPos);
   },
 };
 
-const onTitleChanged = ({ newDoc }) => {
+const onTitleChanged = ({ newDoc }: { newDoc: string }) => {
   const blockId = props.block.id;
   const newContent = {
     ...props.block.content,

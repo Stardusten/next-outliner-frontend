@@ -28,7 +28,14 @@ export const clientStorePlugin = (app: AppState) => {
     for (const [key, refValue] of Object.entries(values)) {
       watch(refValue, () => {
         localStorage[key] = JSON.stringify(refValue.value);
-      });
+      }, {immediate: true});
+    }
+
+    // 持久化 settings 中的所有设置项
+    for (const key of Object.keys(app.settingEntries)) {
+      watch(() => app.settingEntries[key], () => {
+        localStorage[`settings.${key}`] = JSON.stringify(app.settingEntries[key]);
+      }, {immediate: true});
     }
   };
   app.decorate(
@@ -55,6 +62,13 @@ export const clientStorePlugin = (app: AppState) => {
     for (const key of nonTrackingKeys) {
       if (key in app && key in localStorage) {
         (app as any)[key].value = JSON.parse(localStorage[key]);
+      }
+    }
+    // 恢复 settings 中的所有设置项
+    for (const key of Object.keys(app.settingEntries)) {
+      const storageKey = `settings.${key}`;
+      if (storageKey in localStorage) {
+        app.settingEntries[key] = JSON.parse(localStorage[storageKey]);
       }
     }
     // TODO 聚焦到上一次浏览的块

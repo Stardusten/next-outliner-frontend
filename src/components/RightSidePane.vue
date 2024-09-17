@@ -3,7 +3,10 @@
     <div class="right-side-pane" v-if="showRightSidePane">
       <div class="resize-handler" @mousedown="mouseDownHandler"></div>
       <div v-for="(item, i) in items" :key="item">
-        <div class="remove-button icon-14" @click="app.removeFromRightSidePane(item)">
+        <div
+          class="remove-button mixin--clickable-icon-14"
+          @click="app.removeFromRightSidePane(item)"
+        >
           <X></X>
         </div>
         <div class="block-path">
@@ -19,6 +22,7 @@
           :virtual="true"
           :root-block-ids="[item]"
           :root-block-level="0"
+          :padding-bottom="0"
         ></BlockTree>
         <div class="hsep"></div>
       </div>

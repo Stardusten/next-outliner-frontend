@@ -9,9 +9,11 @@
               <div class="database-location">{{ d.location }}</div>
             </div>
             <div class="right-part">
-              <button class="open-database" @click="onOpenDatabase(i)">Open</button>
-              <button class="new-backup" @click="newBackup(i, d.name)">New backup</button>
-              <div class="settings-panel icon-16">
+              <button class="open-database mixin--button" @click="onOpenDatabase(i)">Open</button>
+              <button class="new-backup mixin--button" @click="newBackup(i, d.name)">
+                New backup
+              </button>
+              <div class="settings-panel mixin--clickable-icon-16">
                 <Settings></Settings>
               </div>
             </div>

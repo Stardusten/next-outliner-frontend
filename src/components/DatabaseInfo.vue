@@ -14,7 +14,7 @@
       </div>
       <div class="database-location">{{ openedDatabase.location }}</div>
     </div>
-    <div class="icon-16">
+    <div class="mixin--clickable-icon-16">
       <Settings></Settings>
     </div>
   </div>
@@ -35,7 +35,7 @@ const { openedDatabase, syncStatus } = app;
   background-color: var(--bg-color-primary);
   padding: 12px;
   border-radius: 6px;
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--border-color-primary);
 
   .left-part {
     margin-right: 10px;

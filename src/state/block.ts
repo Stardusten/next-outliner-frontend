@@ -235,7 +235,20 @@ declare module "@/state/state" {
     getClozeIds: (target: BlockId | BlockContent) => Cloze["id"][];
     getBoosting: (target: BlockId | BlockContent) => number;
     normalizePos: (pos: BlockPos) => BlockPosParentChild | null;
-    toggleFold: (blockId: BlockId, fold: boolean, tree?: BlockTree) => boolean;
+    /**
+     * 更改一个块的折叠状态
+     * @param blockId 要更改的块
+     * @param fold 目标折叠状态
+     * @param tree 如果指定了 blockTree，则只保证 block 在这个 blockTree 中展开，否则保证在所有 blockTree 中展开
+     * @param animate 是否显示动画，如果不指定，默认值为 `app.settingEntries["appearance.enableFoldExpandAnimation"]`
+     * @returns 
+     */
+    toggleFold: (
+      blockId: BlockId,
+      fold: boolean,
+      tree?: BlockTree,
+      animate?: boolean,
+    ) => Promise<boolean>;
     toggleFoldWithAnimation: (
       blockId: BlockId,
       fold: boolean,
@@ -731,9 +744,18 @@ export const blockManagePlugin = (s: AppState) => {
   };
   s.decorate("normalizePos", normalizePos);
 
-  const toggleFold = (blockId: BlockId, fold: boolean, tree?: BlockTree) => {
+  const toggleFold = async (
+    blockId: BlockId,
+    fold: boolean,
+    tree?: BlockTree,
+    animate?: boolean,
+  ) => {
     const block = getBlock(blockId, true);
     if (!block) return false;
+
+    if (animate) {
+      return toggleFoldWithAnimation(blockId, fold, tree);
+    }
 
     // 如果指定了 blockTree，则只保证 block 在这个 blockTree 中展开，否则保证在所有 blockTree 中展开
     let toggled = false;
@@ -1485,7 +1507,7 @@ export const blockManagePlugin = (s: AppState) => {
         let needWaitUpdate = false;
         for (let i = index; i > 0; i--) {
           const id = targetPath[i];
-          needWaitUpdate ||= toggleFold(id, false);
+          needWaitUpdate ||= await toggleFold(id, false);
         }
         needWaitUpdate && (await blockTree.nextUpdate());
         blockTree.scrollBlockIntoView(targetBlockId);

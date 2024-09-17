@@ -154,7 +154,7 @@ const buttonSpecs: ButtonSpec[] = [
   flex-direction: row;
   padding: 4px;
   height: 24px;
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--border-color-primary);
   border-radius: 6px;
   box-shadow: var(--shadow-s);
   background-color: var(--bg-color-primary);

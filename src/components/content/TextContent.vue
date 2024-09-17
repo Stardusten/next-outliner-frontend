@@ -16,7 +16,7 @@
 <script setup lang="ts">
 import type { BlockTree } from "@/state/block-tree";
 import type { ABlock, BlockId, TextContent } from "@/state/block";
-import { onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from "vue";
 import { useAppState } from "@/state/state";
 import { inputRules } from "prosemirror-inputrules";
 import { mkHighlightMatchesPlugin } from "@/pm/plugins/highlight-matches";
@@ -44,7 +44,7 @@ import { MathInlineKatex } from "@/pm/node-views/inline-math-katex";
 import { mkLongTextPastePlugin } from "@/pm/plugins/long-text-paste";
 import { mkHighlightRefsPlugin } from "@/pm/plugins/highlight-refs";
 import ProseMirror from "@/components/ProseMirror.vue";
-import type { EditorView } from "prosemirror-view";
+import type { EditorProps, EditorView } from "prosemirror-view";
 
 const props = defineProps<{
   blockTree?: BlockTree;
@@ -57,12 +57,12 @@ const props = defineProps<{
 const docJson = shallowRef<any | null>(null);
 const pmWrapper = ref<InstanceType<typeof ProseMirror> | null>(null);
 const app = useAppState();
-const nodeViews = {
+const nodeViews: EditorProps["nodeViews"] = {
   mathInline(node, view, getPos) {
     return new MathInlineKatex(node, view, getPos);
   },
 };
-const onDocChanged = ({ newDoc }) => {
+const onDocChanged = ({ newDoc }: { newDoc: any }) => {
   const blockId = props.block.id;
   const newBlockContent = {
     ...props.block.content,
@@ -110,6 +110,10 @@ const customPluginsGenerator = (getEditorView: () => EditorView | null, readonly
   }
 };
 
+const tldrBlockId = computed(() => {
+  return app.getTldrOf(props.block.id);
+});
+
 watch(
   () => props.block.content,
   (content) => {
@@ -125,13 +129,20 @@ onMounted(() => {
   const wrapperDom = pmWrapper.value?.getWrapperDom();
   if (editorView && wrapperDom) Object.assign(wrapperDom, { pmView: editorView });
 
-  // mtext 改变时, 更新 inlay hint
+  // TODO 更新 inlay hint
   if (editorView?.updateTrailingHint) {
     watch(
-      () => props.block.mtext,
-      (value) => {
+      [() => props.block.mtext, tldrBlockId],
+      () => {
         const editorView = pmWrapper.value?.getEditorView();
-        editorView?.updateTrailingHint!(value);
+        if (!editorView || !editorView.updateTrailingHint) return;
+        // TODO 根据设置确定显示什么，能否同时显示
+        if (tldrBlockId.value) {
+          const tldrBlock = app.getBlock(tldrBlockId.value);
+          if (tldrBlock) editorView.updateTrailingHint(tldrBlock.ctext);
+        } else if (props.block.mtext.trim().length > 0) {
+          editorView.updateTrailingHint(props.block.mtext);
+        }
       },
       { immediate: true },
     );
@@ -140,7 +151,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   const wrapperDom = pmWrapper.value?.getWrapperDom();
-  if ("pmView" in wrapperDom) delete wrapperDom["pmView"];
+  if (wrapperDom && "pmView" in wrapperDom) delete wrapperDom["pmView"];
 });
 </script>
 

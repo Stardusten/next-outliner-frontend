@@ -1,16 +1,16 @@
 <template>
   <div class="connect-backend">
     <h1><i>next</i>-Outliner</h1>
-    <input v-model="backendUrl" placeholder="Backend URL" />
-    <input v-model="password" placeholder="Password" type="password" />
-    <button class="connect-button" @click="onConnectBackend">Connect</button>
+    <CustomInput class="backend-url-input" v-model="backendUrl" placeholder="Backend URL" />
+    <CustomInput class="password-input" v-model="password" placeholder="Password" type="password" />
+    <button class="connect-button mixin--button" @click="onConnectBackend">Connect</button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
 import { useAppState } from "@/state/state";
-import { Dot } from "lucide-vue-next";
+import CustomInput from "@/components/CustomInput.vue";
 
 const app = useAppState();
 const { backendUrl } = app;
@@ -36,18 +36,9 @@ const onConnectBackend = () => {
   justify-content: center;
   align-items: center;
 
-  input {
-    width: 300px;
-    border-radius: var(--input-radius);
-    height: var(--input-height);
-    background-color: var(--bg-color-primary);
-    color: var(--text-primary-color);
-    border: var(--input-border);
-    text-indent: var(--input-text-indent);
-
-    &:focus {
-      box-shadow: var(--input-active-shadow);
-    }
+  .backend-url-input,
+  .password-input {
+    width: 250px;
   }
 
   .connect-button {

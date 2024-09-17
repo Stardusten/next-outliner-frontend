@@ -87,9 +87,6 @@ export const uiMiscPlugin = (s: AppState) => {
   });
   s.decorate("mainRootBlockPath", mainRootBlockPath);
 
-  const theme = ref("dark");
-  s.decorate("theme", theme);
-
   const foldingStatus = ref<FoldingStatus>({ op: "none" });
   s.decorate("foldingStatus", foldingStatus);
 
@@ -170,17 +167,25 @@ export const uiMiscPlugin = (s: AppState) => {
   };
   s.decorate("restoreSelection", restoreSelection);
 
-  watch(
-    theme,
-    (value) => {
-      if (value == "light") {
-        document.body.classList.add("light");
-        document.body.classList.remove("dark");
-      } else {
-        document.body.classList.add("dark");
-        document.body.classList.remove("light");
-      }
-    },
-    { immediate: true },
-  );
+  const logout = () => {
+    s.disconnectBackend();
+    location.reload();
+  };
+  s.decorate("logout", logout);
+  setTimeout(() => {
+    s.addSettingsPanelItem("General", [
+      {
+        type: "buttons",
+        key: "",
+        title: "Logout",
+        description: "End this session and you can connect to another database",
+        buttons: [
+          {
+            text: "Logout",
+            onClick: logout,
+          },
+        ],
+      },
+    ]);
+  });
 };

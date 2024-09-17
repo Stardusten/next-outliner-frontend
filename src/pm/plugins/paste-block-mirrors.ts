@@ -9,7 +9,7 @@ import type {BlockTree} from "@/state/block-tree";
 
 export const mkPasteBlockMirrorsPlugin = (
   getBlockId: () => BlockId,
-  getBlockTree: () => BlockTree
+  getBlockTree: () => BlockTree | null
 ) =>
   new Plugin({
     props: {

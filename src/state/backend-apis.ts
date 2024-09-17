@@ -2,6 +2,7 @@
 import type { AppState } from "@/state/state";
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 import { computed, type ComputedRef, ref, type Ref } from "vue";
+import type { BackupType } from "./backup-controller";
 
 export type Database = {
   name: string;
@@ -26,9 +27,9 @@ declare module "@/state/state" {
     syncStatus: Ref<SyncStatus>;
 
     // Actions
-    connectBackend: (backendUrl: string, password: string) => void;
+    connectBackend: (backendUrl: string, password: string) => Promise<void>;
     disconnectBackend: () => void;
-    fetchWebpageTitle: (url: string) => Promise<string>;
+    fetchWebpageTitle: (url: string) => Promise<string | null>;
     fs: {
       stat: (filePath: string) => Promise<{
         ctime: Date;
@@ -41,7 +42,10 @@ declare module "@/state/state" {
       download: (filePath: string) => Promise<Blob | null>;
       upload: (path: string, file: string | Blob) => Promise<{ success: true } | { error: string }>;
     };
-    backupDatabase: (index: number, name: string) => Promise<void>;
+    backup: {
+      backupDatabase: (index: number, name: string, type: BackupType) => Promise<boolean>;
+      getAllBackups: (index: number, name: string) => Promise<string[]>;
+    };
   }
 }
 
@@ -96,11 +100,29 @@ export const backendApiPlugin = (s: AppState) => {
   s.decorate("axios", _axios);
 
   /// Actions
+  // 封装 axios 的 POST 和 GET 请求，统一处理错误和返回值
   const _axiosPost = async (url: string, data?: any, config?: AxiosRequestConfig) => {
     if (!_axios.value) return null;
-    const resp = await _axios.value.post(url, data, config);
-    if ("error" in resp.data) return null;
-    return resp.data;
+    try {
+      const resp = await _axios.value.post(url, data, config);
+      if ("error" in resp.data) return null;
+      return resp.data;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  };
+
+  const _axiosGet = async (url: string, config?: AxiosRequestConfig) => {
+    if (!_axios.value) return null;
+    try {
+      const resp = await _axios.value.get(url, config);
+      if ("error" in resp.data) return null;
+      return resp.data;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
   };
 
   const connectBackend = async (_backendUrl: string, password: string) => {
@@ -130,7 +152,7 @@ export const backendApiPlugin = (s: AppState) => {
 
   const fetchWebpageTitle = async (url: string) => {
     const data = await _axiosPost("/fetch-webpage-title", { webpageUrl: url });
-    return data?.title;
+    return data?.title ?? null;
   };
   s.decorate("fetchWebpageTitle", fetchWebpageTitle);
 
@@ -150,10 +172,10 @@ export const backendApiPlugin = (s: AppState) => {
   const download = async (filePath: string): Promise<Blob | null> => {
     if (!_axios.value) return null;
     if (backendUrl.value) {
-      const url = `http://${backendUrl.value}/fs/download/${encodeURIComponent(filePath)}`;
+      const url = `/fs/download/${encodeURIComponent(filePath)}`;
       try {
-        const resp = await _axios.value.get(url, { responseType: "blob" });
-        return resp.data;
+        const resp = await _axiosGet(url, { responseType: "blob" });
+        return resp;
       } catch (err) {
         return null;
       }
@@ -161,8 +183,6 @@ export const backendApiPlugin = (s: AppState) => {
   };
 
   const upload = async (path: string, file: string | Blob) => {
-    if (_axios.value == null) return null;
-
     const formData = new FormData();
     formData.append("path", path);
     formData.append("file", file);
@@ -181,9 +201,29 @@ export const backendApiPlugin = (s: AppState) => {
     upload,
   });
 
-  const backupDatabase = async (index: number, name: string) => {
-    const data = await _axiosPost("/db/newBackup", { index, name });
-    return !("error" in data);
+  // 备份相关 APIs
+  /**
+   * 创建新备份
+   * @param index 数据库下标
+   * @param name 数据库的名称
+   * @returns 是否成功
+   */
+  const backupDatabase = async (index: number, name: string, type: BackupType) => {
+    const data = await _axiosPost("/db/newBackup", { index, name, type });
+    return data != null;
   };
-  s.decorate("backupDatabase", backupDatabase);
+
+  /**
+   * 获取所有备份
+   * @returns 备份文件名列表
+   */
+  const getAllBackups = async (index: number, name: string): Promise<string[]> => {
+    const data = await _axiosPost("/db/getAllBackups", { index, name });
+    return data.backups;
+  }
+
+  s.decorate("backup", {
+    backupDatabase,
+    getAllBackups,
+  });
 };

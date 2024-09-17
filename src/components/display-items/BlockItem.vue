@@ -12,14 +12,16 @@
       selected: app.isBlockSelected(item.id),
       [item.content.type]: item.content.type,
     }"
-    :style="{ paddingLeft: `${item.level * 36}px` }"
     :level="item.level"
     :block-id="item.id"
-    :block-tree-id="blockTree.getId()"
+    :block-tree-id="blockTree?.getId()"
     ref="$blockItem"
     @focusin="onFocusin"
     tabindex="-1"
   >
+    <div class="indent-lines">
+      <div class="indent-line" v-for="i in item.level" :key="i"></div>
+    </div>
     <div class="fold-button" v-if="!hideFoldButton" @click="onClickFoldButton">
       <Triangle></Triangle>
     </div>
@@ -84,7 +86,7 @@ import { disposableComputed } from "@/state/tracking";
 import QueryContent from "@/components/content/QueryContent.vue";
 
 const props = defineProps<{
-  blockTree: BlockTree;
+  blockTree?: BlockTree;
   item: BlockDI;
   hideFoldButton?: boolean;
   hideBullet?: boolean;
@@ -107,15 +109,16 @@ const backlinks = computed(() => app.getBacklinks(props.item.actualSrc));
 const shouldFold = computed(() => {
   const blockId = props.item.id;
   // 如果处于强制折叠模式，并且不在 tempExpanded 中，则折叠
-  if (props.forceFold) return !props.blockTree.inTempExpanded(blockId);
+  if (props.forceFold) return !props.blockTree?.inTempExpanded(blockId);
   else return props.item.fold; // 否则看 block.fold 属性
 });
 
 const onClickFoldButton = () => {
   const blockId = props.item.id;
   app.taskQueue.addTask(async () => {
+    if (!props.blockTree) return;
     const fold = props.forceFold ? props.blockTree.inTempExpanded(blockId) : !props.item.fold;
-    await app.toggleFoldWithAnimation(blockId, fold, props.blockTree);
+    await app.toggleFold(blockId, fold, props.blockTree);
     app.addUndoPoint({ message: "toggle fold" });
   });
 };
@@ -151,6 +154,17 @@ onMounted(() => {
     .block-content,
     .bullet {
       background-color: var(--selected-block-item-bg);
+    }
+  }
+
+  .indent-lines {
+    display: flex;
+
+    .indent-line {
+      width: calc(var(--block-indent-width) - var(--block-indent-adjust));
+      height: 100%;
+      border-right: var(--border-indent);
+      margin-right: var(--block-indent-adjust);
     }
   }
 

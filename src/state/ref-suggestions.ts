@@ -1,59 +1,42 @@
-import {computed, type ComputedRef, ref, type Ref} from "vue";
-import type {AppState} from "@/state/state";
-import type {ABlock, BlockId} from "@/state/block";
-import {simpleTokenize} from "@/util/tokenizer";
+import { computed, type ComputedRef, ref, type Ref } from "vue";
+import type { AppState } from "@/state/state";
+import type { ABlock, BlockId } from "@/state/block";
+import { simpleTokenize } from "@/util/tokenizer";
+import type { SettingsPanelItemBlockId } from "@/state/settings";
 
 /// Types
-export const refSuggestions: unique symbol = Symbol("ref suggestions plugin");
+type RefSuggestionsType = {
+  openRefSuggestions: (
+    showPos: { x: number; y: number },
+    cb: (blockId: BlockId | null) => void,
+    initQuery?: string,
+  ) => void;
+};
+
 
 declare module "@/state/state" {
   interface AppState {
-    [refSuggestions]: true,
-    refSuggestions: {
-      query: Ref<string | null>;
-      showPos: Ref<{ x: number, y: number } | null>;
-      callback: Ref<((blockId: BlockId | null) => void) | null>;
-      suggestions: Ref<(ABlock & { ancestors: ABlock[] })[]>;
-      focusItemIndex: Ref<number>;
-      queryTerms: ComputedRef<string[]>;
-      selected: ComputedRef<(ABlock & { ancestors: ABlock[] }) | null>;
-      hide: () => void;
-    }
+    openRefSuggestions: RefSuggestionsType["openRefSuggestions"];
+    _registerRefSuggestions: (refSuggestions: RefSuggestionsType) => void;
   }
 }
 
 export const refSuggestionsPlugin = (app: AppState) => {
-  /// Data
-  const query = ref<string | null>(null);
-  const showPos = ref<{ x: number, y: number } | null>(null);
-  const suggestions = ref<(ABlock & { ancestors: ABlock[] })[]>([]);
-  const callback = ref<((blockId: BlockId | null) => void) | null>(null);
-  const focusItemIndex = ref(0);
-
-  /// Computed
-  const queryTerms = computed(() => {
-    if (query.value == null || query.value.length == 0) return [];
-    return simpleTokenize(query.value, false, 1) ?? [];
+  const refSuggestions = ref<RefSuggestionsType | null>(null);
+  app.decorate("openRefSuggestions", (...args: Parameters<RefSuggestionsType["openRefSuggestions"]>) => {
+    if (!refSuggestions.value) return;
+    refSuggestions.value.openRefSuggestions(...args);
   });
-  const selected = computed(() => suggestions.value[focusItemIndex.value] ?? null);
-
-  /// Actions
-  const hide = () => {
-    query.value = null;
-    showPos.value = null;
-    callback.value = null;
-    suggestions.value.length = 0;
-    focusItemIndex.value = 0;
-  }
-
-  app.decorate("refSuggestions", {
-    query,
-    showPos,
-    callback,
-    suggestions,
-    focusItemIndex,
-    queryTerms,
-    selected,
-    hide,
+  app.decorate("_registerRefSuggestions", (val: RefSuggestionsType) => {
+    refSuggestions.value = val;
   });
-}
+
+  // 反链提示面板允许直接创建新块，下面的值控制新块应该创建在哪个块下面
+  setTimeout(() => {app.addSettingEntry("appearance.newBlockPos", null);
+  const posToCreateNewBlockItem: SettingsPanelItemBlockId = {
+    type: "blockId",
+    key: "appearance.newBlockPos",
+    title: "New Block Position",
+    description: "Where to put new created blocks",
+  };});
+};

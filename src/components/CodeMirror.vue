@@ -15,9 +15,9 @@ import { basicDark } from "@/cm/themes/cm-basic-dark";
 import { updateHighlightTerms } from "@/cm/plugins/highlight-matches";
 
 const props = defineProps<{
-  theme?: string;
+  theme: string;
   readonly?: boolean;
-  lang?: string;
+  lang: string;
   extensionsGenerator?: () => Extension[];
   highlightTerms?: string[];
   onSrcChanged?: (newSrc: string, oldSrc?: string) => void;
@@ -87,7 +87,7 @@ watch(() => props.lang, configureLanguage);
 
 const configureTheme = (theme: string) => {
   if (!editorView) return;
-  const themePlugin = registeredThemes[theme];
+  const themePlugin = (registeredThemes as any)[theme];
   if (themePlugin) {
     editorView.dispatch({
       effects: themeCompartment.reconfigure([themePlugin]),
@@ -166,5 +166,9 @@ onBeforeUnmount(() => {
   background-color: var(--bg-hover) !important;
   color: var(--text-primary-color) !important;
   outline: none;
+
+  @at-root .cm-focused .cm-matchingBracket {
+    outline: none !important;
+  }
 }
 </style>

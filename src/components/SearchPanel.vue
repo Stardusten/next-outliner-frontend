@@ -221,7 +221,7 @@ watch(show, () => {
       max-height: 100%;
       border-radius: 12px;
       background-color: var(--bg-color-primary);
-      border: solid 1px var(--border-primary);
+      border: solid 1px var(--border-color-primary);
       box-shadow: var(--shadow-s);
       overflow: clip;
       transition: all 0.2s ease-in;
@@ -231,7 +231,7 @@ watch(show, () => {
         justify-content: center;
         align-items: center;
         padding: 0 20px;
-        border-bottom: 1px solid var(--border-primary);
+        border-bottom: 1px solid var(--border-color-primary);
 
         // search icon
         svg {
@@ -302,7 +302,7 @@ watch(show, () => {
         color: var(--text-secondary-color);
         background-color: var(--bg-color-secondary);
         padding: 8px 20px;
-        border-bottom: 1px solid var(--border-primary);
+        border-bottom: 1px solid var(--border-color-primary);
 
         .block-type {
           margin-right: 6px;

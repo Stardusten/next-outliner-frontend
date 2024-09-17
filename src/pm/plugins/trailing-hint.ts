@@ -10,7 +10,7 @@ declare module "prosemirror-view" {
   }
 }
 
-export const mkTrailingHintPlugin = (getBlockId: () => BlockId, getBlockTree: () => BlockTree) => {
+export const mkTrailingHintPlugin = (getBlockId: () => BlockId, getBlockTree: () => BlockTree | null) => {
   const plugin: Plugin = new Plugin({
     view: (_view) => {
       const updateTrailingHint = (content: string | HTMLElement) => {
@@ -46,10 +46,12 @@ export const mkTrailingHintPlugin = (getBlockId: () => BlockId, getBlockTree: ()
                 const app = useAppState();
                 const blockId = getBlockId();
                 const tree = getBlockTree();
+                if (tree == null) return;
                 const block = app.getBlock(blockId);
-                if (block == null) return;
+                if (block == null || !block.fold || tree.inTempExpanded(blockId)) return;
                 app.taskQueue.addTask(async () => {
-                  if (await app.toggleFoldWithAnimation(blockId, false, tree))
+                  if (tree == null) return;
+                  if (await app.toggleFold(blockId, false, tree))
                     await tree.nextUpdate();
                   tree.expandMetadataItemInView(blockId);
                 });

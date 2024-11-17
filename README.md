@@ -1,3 +1,5 @@
+> 对整个架构和 UI 不太满意，已经重写了：https://github.com/Stardusten/next-outliner-frontend2
+
 # Next Outliner
 
 一个类似 Workflowy 的大纲笔记软件，但加了一些功能，包括：
